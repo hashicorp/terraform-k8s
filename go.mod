@@ -2,9 +2,12 @@ module github.com/hashicorp/terraform-k8s
 
 require (
 	github.com/go-openapi/spec v0.17.2
+	github.com/google/martian v2.1.0+incompatible
 	github.com/hashicorp/go-tfe v0.3.27
+	github.com/hashicorp/terraform v0.12.16
 	github.com/operator-framework/operator-sdk v0.12.1-0.20191127152849-96dd1d2d5de1
 	github.com/spf13/pflag v1.0.3
+	github.com/stretchr/testify v1.3.0
 	k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible

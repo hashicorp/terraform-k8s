@@ -16,7 +16,7 @@ spec:
       containers:
         - name: terraform-k8s
           # Replace this with the built image name
-          image: REPLACE_IMAGE
+          image: joatmon08/operator-terraform
           command:
           - terraform-k8s
           imagePullPolicy: Always
@@ -31,3 +31,17 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "terraform-k8s"
+            - name: TF_CLI_CONFIG_FILE
+              value: "/etc/terraform/.terraformrc"
+          volumeMounts:
+          - name: terraformrc
+            mountPath: "/etc/terraform"
+            readOnly: true
+      volumes:
+        - name: terraformrc
+          secret:
+            secretName: terraformrc
+            items:
+            - key: credentials
+              path: ".terraformrc"
+        

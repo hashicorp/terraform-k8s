@@ -2,6 +2,12 @@ apiVersion: app.terraform.io/v1alpha1
 kind: Workspace
 metadata:
   name: example-workspace
+  namespace: operator-test
 spec:
-  # Add fields here
-  size: 3
+  module:
+    source: "terraform-aws-modules/security-group/aws"
+    version: 3.2.0
+  variables:
+    - key: test
+      value: hello
+      sensitive: false
