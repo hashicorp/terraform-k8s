@@ -2,7 +2,6 @@ apiVersion: app.terraform.io/v1alpha1
 kind: Workspace
 metadata:
   name: example-workspace
-  namespace: operator-test
 spec:
   module:
     source: "terraform-aws-modules/security-group/aws"
