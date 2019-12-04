@@ -85,6 +85,11 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
+			reqLogger.Info("Deleting workspace", "Organization", request.Namespace, "Name", request.Name)
+			err := r.tfclient.DeleteWorkspace(request.Namespace, request.Name)
+			if err != nil {
+				reqLogger.Error(err, "Could not delete workspace")
+			}
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.

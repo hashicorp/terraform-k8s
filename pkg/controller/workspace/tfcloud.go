@@ -35,6 +35,7 @@ func (t *TerraformCloudClient) GetClient() error {
 	return nil
 }
 
+// CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
 func (t *TerraformCloudClient) CreateWorkspace(organization string, name string) error {
 	autoApply := true
 	options := tfc.WorkspaceCreateOptions{
@@ -42,6 +43,15 @@ func (t *TerraformCloudClient) CreateWorkspace(organization string, name string)
 		Name:      &name,
 	}
 	_, err := t.Client.Workspaces.Create(context.TODO(), organization, options)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteWorkspace removes the workspace from Terraform Cloud
+func (t *TerraformCloudClient) DeleteWorkspace(organization string, name string) error {
+	err := t.Client.Workspaces.Delete(context.TODO(), organization, name)
 	if err != nil {
 		return err
 	}
