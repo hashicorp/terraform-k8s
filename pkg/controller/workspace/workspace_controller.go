@@ -106,6 +106,11 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	if err := r.tfclient.CheckWorkspace(); err != nil && err == ErrResourceNotFound {
 		reqLogger.Info("Creating a new workspace", "Organization", request.Namespace, "Name", request.Name)
 		err := r.tfclient.CreateWorkspace()
+		reqLogger.Info("Creating a variables in workspace", "Organization", request.Namespace, "Name", request.Name)
+		if err := r.tfclient.CreateTerraformVariables(instance.Spec.Variables); err != nil {
+			reqLogger.Error(err, "Could not create variables in workspace")
+			return reconcile.Result{}, err
+		}
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -115,5 +120,6 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	reqLogger.Info("Skip reconcile: Workspace already exists", "Organization", request.Namespace, "Name", request.Name)
+
 	return reconcile.Result{}, nil
 }

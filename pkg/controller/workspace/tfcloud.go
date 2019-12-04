@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	tfc "github.com/hashicorp/go-tfe"
+	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
 	"github.com/hashicorp/terraform/command/cliconfig"
 )
 
@@ -14,6 +15,8 @@ const (
 
 var (
 	ErrResourceNotFound = tfc.ErrResourceNotFound
+	TerraformVariable   = tfc.CategoryTerraform
+	EnvironmentVariable = tfc.CategoryEnv
 )
 
 type TerraformCloudClient struct {
@@ -53,15 +56,6 @@ func (t *TerraformCloudClient) CheckWorkspace() error {
 	return err
 }
 
-func (t *TerraformCloudClient) listVariables() (*tfc.VariableList, error) {
-	options := tfc.VariableListOptions{
-		ListOptions:  tfc.ListOptions{PageSize: PageSize},
-		Organization: &t.Organization,
-		Workspace:    &t.Workspace,
-	}
-	return t.Client.Variables.List(context.TODO(), options)
-}
-
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
 func (t *TerraformCloudClient) CreateWorkspace() error {
 	autoApply := true
@@ -81,6 +75,48 @@ func (t *TerraformCloudClient) DeleteWorkspace() error {
 	err := t.Client.Workspaces.Delete(context.TODO(), t.Organization, t.Workspace)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (t *TerraformCloudClient) listVariables() (*tfc.VariableList, error) {
+	options := tfc.VariableListOptions{
+		ListOptions:  tfc.ListOptions{PageSize: PageSize},
+		Organization: &t.Organization,
+		Workspace:    &t.Workspace,
+	}
+	return t.Client.Variables.List(context.TODO(), options)
+}
+
+// DeleteAllVariables removes all variables from the workspace for re-creation
+func (t *TerraformCloudClient) DeleteAllVariables() error {
+	variables, err := t.listVariables()
+	if err != nil {
+		return err
+	}
+	for _, variable := range variables.Items {
+		err := t.Client.Variables.Delete(context.TODO(), variable.ID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CreateTerraformVariables creates Terraform variables for Terraform Cloud
+func (t *TerraformCloudClient) CreateTerraformVariables(variables []*v1alpha1.Variable) error {
+	for _, variable := range variables {
+		options := tfc.VariableCreateOptions{
+			Key:       &variable.Key,
+			Value:     &variable.Value,
+			Category:  &TerraformVariable,
+			Sensitive: &variable.Sensitive,
+			Workspace: &tfc.Workspace{Name: t.Workspace},
+		}
+		_, err := t.Client.Variables.Create(context.TODO(), options)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
