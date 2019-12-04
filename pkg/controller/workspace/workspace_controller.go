@@ -79,6 +79,8 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 
 	// Fetch the Workspace instance
 	instance := &appv1alpha1.Workspace{}
+	r.tfclient.Organization = request.Namespace
+	r.tfclient.Workspace = request.Name
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -86,7 +88,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
 			reqLogger.Info("Deleting workspace", "Organization", request.Namespace, "Name", request.Name)
-			err := r.tfclient.DeleteWorkspace(request.Namespace, request.Name)
+			err := r.tfclient.DeleteWorkspace()
 			if err != nil {
 				reqLogger.Error(err, "Could not delete workspace")
 			}
@@ -96,14 +98,14 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	if _, err := r.tfclient.Client.Organizations.Read(context.TODO(), request.Namespace); err != nil {
+	if err := r.tfclient.CheckOrganization(); err != nil {
 		reqLogger.Error(err, "Could not find organization")
 		return reconcile.Result{}, nil
 	}
 
-	if _, err := r.tfclient.Client.Workspaces.Read(context.TODO(), request.Namespace, request.Name); err != nil && err == ErrResourceNotFound {
+	if err := r.tfclient.CheckWorkspace(); err != nil && err == ErrResourceNotFound {
 		reqLogger.Info("Creating a new workspace", "Organization", request.Namespace, "Name", request.Name)
-		err := r.tfclient.CreateWorkspace(request.Namespace, request.Name)
+		err := r.tfclient.CreateWorkspace()
 		if err != nil {
 			return reconcile.Result{}, err
 		}

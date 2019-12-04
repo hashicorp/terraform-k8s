@@ -25,8 +25,10 @@ operator: setup
 workspace:
 	kubectl -n $(NAMESPACE) create -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml
 
-clean:
+clean-workspace:
 	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml --ignore-not-found
+
+clean: clean-workspace
 	kubectl -n $(NAMESPACE) delete -f deploy/operator.yaml --ignore-not-found
 	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_workspaces_crd.yaml --ignore-not-found
 	kubectl -n $(NAMESPACE) delete -f deploy/role_binding.yaml --ignore-not-found
