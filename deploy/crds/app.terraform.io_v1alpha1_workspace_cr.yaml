@@ -6,7 +6,3 @@ spec:
   module:
     source: "terraform-aws-modules/security-group/aws"
     version: 3.2.0
-  variables:
-    - key: test
-      value: hellozzz
-      sensitive: false

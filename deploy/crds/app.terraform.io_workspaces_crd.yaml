@@ -60,7 +60,6 @@ spec:
               type: array
           required:
           - module
-          - variables
           type: object
         status:
           description: WorkspaceStatus defines the observed state of Workspace

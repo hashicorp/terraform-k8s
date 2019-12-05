@@ -65,6 +65,15 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []
 	if err != nil {
 		return err
 	}
+	for _, v := range workspaceVariables {
+		index := findInSpecVariables(specVariables, v.Key)
+		if index < 0 {
+			err := t.DeleteVariable(v)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	for _, v := range specVariables {
 		index := find(workspaceVariables, v.Key)
 		if index < 0 {
@@ -116,6 +125,15 @@ func find(tfcVariables []*tfc.Variable, key string) int {
 	return -1
 }
 
+func findInSpecVariables(specVariables []*v1alpha1.Variable, key string) int {
+	for index, variable := range specVariables {
+		if variable.Key == key {
+			return index
+		}
+	}
+	return -1
+}
+
 func (t *TerraformCloudClient) listVariables(workspace string) ([]*tfc.Variable, error) {
 	options := tfc.VariableListOptions{
 		ListOptions:  tfc.ListOptions{PageSize: PageSize},
@@ -140,6 +158,14 @@ func (t *TerraformCloudClient) DeleteAllVariables(workspace string) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (t *TerraformCloudClient) DeleteVariable(variable *tfc.Variable) error {
+	err := t.Client.Variables.Delete(context.TODO(), variable.ID)
+	if err != nil {
+		return err
 	}
 	return nil
 }
