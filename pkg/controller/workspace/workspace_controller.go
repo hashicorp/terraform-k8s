@@ -80,7 +80,6 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	// Fetch the Workspace instance
 	instance := &appv1alpha1.Workspace{}
 	r.tfclient.Organization = request.Namespace
-	r.tfclient.Workspace = request.Name
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -88,7 +87,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
 			reqLogger.Info("Deleting workspace", "Organization", request.Namespace, "Name", request.Name)
-			err := r.tfclient.DeleteWorkspace()
+			err := r.tfclient.DeleteWorkspace(request.Name)
 			if err != nil {
 				reqLogger.Error(err, "Could not delete workspace")
 			}
@@ -103,23 +102,22 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.tfclient.CheckWorkspace(); err != nil && err == ErrResourceNotFound {
+	if err := r.tfclient.CheckWorkspace(request.Name); err != nil && err == ErrResourceNotFound {
 		reqLogger.Info("Creating a new workspace", "Organization", request.Namespace, "Name", request.Name)
-		err := r.tfclient.CreateWorkspace()
-		reqLogger.Info("Creating a variables in workspace", "Organization", request.Namespace, "Name", request.Name)
-		if err := r.tfclient.CreateTerraformVariables(instance.Spec.Variables); err != nil {
-			reqLogger.Error(err, "Could not create variables in workspace")
+		if err := r.tfclient.CreateWorkspace(request.Name); err != nil {
 			return reconcile.Result{}, err
 		}
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		return reconcile.Result{}, nil
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	reqLogger.Info("Skip reconcile: Workspace already exists", "Organization", request.Namespace, "Name", request.Name)
+	reqLogger.Info("Check variables exist in workspace", "Organization", request.Namespace, "Name", request.Name)
+	if err := r.tfclient.CheckVariables(request.Name, instance.Spec.Variables); err != nil {
+		reqLogger.Error(err, "Could not update variables")
+		return reconcile.Result{}, err
+	}
+
+	reqLogger.Info("Updated variables", "Organization", request.Namespace, "Name", request.Name)
 
 	return reconcile.Result{}, nil
 }
