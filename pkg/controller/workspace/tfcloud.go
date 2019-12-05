@@ -67,8 +67,15 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []
 	}
 	for _, v := range specVariables {
 		index := find(workspaceVariables, v.Key)
-		if index < 0 || v.Value != workspaceVariables[index].Value {
+		if index < 0 {
 			err := t.CreateTerraformVariable(tfcWorkspace, v.Key, v.Value)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		if v.Value != workspaceVariables[index].Value {
+			err := t.UpdateTerraformVariable(workspaceVariables[index], v.Value)
 			if err != nil {
 				return err
 			}
@@ -155,6 +162,18 @@ func (t *TerraformCloudClient) CreateTerraformVariables(workspace string, variab
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (t *TerraformCloudClient) UpdateTerraformVariable(variable *tfc.Variable, newValue string) error {
+	options := tfc.VariableUpdateOptions{
+		Key:   &variable.Key,
+		Value: &newValue,
+	}
+	_, err := t.Client.Variables.Update(context.TODO(), variable.ID, options)
+	if err != nil {
+		return err
 	}
 	return nil
 }
