@@ -19,7 +19,7 @@ setup:
 	kubectl -n $(NAMESPACE) create -f deploy/role_binding.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/crds/app.terraform.io_workspaces_crd.yaml || true
 
-operator: setup
+operator: docker setup
 	kubectl -n $(NAMESPACE) create -f deploy/operator.yaml || true
 
 workspace:
