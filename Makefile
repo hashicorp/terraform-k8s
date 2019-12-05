@@ -1,7 +1,7 @@
 NAMESPACE='rosemarycorp'
 
 test:
-	OPERATOR_NAME=terraform-k8s operator-sdk up local --namespace=$(NAMESPACE)
+	TF_CLI_CONFIG_FILE=credentials OPERATOR_NAME=terraform-k8s operator-sdk up local --namespace=$(NAMESPACE)
 
 crd:
 	operator-sdk generate k8s
