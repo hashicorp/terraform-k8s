@@ -23,7 +23,7 @@ operator: docker setup
 	kubectl -n $(NAMESPACE) create -f deploy/operator.yaml || true
 
 workspace:
-	kubectl -n $(NAMESPACE) create -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml
+	kubectl -n $(NAMESPACE) apply -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml
 
 clean-workspace:
 	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml --ignore-not-found
