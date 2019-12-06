@@ -14,7 +14,6 @@ type Module struct {
 }
 
 type Variable struct {
-	ID        string `json:"id"`
 	Key       string `json:"key"`
 	Value     string `json:"value"`
 	Sensitive bool   `json:"sensitive"`
@@ -27,6 +26,7 @@ type WorkspaceSpec struct {
 	Module *Module `json:"module"`
 	// Variables as inputs to module
 	// +listType=set
+	// +optional
 	Variables []*Variable `json:"variables"`
 }
 

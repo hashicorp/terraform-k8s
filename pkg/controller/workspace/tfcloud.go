@@ -56,7 +56,20 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string) error {
 	return err
 }
 
+func changeTypeToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
+	tfcVariables := []*tfc.Variable{}
+	for _, variable := range specVariables {
+		tfcVariables = append(tfcVariables, &tfc.Variable{
+			Key:       variable.Key,
+			Value:     variable.Value,
+			Sensitive: variable.Sensitive,
+		})
+	}
+	return tfcVariables
+}
+
 func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []*v1alpha1.Variable) error {
+	specTFCVariables := changeTypeToTFCVariable(specVariables)
 	tfcWorkspace, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil {
 		return err
@@ -66,7 +79,7 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []
 		return err
 	}
 	for _, v := range workspaceVariables {
-		index := findInSpecVariables(specVariables, v.Key)
+		index := find(specTFCVariables, v.Key)
 		if index < 0 {
 			err := t.DeleteVariable(v)
 			if err != nil {
@@ -74,7 +87,7 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []
 			}
 		}
 	}
-	for _, v := range specVariables {
+	for _, v := range specTFCVariables {
 		index := find(workspaceVariables, v.Key)
 		if index < 0 {
 			err := t.CreateTerraformVariable(tfcWorkspace, v.Key, v.Value)

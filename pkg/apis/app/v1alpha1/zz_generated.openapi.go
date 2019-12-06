@@ -93,7 +93,7 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"module", "variables"},
+				Required: []string{"module"},
 			},
 		},
 		Dependencies: []string{
