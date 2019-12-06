@@ -138,15 +138,6 @@ func find(tfcVariables []*tfc.Variable, key string) int {
 	return -1
 }
 
-func findInSpecVariables(specVariables []*v1alpha1.Variable, key string) int {
-	for index, variable := range specVariables {
-		if variable.Key == key {
-			return index
-		}
-	}
-	return -1
-}
-
 func (t *TerraformCloudClient) listVariables(workspace string) ([]*tfc.Variable, error) {
 	options := tfc.VariableListOptions{
 		ListOptions:  tfc.ListOptions{PageSize: PageSize},
