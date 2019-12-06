@@ -10,16 +10,22 @@ import (
 )
 
 const (
+	// PageSize is page size for TFC API
 	PageSize = 500
 )
 
 var (
+	// ErrResourceNotFound wraps around TFC's error not found
 	ErrResourceNotFound = tfc.ErrResourceNotFound
-	TerraformVariable   = tfc.CategoryTerraform
+	// TerraformVariable is a variable
+	TerraformVariable = tfc.CategoryTerraform
+	// EnvironmentVariable is an environment variable
 	EnvironmentVariable = tfc.CategoryEnv
-	Sensitive           = false
+	// Sensitive defaults to false
+	Sensitive = false
 )
 
+// TerraformCloudClient has a TFC Client and organization
 type TerraformCloudClient struct {
 	Client       *tfc.Client
 	Organization string
@@ -183,6 +189,7 @@ func (t *TerraformCloudClient) CreateTerraformVariables(workspace string, variab
 	return nil
 }
 
+// UpdateTerraformVariable updates a variable
 func (t *TerraformCloudClient) UpdateTerraformVariable(variable *tfc.Variable, newValue string) error {
 	options := tfc.VariableUpdateOptions{
 		Key:   &variable.Key,
@@ -195,6 +202,7 @@ func (t *TerraformCloudClient) UpdateTerraformVariable(variable *tfc.Variable, n
 	return nil
 }
 
+// CreateTerraformVariable creates a Terraform variable based on key and value
 func (t *TerraformCloudClient) CreateTerraformVariable(workspace *tfc.Workspace, key string, value string) error {
 	options := tfc.VariableCreateOptions{
 		Key:       &key,
