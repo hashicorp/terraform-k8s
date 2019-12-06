@@ -68,6 +68,7 @@ func changeTypeToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable
 	return tfcVariables
 }
 
+// CheckVariables creates, updates, or deletes variables as needed
 func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []*v1alpha1.Variable) error {
 	specTFCVariables := changeTypeToTFCVariable(specVariables)
 	tfcWorkspace, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
@@ -151,21 +152,7 @@ func (t *TerraformCloudClient) listVariables(workspace string) ([]*tfc.Variable,
 	return variables.Items, nil
 }
 
-// DeleteAllVariables removes all variables from the workspace for re-creation
-func (t *TerraformCloudClient) DeleteAllVariables(workspace string) error {
-	variables, err := t.listVariables(workspace)
-	if err != nil {
-		return err
-	}
-	for _, variable := range variables {
-		err := t.Client.Variables.Delete(context.TODO(), variable.ID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
+// DeleteVariable removes the variable by ID from Terraform Cloud
 func (t *TerraformCloudClient) DeleteVariable(variable *tfc.Variable) error {
 	err := t.Client.Variables.Delete(context.TODO(), variable.ID)
 	if err != nil {
