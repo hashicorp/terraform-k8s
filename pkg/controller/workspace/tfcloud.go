@@ -1,8 +1,10 @@
 package workspace
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"text/template"
 
 	tfc "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
@@ -216,4 +218,30 @@ func (t *TerraformCloudClient) CreateTerraformVariable(workspace *tfc.Workspace,
 		return err
 	}
 	return nil
+}
+
+func createTerraformFile(workspace *v1alpha1.Workspace) (string, error) {
+	tfTemplate, err := template.New("main.tf").Parse(`terraform {
+		backend "remote" {
+			organization = "{{.ObjectMeta.Namespace}}"
+	
+			workspaces {
+				name = "{{.ObjectMeta.Name}}"
+			}
+		}
+	}
+
+	module "operator" {
+		source = "{{.Spec.Module.Source}}"
+		version = "{{.Spec.Module.Version}}"
+		{{range .Spec.Variables}}{{.Key}} = var.{{.Key}}{{end}}
+	}`)
+	if err != nil {
+		return "", err
+	}
+	var tpl bytes.Buffer
+	if err := tfTemplate.Execute(&tpl, workspace); err != nil {
+		return "", err
+	}
+	return tpl.String(), nil
 }
