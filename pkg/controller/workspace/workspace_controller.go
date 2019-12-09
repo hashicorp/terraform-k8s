@@ -102,14 +102,14 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.tfclient.CheckWorkspace(request.Name); err != nil && err == ErrResourceNotFound {
-		reqLogger.Info("Creating a new workspace", "Organization", request.Namespace, "Name", request.Name)
-		if err := r.tfclient.CreateWorkspace(request.Name); err != nil {
-			return reconcile.Result{}, err
-		}
-	} else if err != nil {
+	reqLogger.Info("Checking workspace", "Organization", request.Namespace, "Name", request.Name)
+	workspaceID, err := r.tfclient.CheckWorkspace(request.Name)
+	if err != nil {
+		reqLogger.Error(err, "Could not update workspace")
 		return reconcile.Result{}, err
 	}
+	reqLogger.Info("Found workspace", "Organization", request.Namespace, "Name", request.Name, "ID", workspaceID)
+	instance.Status.WorkspaceID = workspaceID
 
 	reqLogger.Info("Check variables exist in workspace", "Organization", request.Namespace, "Name", request.Name)
 	if err := r.tfclient.CheckVariables(request.Name, instance.Spec.Variables); err != nil {

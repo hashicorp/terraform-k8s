@@ -33,6 +33,8 @@ type WorkspaceSpec struct {
 // WorkspaceStatus defines the observed state of Workspace
 // +k8s:openapi-gen=true
 type WorkspaceStatus struct {
+	// Workspace ID
+	WorkspaceID string `json:"workspaceID"`
 	// Status of run
 	RunStatus tfc.RunStatus `json:"runStatus"`
 	// Outputs

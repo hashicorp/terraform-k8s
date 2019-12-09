@@ -4,19 +4,23 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"fmt"
+	"context"
 	"net/http"
 	"os"
 	"text/template"
 
-	"github.com/google/uuid"
+	tfc "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
 )
 
 const (
-	ConfigurationFileEndpoint = "https://archivist.terraform.io/v1/object"
-	ConfigurationFileName     = "main.tf"
-	ConfigurationTarball      = "configuration.tar.gz"
+	ConfigurationFileName = "main.tf"
+	ConfigurationTarball  = "configuration.tar.gz"
+)
+
+var (
+	AutoQueueRuns = true
+	Speculative   = false
 )
 
 func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer, error) {
@@ -79,24 +83,40 @@ func createConfigurationTarGz(data *bytes.Buffer) error {
 	return nil
 }
 
-func UploadConfigurationFiles(workspace *v1alpha1.Workspace) error {
-	uuid, err := uuid.NewUUID()
-	if err != nil {
-		return err
-	}
+func UploadConfigurationFiles(configVersion *tfc.ConfigurationVersion, workspace *v1alpha1.Workspace) error {
 	client := &http.Client{}
-	url := fmt.Sprintf("%s/%s", ConfigurationFileEndpoint, uuid.String())
 	data, err := createTerraformConfiguration(workspace)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPut, url, data)
+	if err := createConfigurationTarGz(data); err != nil {
+		return err
+	}
+	file, err := os.Open(ConfigurationTarball)
 	if err != nil {
 		return err
 	}
+	defer file.Close()
+	req, err := http.NewRequest(http.MethodPut, configVersion.UploadURL, file)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/octet-stream")
 	_, err = client.Do(req)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*tfc.ConfigurationVersion, error) {
+	options := tfc.ConfigurationVersionCreateOptions{
+		AutoQueueRuns: &AutoQueueRuns,
+		Speculative:   &Speculative,
+	}
+	configVersion, err := t.Client.ConfigurationVersions.Create(context.TODO(), workspaceID, options)
+	if err != nil {
+		return nil, err
+	}
+	return configVersion, nil
 }

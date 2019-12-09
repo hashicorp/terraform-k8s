@@ -15,8 +15,6 @@ const (
 )
 
 var (
-	// ErrResourceNotFound wraps around TFC's error not found
-	ErrResourceNotFound = tfc.ErrResourceNotFound
 	// TerraformVariable is a variable
 	TerraformVariable = tfc.CategoryTerraform
 	// EnvironmentVariable is an environment variable
@@ -57,9 +55,18 @@ func (t *TerraformCloudClient) CheckOrganization() error {
 }
 
 // CheckWorkspace looks for a workspace
-func (t *TerraformCloudClient) CheckWorkspace(workspace string) error {
-	_, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
-	return err
+func (t *TerraformCloudClient) CheckWorkspace(workspace string) (string, error) {
+	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
+	if err != nil && err == tfc.ErrResourceNotFound {
+		id, err := t.CreateWorkspace(workspace)
+		if err != nil {
+			return "", err
+		}
+		return id, nil
+	} else if err != nil {
+		return "", err
+	}
+	return ws.ID, err
 }
 
 func changeTypeToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
@@ -114,17 +121,17 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []
 }
 
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
-func (t *TerraformCloudClient) CreateWorkspace(workspace string) error {
+func (t *TerraformCloudClient) CreateWorkspace(workspace string) (string, error) {
 	autoApply := true
 	options := tfc.WorkspaceCreateOptions{
 		AutoApply: &autoApply,
 		Name:      &workspace,
 	}
-	_, err := t.Client.Workspaces.Create(context.TODO(), t.Organization, options)
+	ws, err := t.Client.Workspaces.Create(context.TODO(), t.Organization, options)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return ws.ID, nil
 }
 
 // DeleteWorkspace removes the workspace from Terraform Cloud
