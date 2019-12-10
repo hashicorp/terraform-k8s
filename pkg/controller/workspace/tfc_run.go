@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"text/template"
+	"time"
 
 	tfc "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
@@ -19,10 +20,12 @@ import (
 var (
 	autoQueueRuns         = false
 	speculative           = false
+	isDestroy             = true
 	_, b, _, _            = runtime.Caller(0)
 	basepath              = filepath.Dir(b)
 	moduleDirectory       = fmt.Sprintf("%s/%s", basepath, "module")
 	configurationFilePath = fmt.Sprintf("%s/%s", moduleDirectory, "main.tf")
+	interval              = 30 * time.Second
 )
 
 func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer, error) {
@@ -110,7 +113,8 @@ func (t *TerraformCloudClient) CheckRunConfiguration(workspace *v1alpha1.Workspa
 	if err := t.UploadConfigurationFile(configVersion.UploadURL); err != nil {
 		return err
 	}
-	message := fmt.Sprintf("Operator, ConfigHash, %s", md5Sum)
+
+	message := fmt.Sprintf("operator, apply, configHash, %s", md5Sum)
 	options := tfc.RunCreateOptions{
 		Message:              &message,
 		ConfigurationVersion: configVersion,
@@ -139,4 +143,31 @@ func (t *TerraformCloudClient) CheckRunForError(workspace *v1alpha1.Workspace) e
 	}
 
 	return nil
+}
+
+func (t *TerraformCloudClient) RunDelete(workspace string) error {
+	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
+	if err != nil {
+		return err
+	}
+	message := "operator, destroy, latest"
+	options := tfc.RunCreateOptions{
+		IsDestroy: &isDestroy,
+		Message:   &message,
+		Workspace: ws,
+	}
+	run, err := t.Client.Runs.Create(context.TODO(), options)
+	if err != nil {
+		return err
+	}
+	for {
+		checkRun, err := t.Client.Runs.Read(context.TODO(), run.ID)
+		if err != nil || checkRun.Status == tfc.RunErrored {
+			return fmt.Errorf("destroy had error: %v", err)
+		}
+		if checkRun.Status == tfc.RunApplied {
+			return nil
+		}
+		time.Sleep(interval)
+	}
 }
