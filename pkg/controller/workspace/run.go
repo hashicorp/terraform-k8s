@@ -1,9 +1,7 @@
 package workspace
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -19,17 +17,15 @@ import (
 )
 
 const (
-	ConfigurationFileName    = "main.tf"
-	ConfigurationTarballName = "configuration.tar.gz"
+	ConfigurationFileName = "main.tf"
 )
 
 var (
-	AutoQueueRuns         = false
-	Speculative           = false
-	_, b, _, _            = runtime.Caller(0)
-	basepath              = filepath.Dir(b)
-	moduleDirectory       = fmt.Sprintf("%s/%s", basepath, "module")
-	ConfigurationFilePath = basepath + "/" + ConfigurationTarballName
+	AutoQueueRuns   = false
+	Speculative     = false
+	_, b, _, _      = runtime.Caller(0)
+	basepath        = filepath.Dir(b)
+	moduleDirectory = fmt.Sprintf("%s/%s", basepath, "module")
 )
 
 type RunConfiguration struct {
@@ -71,36 +67,6 @@ func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer,
 func writeToFile(data *bytes.Buffer) error {
 	os.Mkdir(moduleDirectory, 0777)
 	if err := ioutil.WriteFile(moduleDirectory+"/"+ConfigurationFileName, data.Bytes(), 0777); err != nil {
-		return err
-	}
-	return nil
-}
-
-func createConfigurationTarGz(data *bytes.Buffer) error {
-	file, err := os.Create(basepath + "/" + ConfigurationTarballName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	gzw := gzip.NewWriter(file)
-	defer gzw.Close()
-
-	tw := tar.NewWriter(gzw)
-	defer tw.Close()
-
-	hdr := &tar.Header{
-		Name: ConfigurationFileName,
-		Mode: 0744,
-		Size: int64(len(data.Bytes())),
-	}
-	if err := tw.WriteHeader(hdr); err != nil {
-		return err
-	}
-	if _, err := tw.Write(data.Bytes()); err != nil {
-		return err
-	}
-	if err := tw.Close(); err != nil {
 		return err
 	}
 	return nil
