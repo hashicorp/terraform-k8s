@@ -16,22 +16,14 @@ import (
 	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
 )
 
-const (
-	ConfigurationFileName = "main.tf"
-)
-
 var (
-	AutoQueueRuns   = false
-	Speculative     = false
-	_, b, _, _      = runtime.Caller(0)
-	basepath        = filepath.Dir(b)
-	moduleDirectory = fmt.Sprintf("%s/%s", basepath, "module")
+	autoQueueRuns         = false
+	speculative           = false
+	_, b, _, _            = runtime.Caller(0)
+	basepath              = filepath.Dir(b)
+	moduleDirectory       = fmt.Sprintf("%s/%s", basepath, "module")
+	configurationFilePath = fmt.Sprintf("%s/%s", moduleDirectory, "main.tf")
 )
-
-type RunConfiguration struct {
-	ConfigurationHash string
-	RunID             string
-}
 
 func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer, error) {
 	tfTemplate, err := template.New("main.tf").Parse(`terraform {
@@ -66,26 +58,25 @@ func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer,
 
 func writeToFile(data *bytes.Buffer) error {
 	os.Mkdir(moduleDirectory, 0777)
-	if err := ioutil.WriteFile(moduleDirectory+"/"+ConfigurationFileName, data.Bytes(), 0777); err != nil {
+	if err := ioutil.WriteFile(configurationFilePath, data.Bytes(), 0777); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (t *TerraformCloudClient) UploadConfigurationFile(data *bytes.Buffer, uploadURL string) error {
-	if err := writeToFile(data); err != nil {
-		return err
-	}
+// UploadConfigurationFile uploads the main.tf to a configuration version
+func (t *TerraformCloudClient) UploadConfigurationFile(uploadURL string) error {
 	if err := t.Client.ConfigurationVersions.Upload(context.TODO(), uploadURL, moduleDirectory); err != nil {
 		return fmt.Errorf("error, %v, %v", err, moduleDirectory)
 	}
 	return nil
 }
 
+// CreateConfigurationVersion creates a configuration version for a workspace
 func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*tfc.ConfigurationVersion, error) {
 	options := tfc.ConfigurationVersionCreateOptions{
-		AutoQueueRuns: &AutoQueueRuns,
-		Speculative:   &Speculative,
+		AutoQueueRuns: &autoQueueRuns,
+		Speculative:   &speculative,
 	}
 	configVersion, err := t.Client.ConfigurationVersions.Create(context.TODO(), workspaceID, options)
 	if err != nil {
@@ -94,7 +85,9 @@ func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*
 	return configVersion, nil
 }
 
-func (t *TerraformCloudClient) CheckConfiguration(workspace *v1alpha1.Workspace) error {
+// CheckRunConfiguration examines if there is a change in the Terraform configuration and
+// runs the workspace if there is
+func (t *TerraformCloudClient) CheckRunConfiguration(workspace *v1alpha1.Workspace) error {
 	data, err := createTerraformConfiguration(workspace)
 	if err != nil {
 		return err
@@ -105,15 +98,19 @@ func (t *TerraformCloudClient) CheckConfiguration(workspace *v1alpha1.Workspace)
 		return nil
 	}
 
-	workspace.Status.ConfigHash = md5Sum
 	configVersion, err := t.CreateConfigurationVersion(workspace.Status.WorkspaceID)
 	if err != nil {
 		return err
 	}
-	if err := t.UploadConfigurationFile(data, configVersion.UploadURL); err != nil {
+
+	workspace.Status.ConfigHash = md5Sum
+	if err := writeToFile(data); err != nil {
 		return err
 	}
-	message := fmt.Sprintf("Operator creating plan for configuration hash: %s", md5Sum)
+	if err := t.UploadConfigurationFile(configVersion.UploadURL); err != nil {
+		return err
+	}
+	message := fmt.Sprintf("Operator, ConfigHash, %s", md5Sum)
 	options := tfc.RunCreateOptions{
 		Message:              &message,
 		ConfigurationVersion: configVersion,
@@ -130,21 +127,11 @@ func (t *TerraformCloudClient) CheckConfiguration(workspace *v1alpha1.Workspace)
 	return nil
 }
 
-func (t *TerraformCloudClient) CheckPlanAndApply(workspace *v1alpha1.Workspace) error {
+// CheckRunForError examines for errors in the run
+func (t *TerraformCloudClient) CheckRunForError(workspace *v1alpha1.Workspace) error {
 	run, err := t.Client.Runs.Read(context.TODO(), workspace.Status.RunID)
 	if err != nil {
 		return err
-	}
-
-	if run.Status == tfc.RunPlannedAndFinished {
-		message := fmt.Sprintf("Operator applying run: %s", workspace.Status.RunID)
-		options := tfc.RunApplyOptions{
-			Comment: &message,
-		}
-		err := t.Client.Runs.Apply(context.TODO(), workspace.Status.RunID, options)
-		if err != nil {
-			return err
-		}
 	}
 
 	if run.Status == tfc.RunErrored {

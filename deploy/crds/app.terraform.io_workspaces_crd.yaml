@@ -67,11 +67,6 @@ spec:
             configHash:
               description: Configuration hash
               type: string
-            outputs:
-              description: Outputs
-              items:
-                type: string
-              type: array
             runID:
               description: Run ID
               type: string
@@ -80,7 +75,6 @@ spec:
               type: string
           required:
           - configHash
-          - outputs
           - runID
           - workspaceID
           type: object

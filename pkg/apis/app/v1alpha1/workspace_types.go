@@ -38,9 +38,6 @@ type WorkspaceStatus struct {
 	RunID string `json:"runID"`
 	// Configuration hash
 	ConfigHash string `json:"configHash"`
-	// Outputs
-	// +listType=set
-	Outputs []string `json:"outputs"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

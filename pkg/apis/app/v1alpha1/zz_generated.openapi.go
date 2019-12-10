@@ -129,27 +129,8 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
-					"outputs": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "set",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Outputs",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
-									},
-								},
-							},
-						},
-					},
 				},
-				Required: []string{"workspaceID", "runID", "configHash", "outputs"},
+				Required: []string{"workspaceID", "runID", "configHash"},
 			},
 		},
 	}

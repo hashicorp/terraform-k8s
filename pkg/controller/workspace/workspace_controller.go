@@ -119,18 +119,22 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	reqLogger.Info("Updated variables", "Organization", request.Namespace, "Name", request.Name)
 
 	reqLogger.Info("Run if needed", "Organization", request.Namespace, "Name", request.Name)
-	if err := r.tfclient.CheckConfiguration(instance); err != nil {
+	if err := r.tfclient.CheckRunConfiguration(instance); err != nil {
 		reqLogger.Error(err, "Could not execute run")
 		return reconcile.Result{}, err
 	}
-	reqLogger.Info("Uploaded new configuration and run", "Organization", request.Namespace, "Name", request.Name, "Run", instance.Status.RunID)
 
-	reqLogger.Info("Apply if it hasn't already", "Organization", request.Namespace, "Name", request.Name, "Run", instance.Status.RunID)
-	if err := r.tfclient.CheckPlanAndApply(instance); err != nil {
-		reqLogger.Error(err, "Could not apply")
+	reqLogger.Info("Check run status", "Organization", request.Namespace, "Name", request.Name, "Run", instance.Status.RunID)
+	if err := r.tfclient.CheckRunForError(instance); err != nil {
+		reqLogger.Error(err, "Run has error")
 		return reconcile.Result{}, err
 	}
-	reqLogger.Info("Applied configuration", "Organization", request.Namespace, "Name", request.Name, "Run", instance.Status.RunID)
+	reqLogger.Info("Plan and apply executed", "Organization", request.Namespace, "Name", request.Name, "Run", instance.Status.RunID)
+
+	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+		reqLogger.Error(err, "Failed to update Workspace status")
+		return reconcile.Result{}, err
+	}
 
 	return reconcile.Result{}, nil
 }
