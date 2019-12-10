@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -13,25 +14,34 @@ type Module struct {
 }
 
 type Variable struct {
-	Key       string `json:"key"`
-	Value     string `json:"value"`
-	Sensitive bool   `json:"sensitive"`
+	// Variable name
+	Key string `json:"key"`
+	// Variable value
+	// +optional
+	Value string `json:"value"`
+	// VolumeMount if secret
+	// +optional
+	VolumeMount corev1.VolumeMount `json:"volumeMount"`
 }
 
-// WorkspaceSpec defines the desired state of Workspace
+// OrganizationSpec defines the desired state of Organization
 // +k8s:openapi-gen=true
-type WorkspaceSpec struct {
+type OrganizationSpec struct {
 	// Module source and version to use
 	Module *Module `json:"module"`
 	// Variables as inputs to module
 	// +listType=set
 	// +optional
 	Variables []*Variable `json:"variables"`
+	// Volumes for sensitive variables
+	// +listType=set
+	// +optional
+	Volumes []*corev1.Volume `json:"volumes"`
 }
 
-// WorkspaceStatus defines the observed state of Workspace
+// OrganizationStatus defines the observed state of Organization
 // +k8s:openapi-gen=true
-type WorkspaceStatus struct {
+type OrganizationStatus struct {
 	// Workspace ID
 	WorkspaceID string `json:"workspaceID"`
 	// Run ID
@@ -42,27 +52,27 @@ type WorkspaceStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Workspace is the Schema for the workspaces API
+// Organization is the Schema for the organizations API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=workspaces,scope=Namespaced
-type Workspace struct {
+// +kubebuilder:resource:path=organizations,scope=Namespaced
+type Organization struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   WorkspaceSpec   `json:"spec,omitempty"`
-	Status WorkspaceStatus `json:"status,omitempty"`
+	Spec   OrganizationSpec   `json:"spec,omitempty"`
+	Status OrganizationStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// WorkspaceList contains a list of Workspace
-type WorkspaceList struct {
+// OrganizationList contains a list of Organization
+type OrganizationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Workspace `json:"items"`
+	Items           []Organization `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Workspace{}, &WorkspaceList{})
+	SchemeBuilder.Register(&Organization{}, &OrganizationList{})
 }

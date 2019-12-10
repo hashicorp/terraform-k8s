@@ -1,4 +1,4 @@
-package workspace
+package organization
 
 import (
 	"context"
@@ -25,9 +25,8 @@ func changeTypeToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable
 	tfcVariables := []*tfc.Variable{}
 	for _, variable := range specVariables {
 		tfcVariables = append(tfcVariables, &tfc.Variable{
-			Key:       variable.Key,
-			Value:     variable.Value,
-			Sensitive: variable.Sensitive,
+			Key:   variable.Key,
+			Value: variable.Value,
 		})
 	}
 	return tfcVariables
@@ -114,7 +113,7 @@ func (t *TerraformCloudClient) CreateTerraformVariables(workspace string, variab
 			Key:       &variable.Key,
 			Value:     &variable.Value,
 			Category:  &TerraformVariable,
-			Sensitive: &variable.Sensitive,
+			Sensitive: &Sensitive,
 			Workspace: tfcWorkspace,
 		}
 		_, err := t.Client.Variables.Create(context.TODO(), options)

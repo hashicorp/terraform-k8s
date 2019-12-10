@@ -57,5 +57,6 @@ rules:
   - app.terraform.io
   resources:
   - '*'
+  - organizations
   verbs:
   - '*'

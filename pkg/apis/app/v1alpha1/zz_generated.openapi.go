@@ -11,17 +11,17 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"./pkg/apis/app/v1alpha1.Workspace":       schema_pkg_apis_app_v1alpha1_Workspace(ref),
-		"./pkg/apis/app/v1alpha1.WorkspaceSpec":   schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref),
-		"./pkg/apis/app/v1alpha1.WorkspaceStatus": schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref),
+		"./pkg/apis/app/v1alpha1.Organization":       schema_pkg_apis_app_v1alpha1_Organization(ref),
+		"./pkg/apis/app/v1alpha1.OrganizationSpec":   schema_pkg_apis_app_v1alpha1_OrganizationSpec(ref),
+		"./pkg/apis/app/v1alpha1.OrganizationStatus": schema_pkg_apis_app_v1alpha1_OrganizationStatus(ref),
 	}
 }
 
-func schema_pkg_apis_app_v1alpha1_Workspace(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_app_v1alpha1_Organization(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Workspace is the Schema for the workspaces API",
+				Description: "Organization is the Schema for the organizations API",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -45,27 +45,27 @@ func schema_pkg_apis_app_v1alpha1_Workspace(ref common.ReferenceCallback) common
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1alpha1.WorkspaceSpec"),
+							Ref: ref("./pkg/apis/app/v1alpha1.OrganizationSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1alpha1.WorkspaceStatus"),
+							Ref: ref("./pkg/apis/app/v1alpha1.OrganizationStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1alpha1.WorkspaceSpec", "./pkg/apis/app/v1alpha1.WorkspaceStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"./pkg/apis/app/v1alpha1.OrganizationSpec", "./pkg/apis/app/v1alpha1.OrganizationStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_app_v1alpha1_OrganizationSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "WorkspaceSpec defines the desired state of Workspace",
+				Description: "OrganizationSpec defines the desired state of Organization",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"module": {
@@ -92,20 +92,38 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref common.ReferenceCallback) co
 							},
 						},
 					},
+					"volumes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Volumes for sensitive variables",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.Volume"),
+									},
+								},
+							},
+						},
+					},
 				},
 				Required: []string{"module"},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1alpha1.Module", "./pkg/apis/app/v1alpha1.Variable"},
+			"./pkg/apis/app/v1alpha1.Module", "./pkg/apis/app/v1alpha1.Variable", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
-func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_app_v1alpha1_OrganizationStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "WorkspaceStatus defines the observed state of Workspace",
+				Description: "OrganizationStatus defines the observed state of Organization",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"workspaceID": {

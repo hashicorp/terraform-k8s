@@ -1,4 +1,4 @@
-package workspace
+package organization
 
 import (
 	"testing"
@@ -28,26 +28,24 @@ func TestShouldCreateTerraformWithMultipleVariables(t *testing.T) {
 		hello = var.hello
 	}`
 
-	workspace := &v1alpha1.Workspace{
+	workspace := &v1alpha1.Organization{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "hello",
 			Namespace: "world",
 		},
-		Spec: v1alpha1.WorkspaceSpec{
+		Spec: v1alpha1.OrganizationSpec{
 			Module: &v1alpha1.Module{
 				Source:  "my_source",
 				Version: "0.3.2",
 			},
 			Variables: []*v1alpha1.Variable{
 				&v1alpha1.Variable{
-					Key:       "some_var",
-					Value:     "here",
-					Sensitive: false,
+					Key:   "some_var",
+					Value: "here",
 				},
 				&v1alpha1.Variable{
-					Key:       "hello",
-					Value:     "world",
-					Sensitive: false,
+					Key:   "hello",
+					Value: "world",
 				},
 			},
 		},
@@ -73,12 +71,12 @@ func TestShouldCreateTerraformWithNoVariables(t *testing.T) {
 		version = "0.3.2"
 	}`
 
-	workspace := &v1alpha1.Workspace{
+	workspace := &v1alpha1.Organization{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "hello",
 			Namespace: "world",
 		},
-		Spec: v1alpha1.WorkspaceSpec{
+		Spec: v1alpha1.OrganizationSpec{
 			Module: &v1alpha1.Module{
 				Source:  "my_source",
 				Version: "0.3.2",

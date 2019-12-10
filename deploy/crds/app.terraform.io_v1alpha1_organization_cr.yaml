@@ -1,0 +1,20 @@
+apiVersion: app.terraform.io/v1alpha1
+kind: Organization
+metadata:
+  name: rosemarycorp
+spec:
+  module:
+    source: "app.terraform.io/rosemarycorp/hello/random"
+    version: "1.0.0"
+  variables:
+    - key: hello
+      value: rosemary
+    - key: secret_key
+      volumeMount:
+        name:  secret-key
+        mountPath: "/tmp/secrets"
+        readOnly: true
+  volumes:
+    - name: secret-key
+      secret:
+        secretName: mysecrets
