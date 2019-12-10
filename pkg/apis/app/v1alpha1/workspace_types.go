@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	tfc "github.com/hashicorp/go-tfe"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,8 +34,10 @@ type WorkspaceSpec struct {
 type WorkspaceStatus struct {
 	// Workspace ID
 	WorkspaceID string `json:"workspaceID"`
-	// Status of run
-	RunStatus tfc.RunStatus `json:"runStatus"`
+	// Run ID
+	RunID string `json:"runID"`
+	// Configuration hash
+	ConfigHash string `json:"configHash"`
 	// Outputs
 	// +listType=set
 	Outputs []string `json:"outputs"`

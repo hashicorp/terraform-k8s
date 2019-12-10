@@ -4,5 +4,9 @@ metadata:
   name: example-workspace
 spec:
   module:
-    source: "terraform-aws-modules/security-group/aws"
-    version: 3.2.0
+    source: "app.terraform.io/rosemarycorp/hello/random"
+    version: "1.0.0"
+  variables:
+    - key: hello
+      value: rosemary
+      sensitive: false

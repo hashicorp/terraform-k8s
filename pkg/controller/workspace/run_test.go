@@ -1,11 +1,6 @@
 package workspace
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
-	"io"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
@@ -15,7 +10,6 @@ import (
 
 func TestShouldCreateTerraformWithMultipleVariables(t *testing.T) {
 	expectedFile := `terraform {
-		required_version = "~0.12"
 		backend "remote" {
 			organization = "world"
 	
@@ -24,6 +18,8 @@ func TestShouldCreateTerraformWithMultipleVariables(t *testing.T) {
 			}
 		}
 	}
+	variable "some_var" {}
+	variable "hello" {}
 
 	module "operator" {
 		source = "my_source"
@@ -63,7 +59,6 @@ func TestShouldCreateTerraformWithMultipleVariables(t *testing.T) {
 
 func TestShouldCreateTerraformWithNoVariables(t *testing.T) {
 	expectedFile := `terraform {
-		required_version = "~0.12"
 		backend "remote" {
 			organization = "world"
 	
@@ -93,72 +88,4 @@ func TestShouldCreateTerraformWithNoVariables(t *testing.T) {
 	terraformFile, err := createTerraformConfiguration(workspace)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedFile, terraformFile.String())
-}
-
-func TestShouldCreateTarball(t *testing.T) {
-	data := bytes.NewBufferString(`terraform {
-		required_version = "~0.12"
-		backend "remote" {
-			organization = "world"
-	
-			workspaces {
-				name = "hello"
-			}
-		}
-	}
-
-	module "operator" {
-		source = "my_source"
-		version = "0.3.2"
-	}`)
-	err := createConfigurationTarGz(data)
-	assert.Nil(t, err)
-	files, err := readTarFile(ConfigurationTarball)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(files))
-	assert.Equal(t, files[0], ConfigurationFileName)
-	os.Remove(ConfigurationTarball)
-}
-
-func readTarFile(srcFile string) ([]string, error) {
-	files := []string{}
-	f, err := os.Open(srcFile)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	gzf, err := gzip.NewReader(f)
-	if err != nil {
-		return nil, err
-	}
-
-	tarReader := tar.NewReader(gzf)
-
-	i := 0
-	for {
-		header, err := tarReader.Next()
-
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		name := header.Name
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			continue
-		case tar.TypeReg:
-			files = append(files, name)
-		default:
-			return files, err
-		}
-
-		i++
-	}
-	return files, nil
 }

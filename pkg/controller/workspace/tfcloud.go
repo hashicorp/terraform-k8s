@@ -21,6 +21,8 @@ var (
 	EnvironmentVariable = tfc.CategoryEnv
 	// Sensitive defaults to false
 	Sensitive = false
+	// AutoApply run to workspace
+	AutoApply = true
 )
 
 // TerraformCloudClient has a TFC Client and organization
@@ -122,9 +124,8 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []
 
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
 func (t *TerraformCloudClient) CreateWorkspace(workspace string) (string, error) {
-	autoApply := true
 	options := tfc.WorkspaceCreateOptions{
-		AutoApply: &autoApply,
+		AutoApply: &AutoApply,
 		Name:      &workspace,
 	}
 	ws, err := t.Client.Workspaces.Create(context.TODO(), t.Organization, options)

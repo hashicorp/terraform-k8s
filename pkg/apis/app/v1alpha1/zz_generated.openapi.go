@@ -108,9 +108,23 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 				Description: "WorkspaceStatus defines the observed state of Workspace",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"runStatus": {
+					"workspaceID": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Status of run",
+							Description: "Workspace ID",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"runID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Run ID",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"configHash": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Configuration hash",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -135,7 +149,7 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 						},
 					},
 				},
-				Required: []string{"runStatus", "outputs"},
+				Required: []string{"workspaceID", "runID", "configHash", "outputs"},
 			},
 		},
 	}
