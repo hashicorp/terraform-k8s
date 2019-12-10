@@ -145,6 +145,7 @@ func (t *TerraformCloudClient) CheckRunForError(workspace *v1alpha1.Workspace) e
 	return nil
 }
 
+// RunDelete destroys the latest configuration in a workspace
 func (t *TerraformCloudClient) RunDelete(workspace string) error {
 	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil {
