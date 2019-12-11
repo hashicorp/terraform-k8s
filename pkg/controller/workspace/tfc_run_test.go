@@ -54,9 +54,9 @@ func TestShouldCreateTerraformWithMultipleVariables(t *testing.T) {
 			},
 		},
 	}
-	terraformFile, err := createTerraformConfiguration(workspace)
+	terraformFile, err := CreateTerraformTemplate(workspace)
 	assert.Nil(t, err)
-	assert.Equal(t, expectedFile, terraformFile.String())
+	assert.Equal(t, expectedFile, string(terraformFile))
 }
 
 func TestShouldCreateTerraformWithNoVariables(t *testing.T) {
@@ -87,9 +87,9 @@ func TestShouldCreateTerraformWithNoVariables(t *testing.T) {
 			},
 		},
 	}
-	terraformFile, err := createTerraformConfiguration(workspace)
+	terraformFile, err := CreateTerraformTemplate(workspace)
 	assert.Nil(t, err)
-	assert.Equal(t, expectedFile, terraformFile.String())
+	assert.Equal(t, expectedFile, string(terraformFile))
 }
 
 func TestShouldCreateTerraformWithNoEnvironmentVariables(t *testing.T) {
@@ -128,7 +128,7 @@ func TestShouldCreateTerraformWithNoEnvironmentVariables(t *testing.T) {
 			},
 		},
 	}
-	terraformFile, err := createTerraformConfiguration(workspace)
+	terraformFile, err := CreateTerraformTemplate(workspace)
 	assert.Nil(t, err)
-	assert.Equal(t, expectedFile, terraformFile.String())
+	assert.Equal(t, expectedFile, string(terraformFile))
 }

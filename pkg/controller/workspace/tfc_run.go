@@ -28,13 +28,35 @@ var (
 	interval              = 30 * time.Second
 )
 
-// TerraformTemplate holds the template data and md5 hash
-type TerraformTemplate struct {
-	Data *bytes.Buffer
-	MD5  string
+// GetMD5Hash retrieves the md5sum for a byte array
+func GetMD5Hash(data []byte) string {
+	hash := md5.Sum(data)
+	return hex.EncodeToString(hash[:])
 }
 
-func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer, error) {
+// UploadConfigurationFile uploads the main.tf to a configuration version
+func (t *TerraformCloudClient) UploadConfigurationFile(uploadURL string) error {
+	if err := t.Client.ConfigurationVersions.Upload(context.TODO(), uploadURL, moduleDirectory); err != nil {
+		return fmt.Errorf("error, %v, %v", err, moduleDirectory)
+	}
+	return nil
+}
+
+// CreateConfigurationVersion creates a configuration version for a workspace
+func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*tfc.ConfigurationVersion, error) {
+	options := tfc.ConfigurationVersionCreateOptions{
+		AutoQueueRuns: &autoQueueRuns,
+		Speculative:   &speculative,
+	}
+	configVersion, err := t.Client.ConfigurationVersions.Create(context.TODO(), workspaceID, options)
+	if err != nil {
+		return nil, err
+	}
+	return configVersion, nil
+}
+
+// CreateTerraformTemplate creates a template for the Terraform configuration
+func CreateTerraformTemplate(workspace *v1alpha1.Workspace) ([]byte, error) {
 	tfTemplate, err := template.New("main.tf").Parse(`terraform {
 		backend "remote" {
 			organization = "{{.ObjectMeta.Namespace}}"
@@ -66,53 +88,18 @@ func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer,
 	if err := tfTemplate.Execute(&tpl, workspace); err != nil {
 		return nil, err
 	}
-	return &tpl, nil
-}
-
-// UploadConfigurationFile uploads the main.tf to a configuration version
-func (t *TerraformCloudClient) UploadConfigurationFile(uploadURL string) error {
-	if err := t.Client.ConfigurationVersions.Upload(context.TODO(), uploadURL, moduleDirectory); err != nil {
-		return fmt.Errorf("error, %v, %v", err, moduleDirectory)
-	}
-	return nil
-}
-
-// CreateConfigurationVersion creates a configuration version for a workspace
-func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*tfc.ConfigurationVersion, error) {
-	options := tfc.ConfigurationVersionCreateOptions{
-		AutoQueueRuns: &autoQueueRuns,
-		Speculative:   &speculative,
-	}
-	configVersion, err := t.Client.ConfigurationVersions.Create(context.TODO(), workspaceID, options)
-	if err != nil {
-		return nil, err
-	}
-	return configVersion, nil
-}
-
-// CreateTerraformTemplate creates a template for the Terraform configuration
-func (t *TerraformCloudClient) CreateTerraformTemplate(workspace *v1alpha1.Workspace) (*TerraformTemplate, error) {
-	tmpl := &TerraformTemplate{}
-	data, err := createTerraformConfiguration(workspace)
-	if err != nil {
-		return nil, err
-	}
-	hash := md5.Sum(data.Bytes())
-	md5Sum := hex.EncodeToString(hash[:])
-	tmpl.Data = data
-	tmpl.MD5 = md5Sum
-	return tmpl, nil
+	return tpl.Bytes(), nil
 }
 
 // CreateRunForTerraformConfiguration runs a new Terraform Cloud configuration
-func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1alpha1.Workspace, terraform *TerraformTemplate) error {
+func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1alpha1.Workspace, terraform []byte) error {
 	configVersion, err := t.CreateConfigurationVersion(workspace.Status.WorkspaceID)
 	if err != nil {
 		return err
 	}
 
 	os.Mkdir(moduleDirectory, 0777)
-	if err := ioutil.WriteFile(configurationFilePath, terraform.Data.Bytes(), 0777); err != nil {
+	if err := ioutil.WriteFile(configurationFilePath, terraform, 0777); err != nil {
 		return err
 	}
 
@@ -120,7 +107,7 @@ func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1a
 		return err
 	}
 
-	message := fmt.Sprintf("operator, apply, configHash, %s", terraform.MD5)
+	message := fmt.Sprintf("operator, apply, configHash, %s", GetMD5Hash(terraform))
 	options := tfc.RunCreateOptions{
 		Message:              &message,
 		ConfigurationVersion: configVersion,

@@ -169,20 +169,21 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	terraform, err := r.tfclient.CreateTerraformTemplate(instance)
+	terraform, err := CreateTerraformTemplate(instance)
 	if err != nil {
 		reqLogger.Error(err, "Could not create Terraform configuration")
 		return reconcile.Result{}, err
 	}
 
-	if instance.Status.ConfigHash != terraform.MD5 {
+	md5 := GetMD5Hash(terraform)
+	if instance.Status.ConfigHash != md5 {
 		reqLogger.Info("Starting run because template changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
 		err := r.tfclient.CreateRunForTerraformConfiguration(instance, terraform)
 		if err != nil {
 			reqLogger.Error(err, "Could not run new Terraform configuration")
 			return reconcile.Result{}, err
 		}
-		instance.Status.ConfigHash = terraform.MD5
+		instance.Status.ConfigHash = md5
 	} else if updatedVariables {
 		reqLogger.Info("Starting run because variable changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
 		err := r.tfclient.CreateRun(instance)
