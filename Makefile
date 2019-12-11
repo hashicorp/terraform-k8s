@@ -1,4 +1,4 @@
-NAMESPACE='test-operator'
+NAMESPACE='dev'
 
 test:
 	TF_CLI_CONFIG_FILE=credentials OPERATOR_NAME=terraform-k8s operator-sdk up local --namespace=$(NAMESPACE)
@@ -18,20 +18,20 @@ setup:
 	kubectl -n $(NAMESPACE) create -f deploy/service_account.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/role.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/role_binding.yaml || true
-	kubectl -n $(NAMESPACE) create -f deploy/crds/app.terraform.io_organizations_crd.yaml || true
+	kubectl -n $(NAMESPACE) create -f deploy/crds/app.terraform.io_workspaces_crd.yaml || true
 
 operator: docker setup
 	kubectl -n $(NAMESPACE) create -f deploy/operator.yaml || true
 
 workspace:
-	kubectl -n $(NAMESPACE) apply -f deploy/crds/app.terraform.io_v1alpha1_organization_cr.yaml
+	kubectl -n $(NAMESPACE) apply -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml
 
 clean-workspace:
-	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_v1alpha1_organization_cr.yaml --ignore-not-found
+	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml --ignore-not-found
 
 clean: clean-workspace
 	kubectl -n $(NAMESPACE) delete -f deploy/operator.yaml --ignore-not-found
-	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_organizations_crd.yaml --ignore-not-found
+	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_workspaces_crd.yaml --ignore-not-found
 	kubectl -n $(NAMESPACE) delete -f deploy/role_binding.yaml --ignore-not-found
 	kubectl -n $(NAMESPACE) delete -f deploy/role.yaml --ignore-not-found
 	kubectl -n $(NAMESPACE) delete -f deploy/service_account.yaml --ignore-not-found

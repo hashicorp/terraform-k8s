@@ -93,15 +93,11 @@ type ReconcileWorkspace struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	organization := request.Name
-	workspace := request.Namespace
-	reqLogger := log.WithValues("Request.Organization", organization, "Request.Workspace", workspace)
+	reqLogger := log.WithValues("Request.Name", request.Name, "Request.Namespace", request.Namespace)
 	reqLogger.Info("Reconciling Workspace")
 
 	// Fetch the Workspace instance
 	instance := &appv1alpha1.Workspace{}
-	r.tfclient.Organization = organization
-	r.tfclient.Workspace = workspace
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -112,6 +108,14 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+	organization := instance.Spec.Organization
+	r.tfclient.Organization = organization
+	workspace := request.Name
+
+	if err := r.tfclient.CheckOrganization(); err != nil {
+		reqLogger.Error(err, "Could not find organization")
+		return reconcile.Result{}, nil
 	}
 
 	// Check if the Workspace instance is marked to be deleted, which is
@@ -143,45 +147,56 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 
 	r.tfclient.SecretsMountPath = instance.Spec.SecretsMountPath
 
-	if err := r.tfclient.CheckOrganization(); err != nil {
-		reqLogger.Error(err, "Could not find organization")
-		return reconcile.Result{}, nil
-	}
-
 	if err := r.tfclient.CheckSecretsMountPath(); err != nil {
 		reqLogger.Error(err, "Could not find secrets mount path")
 		return reconcile.Result{}, nil
 	}
 
-	reqLogger.Info("Checking workspace", "Organization", organization, "Name", workspace)
+	reqLogger.Info("Checking workspace", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
 	workspaceID, err := r.tfclient.CheckWorkspace(workspace)
 	if err != nil {
 		reqLogger.Error(err, "Could not update workspace")
 		return reconcile.Result{}, err
 	}
-	reqLogger.Info("Found workspace", "Organization", organization, "Name", workspace, "ID", workspaceID)
+	reqLogger.Info("Found workspace", "Organization", organization, "Name", workspace, "ID", workspaceID, "Namespace", request.Namespace)
 	instance.Status.WorkspaceID = workspaceID
 
-	reqLogger.Info("Check variables exist in workspace", "Organization", organization, "Name", workspace)
-	updatedVariables, err := r.tfclient.CheckVariables(workspace, instance.Spec.Variables)
+	reqLogger.Info("Check variables exist in workspace", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
+	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables)
 	if err != nil {
 		reqLogger.Error(err, "Could not update variables")
 		return reconcile.Result{}, err
 	}
-	reqLogger.Info("Updated variables", "Organization", organization, "Name", workspace)
 
-	reqLogger.Info("Run if needed", "Organization", organization, "Name", workspace)
-	if err := r.tfclient.CheckRunConfiguration(instance, updatedVariables); err != nil {
-		reqLogger.Error(err, "Could not execute run")
+	terraform, err := r.tfclient.CreateTerraformTemplate(instance)
+	if err != nil {
+		reqLogger.Error(err, "Could not create Terraform configuration")
 		return reconcile.Result{}, err
 	}
 
-	reqLogger.Info("Check run status", "Organization", organization, "Name", workspace, "Run", instance.Status.RunID)
-	if err := r.tfclient.CheckRunForError(instance); err != nil {
-		reqLogger.Error(err, "Run has error")
-		return reconcile.Result{}, err
+	if instance.Status.ConfigHash != terraform.MD5 {
+		reqLogger.Info("Starting run because template changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+		err := r.tfclient.CreateRunForTerraformConfiguration(instance, terraform)
+		if err != nil {
+			reqLogger.Error(err, "Could not run new Terraform configuration")
+			return reconcile.Result{}, err
+		}
+		instance.Status.ConfigHash = terraform.MD5
+	} else if updatedVariables {
+		reqLogger.Info("Starting run because variable changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+		err := r.tfclient.CreateRun(instance)
+		if err != nil {
+			reqLogger.Error(err, "Could not run new variable changes")
+			return reconcile.Result{}, err
+		}
+	} else {
+		reqLogger.Info("Checking last run status", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+		if err := r.tfclient.CheckRunForError(instance); err != nil {
+			reqLogger.Error(err, "Run has error")
+			return reconcile.Result{}, err
+		}
 	}
-	reqLogger.Info("Plan and apply executed", "Organization", organization, "Name", workspace, "Run", instance.Status.RunID)
 
 	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
 		reqLogger.Error(err, "Failed to update Workspace status")
@@ -190,24 +205,30 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 
 	return reconcile.Result{}, nil
 }
-func (r *ReconcileWorkspace) finalizeWorkspace(reqLogger logr.Logger, m *appv1alpha1.Workspace) error {
-	reqLogger.Info("Deleting resources", "Organization", m.Name, "Name", m.Namespace)
-	err := r.tfclient.RunDelete(m.Namespace)
-	reqLogger.Info("Deleting workspace", "Organization", m.Name, "Name", m.Namespace)
-	err = r.tfclient.DeleteWorkspace(m.Namespace)
-	if err != nil {
+
+func (r *ReconcileWorkspace) finalizeWorkspace(reqLogger logr.Logger, workspace *appv1alpha1.Workspace) error {
+	reqLogger.Info("Deleting runs in workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
+	if err := r.tfclient.DeleteRuns(workspace.Status.WorkspaceID); err != nil {
+		return err
+	}
+	reqLogger.Info("Deleting resources in workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
+	if err := r.tfclient.DeleteResources(workspace.Name); err != nil {
+		return err
+	}
+	reqLogger.Info("Deleting workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
+	if err := r.tfclient.DeleteWorkspace(workspace.Name); err != nil {
 		reqLogger.Error(err, "Could not delete workspace")
 	}
 	reqLogger.Info("Successfully finalized organization")
 	return nil
 }
 
-func (r *ReconcileWorkspace) addFinalizer(reqLogger logr.Logger, m *appv1alpha1.Workspace) error {
+func (r *ReconcileWorkspace) addFinalizer(reqLogger logr.Logger, workspace *appv1alpha1.Workspace) error {
 	reqLogger.Info("Adding Finalizer for the Workspace")
-	m.SetFinalizers(append(m.GetFinalizers(), workspaceFinalizer))
+	workspace.SetFinalizers(append(workspace.GetFinalizers(), workspaceFinalizer))
 
 	// Update CR
-	err := r.client.Update(context.TODO(), m)
+	err := r.client.Update(context.TODO(), workspace)
 	if err != nil {
 		reqLogger.Error(err, "Failed to update Workspace with finalizer")
 		return err

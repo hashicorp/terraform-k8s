@@ -28,6 +28,12 @@ var (
 	interval              = 30 * time.Second
 )
 
+// TerraformTemplate holds the template data and md5 hash
+type TerraformTemplate struct {
+	Data *bytes.Buffer
+	MD5  string
+}
+
 func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer, error) {
 	tfTemplate, err := template.New("main.tf").Parse(`terraform {
 		backend "remote" {
@@ -63,14 +69,6 @@ func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer,
 	return &tpl, nil
 }
 
-func writeToFile(data *bytes.Buffer) error {
-	os.Mkdir(moduleDirectory, 0777)
-	if err := ioutil.WriteFile(configurationFilePath, data.Bytes(), 0777); err != nil {
-		return err
-	}
-	return nil
-}
-
 // UploadConfigurationFile uploads the main.tf to a configuration version
 func (t *TerraformCloudClient) UploadConfigurationFile(uploadURL string) error {
 	if err := t.Client.ConfigurationVersions.Upload(context.TODO(), uploadURL, moduleDirectory); err != nil {
@@ -92,33 +90,37 @@ func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*
 	return configVersion, nil
 }
 
-// CheckRunConfiguration examines if there is a change in the Terraform configuration and
-// runs the workspace if there is
-func (t *TerraformCloudClient) CheckRunConfiguration(workspace *v1alpha1.Workspace, updatedVariables bool) error {
+// CreateTerraformTemplate creates a template for the Terraform configuration
+func (t *TerraformCloudClient) CreateTerraformTemplate(workspace *v1alpha1.Workspace) (*TerraformTemplate, error) {
+	tmpl := &TerraformTemplate{}
 	data, err := createTerraformConfiguration(workspace)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	hash := md5.Sum(data.Bytes())
 	md5Sum := hex.EncodeToString(hash[:])
-	if workspace.Status.ConfigHash == md5Sum && !updatedVariables {
-		return nil
-	}
+	tmpl.Data = data
+	tmpl.MD5 = md5Sum
+	return tmpl, nil
+}
 
+// CreateRunForTerraformConfiguration runs a new Terraform Cloud configuration
+func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1alpha1.Workspace, terraform *TerraformTemplate) error {
 	configVersion, err := t.CreateConfigurationVersion(workspace.Status.WorkspaceID)
 	if err != nil {
 		return err
 	}
 
-	workspace.Status.ConfigHash = md5Sum
-	if err := writeToFile(data); err != nil {
+	os.Mkdir(moduleDirectory, 0777)
+	if err := ioutil.WriteFile(configurationFilePath, terraform.Data.Bytes(), 0777); err != nil {
 		return err
 	}
+
 	if err := t.UploadConfigurationFile(configVersion.UploadURL); err != nil {
 		return err
 	}
 
-	message := fmt.Sprintf("operator, apply, configHash, %s", md5Sum)
+	message := fmt.Sprintf("operator, apply, configHash, %s", terraform.MD5)
 	options := tfc.RunCreateOptions{
 		Message:              &message,
 		ConfigurationVersion: configVersion,
@@ -131,7 +133,6 @@ func (t *TerraformCloudClient) CheckRunConfiguration(workspace *v1alpha1.Workspa
 		return err
 	}
 	workspace.Status.RunID = run.ID
-
 	return nil
 }
 
@@ -149,8 +150,50 @@ func (t *TerraformCloudClient) CheckRunForError(workspace *v1alpha1.Workspace) e
 	return nil
 }
 
-// RunDelete destroys the latest configuration in a workspace
-func (t *TerraformCloudClient) RunDelete(workspace string) error {
+// CreateRun generates a run with the last config version
+func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace) error {
+	message := fmt.Sprintf("operator, apply, variable change")
+	options := tfc.RunCreateOptions{
+		Message: &message,
+		Workspace: &tfc.Workspace{
+			ID: workspace.Status.WorkspaceID,
+		},
+	}
+	run, err := t.Client.Runs.Create(context.TODO(), options)
+	if err != nil {
+		return err
+	}
+	workspace.Status.RunID = run.ID
+	return nil
+}
+
+// DeleteRuns cancels runs that haven't been applied or planned
+func (t *TerraformCloudClient) DeleteRuns(workspaceID string) error {
+	message := "operator, finalizer, cancelling run"
+	runs, err := t.Client.Runs.List(context.TODO(), workspaceID, tfc.RunListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, run := range runs.Items {
+		switch status := run.Status; status {
+		case tfc.RunApplied:
+			continue
+		case tfc.RunPlannedAndFinished:
+			continue
+		default:
+			err := t.Client.Runs.ForceCancel(context.TODO(), run.ID, tfc.RunForceCancelOptions{
+				Comment: &message,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// DeleteResources destroys the resources in a workspace
+func (t *TerraformCloudClient) DeleteResources(workspace string) error {
 	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil {
 		return err

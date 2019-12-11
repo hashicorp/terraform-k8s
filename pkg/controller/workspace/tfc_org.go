@@ -17,7 +17,6 @@ var (
 type TerraformCloudClient struct {
 	Client           *tfc.Client
 	Organization     string
-	Workspace        string
 	SecretsMountPath string
 }
 

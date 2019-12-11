@@ -27,6 +27,8 @@ type Variable struct {
 // WorkspaceSpec defines the desired state of Workspace
 // +k8s:openapi-gen=true
 type WorkspaceSpec struct {
+	// Terraform Cloud organization
+	Organization string `json:"organization"`
 	// Module source and version to use
 	Module *Module `json:"module"`
 	// Variables as inputs to module

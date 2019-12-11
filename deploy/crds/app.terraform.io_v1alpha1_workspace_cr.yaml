@@ -2,12 +2,11 @@ apiVersion: app.terraform.io/v1alpha1
 kind: Workspace
 metadata:
   name: my-workspace
-  finalizers:
-    - finalizer.workspace.app.terraform.io
 spec:
+  organization: rosemaryagain
   secretsMountPath: "/tmp/secrets"
   module:
-    source: "app.terraform.io/rosemarycorp/hello/random"
+    source: "app.terraform.io/rosemaryagain/hello/random"
     version: "2.0.1"
   variables:
     - key: hello
@@ -19,4 +18,8 @@ spec:
       environmentVariable: false
     - key: AWS_SECRET_ACCESS_KEY
       sensitive: true
+      environmentVariable: true
+    - key: CONFIRM_DESTROY
+      value: "1"
+      sensitive: false
       environmentVariable: true

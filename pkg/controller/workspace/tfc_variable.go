@@ -23,7 +23,8 @@ func setVariableType(isEnvironmentVariable bool) tfc.CategoryType {
 	return tfc.CategoryTerraform
 }
 
-func changeTypeToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
+// MapToTFCVariable changes the controller spec to a TFC Variable
+func MapToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
 	tfcVariables := []*tfc.Variable{}
 	for _, variable := range specVariables {
 		tfcVariables = append(tfcVariables, &tfc.Variable{
@@ -58,43 +59,45 @@ func (t *TerraformCloudClient) deleteVariablesFromTFC(specTFCVariables []*tfc.Va
 }
 
 func (t *TerraformCloudClient) updateVariablesOnTFC(workspace *tfc.Workspace, specTFCVariables []*tfc.Variable, workspaceVariables []*tfc.Variable) (bool, error) {
-	variablesUpdated := false
+	updated := false
 	for _, v := range specTFCVariables {
 		index := find(workspaceVariables, v.Key)
 		if index < 0 {
 			err := t.CreateTerraformVariable(workspace, v)
 			if err != nil {
-				return variablesUpdated, err
+				return false, err
 			}
-			variablesUpdated = true
+			updated = true
 			continue
 		}
 		if v.Value != workspaceVariables[index].Value {
+			t.checkAndRetrieveIfSensitive(v)
 			err := t.UpdateTerraformVariable(workspaceVariables[index], v.Value)
 			if err != nil {
-				return variablesUpdated, err
+				return false, err
 			}
-			variablesUpdated = true
+			if !v.Sensitive {
+				updated = true
+			}
 		}
 	}
-	return variablesUpdated, nil
+	return updated, nil
 }
 
 // CheckVariables creates, updates, or deletes variables as needed
-func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []*v1alpha1.Variable) (bool, error) {
-	variablesUpdated := false
-	specTFCVariables := changeTypeToTFCVariable(specVariables)
+func (t *TerraformCloudClient) CheckVariables(workspace string, specTFCVariables []*tfc.Variable) (bool, error) {
 	tfcWorkspace, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil {
-		return variablesUpdated, err
+		return false, err
 	}
 	workspaceVariables, err := t.listVariables(workspace)
 	if err != nil {
-		return variablesUpdated, err
+		return false, err
 	}
 	if err := t.deleteVariablesFromTFC(specTFCVariables, workspaceVariables); err != nil {
-		return variablesUpdated, err
+		return false, err
 	}
+
 	return t.updateVariablesOnTFC(tfcWorkspace, specTFCVariables, workspaceVariables)
 }
 

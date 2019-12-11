@@ -68,6 +68,13 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref common.ReferenceCallback) co
 				Description: "WorkspaceSpec defines the desired state of Workspace",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"organization": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Terraform Cloud organization",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"module": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Module source and version to use",
@@ -100,7 +107,7 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"module", "secretsMountPath"},
+				Required: []string{"organization", "module", "secretsMountPath"},
 			},
 		},
 		Dependencies: []string{
