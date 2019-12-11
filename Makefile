@@ -37,4 +37,4 @@ clean: clean-workspace
 	kubectl -n $(NAMESPACE) delete -f deploy/service_account.yaml --ignore-not-found
 	kubectl -n $(NAMESPACE) delete secret workspace-secrets --ignore-not-found
 	kubectl -n $(NAMESPACE) delete secret terraformrc --ignore-not-found
-	kubectl delete ns $(NAMESPACE)
+	kubectl delete ns $(NAMESPACE) --ignore-not-found

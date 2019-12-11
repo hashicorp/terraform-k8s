@@ -118,6 +118,15 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
+	reqLogger.Info("Checking workspace", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+	workspaceID, err := r.tfclient.CheckWorkspace(workspace)
+	if err != nil {
+		reqLogger.Error(err, "Could not update workspace")
+		return reconcile.Result{}, err
+	}
+	reqLogger.Info("Found workspace", "Organization", organization, "Name", workspace, "ID", workspaceID, "Namespace", request.Namespace)
+	instance.Status.WorkspaceID = workspaceID
+
 	// Check if the Workspace instance is marked to be deleted, which is
 	// indicated by the deletion timestamp being set.
 	markedForDeletion := instance.GetDeletionTimestamp() != nil
@@ -151,15 +160,6 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		reqLogger.Error(err, "Could not find secrets mount path")
 		return reconcile.Result{}, nil
 	}
-
-	reqLogger.Info("Checking workspace", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-	workspaceID, err := r.tfclient.CheckWorkspace(workspace)
-	if err != nil {
-		reqLogger.Error(err, "Could not update workspace")
-		return reconcile.Result{}, err
-	}
-	reqLogger.Info("Found workspace", "Organization", organization, "Name", workspace, "ID", workspaceID, "Namespace", request.Namespace)
-	instance.Status.WorkspaceID = workspaceID
 
 	reqLogger.Info("Check variables exist in workspace", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
 	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)

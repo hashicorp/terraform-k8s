@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"runtime"
 	"text/template"
 	"time"
 
@@ -21,8 +19,7 @@ var (
 	autoQueueRuns         = false
 	speculative           = false
 	isDestroy             = true
-	_, b, _, _            = runtime.Caller(0)
-	basepath              = filepath.Dir(b)
+	basepath              = "/tmp"
 	moduleDirectory       = fmt.Sprintf("%s/%s", basepath, "module")
 	configurationFilePath = fmt.Sprintf("%s/%s", moduleDirectory, "main.tf")
 	interval              = 30 * time.Second
