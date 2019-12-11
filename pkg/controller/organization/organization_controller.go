@@ -97,6 +97,7 @@ func (r *ReconcileOrganization) Reconcile(request reconcile.Request) (reconcile.
 
 	instance := &appv1alpha1.Organization{}
 	r.tfclient.Organization = organization
+	r.tfclient.Workspace = workspace
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -116,8 +117,15 @@ func (r *ReconcileOrganization) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	r.tfclient.SecretsMountPath = instance.Spec.SecretsMountPath
+
 	if err := r.tfclient.CheckOrganization(); err != nil {
 		reqLogger.Error(err, "Could not find organization")
+		return reconcile.Result{}, nil
+	}
+
+	if err := r.tfclient.CheckSecretsMountPath(); err != nil {
+		reqLogger.Error(err, "Could not find secrets mount path")
 		return reconcile.Result{}, nil
 	}
 
@@ -131,14 +139,15 @@ func (r *ReconcileOrganization) Reconcile(request reconcile.Request) (reconcile.
 	instance.Status.WorkspaceID = workspaceID
 
 	reqLogger.Info("Check variables exist in workspace", "Organization", organization, "Name", workspace)
-	if err := r.tfclient.CheckVariables(workspace, instance.Spec.Variables); err != nil {
+	updatedVariables, err := r.tfclient.CheckVariables(workspace, instance.Spec.Variables)
+	if err != nil {
 		reqLogger.Error(err, "Could not update variables")
 		return reconcile.Result{}, err
 	}
 	reqLogger.Info("Updated variables", "Organization", organization, "Name", workspace)
 
 	reqLogger.Info("Run if needed", "Organization", organization, "Name", workspace)
-	if err := r.tfclient.CheckRunConfiguration(instance); err != nil {
+	if err := r.tfclient.CheckRunConfiguration(instance, updatedVariables); err != nil {
 		reqLogger.Error(err, "Could not execute run")
 		return reconcile.Result{}, err
 	}

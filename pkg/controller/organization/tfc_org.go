@@ -15,8 +15,10 @@ var (
 
 // TerraformCloudClient has a TFC Client and organization
 type TerraformCloudClient struct {
-	Client       *tfc.Client
-	Organization string
+	Client           *tfc.Client
+	Organization     string
+	Workspace        string
+	SecretsMountPath string
 }
 
 // GetClient creates the configuration for Terraform Cloud

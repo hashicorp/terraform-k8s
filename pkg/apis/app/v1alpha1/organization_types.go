@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,9 +18,8 @@ type Variable struct {
 	// Variable value
 	// +optional
 	Value string `json:"value"`
-	// VolumeMount if secret
-	// +optional
-	VolumeMount corev1.VolumeMount `json:"volumeMount"`
+	// Variable is a secret and should be retrieved from file
+	Sensitive bool `json:"sensitive"`
 }
 
 // OrganizationSpec defines the desired state of Organization
@@ -33,10 +31,8 @@ type OrganizationSpec struct {
 	// +listType=set
 	// +optional
 	Variables []*Variable `json:"variables"`
-	// Volumes for sensitive variables
-	// +listType=set
-	// +optional
-	Volumes []*corev1.Volume `json:"volumes"`
+	// File path within operator pod to load workspace secrets
+	SecretsMountPath string `json:"secretsMountPath"`
 }
 
 // OrganizationStatus defines the observed state of Organization

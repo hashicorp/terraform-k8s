@@ -3,18 +3,13 @@ kind: Organization
 metadata:
   name: rosemarycorp
 spec:
+  secretsMountPath: "/tmp/secrets"
   module:
     source: "app.terraform.io/rosemarycorp/hello/random"
-    version: "1.0.0"
+    version: "2.0.1"
   variables:
     - key: hello
       value: rosemary
+      sensitive: false
     - key: secret_key
-      volumeMount:
-        name:  secret-key
-        mountPath: "/tmp/secrets"
-        readOnly: true
-  volumes:
-    - name: secret-key
-      secret:
-        secretName: mysecrets
+      sensitive: true

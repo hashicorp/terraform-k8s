@@ -15,7 +15,6 @@ spec:
       serviceAccountName: terraform-k8s
       containers:
         - name: terraform-k8s
-          # Replace this with the built image name
           image: joatmon08/operator-terraform
           command:
           - terraform-k8s
@@ -37,6 +36,9 @@ spec:
           - name: terraformrc
             mountPath: "/etc/terraform"
             readOnly: true
+          - name: workspacesecrets
+            mountPath: "/tmp/secrets"
+            readOnly: true
       volumes:
         - name: terraformrc
           secret:
@@ -44,4 +46,7 @@ spec:
             items:
             - key: credentials
               path: ".terraformrc"
+        - name: workspacesecrets
+          secret:
+            secretName: workspace-secrets
         

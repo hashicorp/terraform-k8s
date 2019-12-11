@@ -90,14 +90,14 @@ func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*
 
 // CheckRunConfiguration examines if there is a change in the Terraform configuration and
 // runs the workspace if there is
-func (t *TerraformCloudClient) CheckRunConfiguration(workspace *v1alpha1.Organization) error {
+func (t *TerraformCloudClient) CheckRunConfiguration(workspace *v1alpha1.Organization, updatedVariables bool) error {
 	data, err := createTerraformConfiguration(workspace)
 	if err != nil {
 		return err
 	}
 	hash := md5.Sum(data.Bytes())
 	md5Sum := hex.EncodeToString(hash[:])
-	if workspace.Status.ConfigHash == md5Sum {
+	if workspace.Status.ConfigHash == md5Sum && !updatedVariables {
 		return nil
 	}
 

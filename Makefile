@@ -14,7 +14,7 @@ docker:
 setup:
 	kubectl create ns $(NAMESPACE) || true
 	kubectl -n $(NAMESPACE) create secret generic terraformrc --from-file=./credentials || true
-	kubectl -n $(NAMESPACE) create secret generic mysecrets --from-literal=secret_key=abc123 || true
+	kubectl -n $(NAMESPACE) create secret generic workspace-secrets --from-literal=secret_key=abc123 || true
 	kubectl -n $(NAMESPACE) create -f deploy/service_account.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/role.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/role_binding.yaml || true
@@ -31,10 +31,10 @@ clean-workspace:
 
 clean: clean-workspace
 	kubectl -n $(NAMESPACE) delete -f deploy/operator.yaml --ignore-not-found
-	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_organization_crd.yaml --ignore-not-found
+	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_organizations_crd.yaml --ignore-not-found
 	kubectl -n $(NAMESPACE) delete -f deploy/role_binding.yaml --ignore-not-found
 	kubectl -n $(NAMESPACE) delete -f deploy/role.yaml --ignore-not-found
 	kubectl -n $(NAMESPACE) delete -f deploy/service_account.yaml --ignore-not-found
-	kubectl -n $(NAMESPACE) delete secret my-secrets --ignore-not-found
+	kubectl -n $(NAMESPACE) delete secret workspace-secrets --ignore-not-found
 	kubectl -n $(NAMESPACE) delete secret terraformrc --ignore-not-found
 	kubectl delete ns $(NAMESPACE)

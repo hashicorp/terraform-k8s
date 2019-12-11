@@ -92,30 +92,19 @@ func schema_pkg_apis_app_v1alpha1_OrganizationSpec(ref common.ReferenceCallback)
 							},
 						},
 					},
-					"volumes": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "set",
-							},
-						},
+					"secretsMountPath": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Volumes for sensitive variables",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Volume"),
-									},
-								},
-							},
+							Description: "File path within operator pod to load workspace secrets",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
-				Required: []string{"module"},
+				Required: []string{"module", "secretsMountPath"},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1alpha1.Module", "./pkg/apis/app/v1alpha1.Variable", "k8s.io/api/core/v1.Volume"},
+			"./pkg/apis/app/v1alpha1.Module", "./pkg/apis/app/v1alpha1.Variable"},
 	}
 }
 
