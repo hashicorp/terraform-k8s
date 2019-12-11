@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	tfc "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
@@ -17,9 +18,9 @@ const (
 
 func setVariableType(isEnvironmentVariable bool) tfc.CategoryType {
 	if isEnvironmentVariable {
-		return tfc.CategoryTerraform
+		return tfc.CategoryEnv
 	}
-	return tfc.CategoryEnv
+	return tfc.CategoryTerraform
 }
 
 func changeTypeToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
@@ -27,7 +28,7 @@ func changeTypeToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable
 	for _, variable := range specVariables {
 		tfcVariables = append(tfcVariables, &tfc.Variable{
 			Key:       variable.Key,
-			Value:     variable.Value,
+			Value:     strings.TrimSuffix(variable.Value, "\n"),
 			Sensitive: variable.Sensitive,
 			Category:  setVariableType(variable.EnvironmentVariable),
 		})

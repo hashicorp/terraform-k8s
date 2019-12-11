@@ -1,6 +1,7 @@
 module github.com/hashicorp/terraform-k8s
 
 require (
+	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.17.2
 	github.com/google/martian v2.1.0+incompatible
 	github.com/google/uuid v1.1.1

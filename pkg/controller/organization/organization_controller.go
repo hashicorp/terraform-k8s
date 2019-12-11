@@ -3,6 +3,7 @@ package organization
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -17,6 +18,8 @@ import (
 )
 
 var log = logf.Log.WithName("controller_organization")
+
+const organizationFinalizer = "finalizer.app.terraform.io"
 
 /**
 * USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
@@ -104,17 +107,37 @@ func (r *ReconcileOrganization) Reconcile(request reconcile.Request) (reconcile.
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			reqLogger.Info("Deleting resources", "Organization", organization, "Name", workspace)
-			err := r.tfclient.RunDelete(workspace)
-			reqLogger.Info("Deleting workspace", "Organization", organization, "Name", workspace)
-			err = r.tfclient.DeleteWorkspace(workspace)
-			if err != nil {
-				reqLogger.Error(err, "Could not delete workspace")
-			}
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	// Check if the Organization instance is marked to be deleted, which is
+	// indicated by the deletion timestamp being set.
+	markedForDeletion := instance.GetDeletionTimestamp() != nil
+	if markedForDeletion {
+		if contains(instance.GetFinalizers(), organizationFinalizer) {
+			if err := r.finalizeOrganization(reqLogger, instance); err != nil {
+				return reconcile.Result{}, err
+			}
+
+			// Remove organizationFinalizer. Once all finalizers have been
+			// removed, the object will be deleted.
+			instance.SetFinalizers(remove(instance.GetFinalizers(), organizationFinalizer))
+			err := r.client.Update(context.TODO(), instance)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+		return reconcile.Result{}, nil
+	}
+
+	// Add finalizer for this CR
+	if !contains(instance.GetFinalizers(), organizationFinalizer) {
+		if err := r.addFinalizer(reqLogger, instance); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	r.tfclient.SecretsMountPath = instance.Spec.SecretsMountPath
@@ -165,4 +188,47 @@ func (r *ReconcileOrganization) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileOrganization) finalizeOrganization(reqLogger logr.Logger, m *appv1alpha1.Organization) error {
+	reqLogger.Info("Deleting resources", "Organization", m.Name, "Name", m.Namespace)
+	err := r.tfclient.RunDelete(m.Namespace)
+	reqLogger.Info("Deleting workspace", "Organization", m.Name, "Name", m.Namespace)
+	err = r.tfclient.DeleteWorkspace(m.Namespace)
+	if err != nil {
+		reqLogger.Error(err, "Could not delete workspace")
+	}
+	reqLogger.Info("Successfully finalized organization")
+	return nil
+}
+
+func (r *ReconcileOrganization) addFinalizer(reqLogger logr.Logger, m *appv1alpha1.Organization) error {
+	reqLogger.Info("Adding Finalizer for the Organization")
+	m.SetFinalizers(append(m.GetFinalizers(), organizationFinalizer))
+
+	// Update CR
+	err := r.client.Update(context.TODO(), m)
+	if err != nil {
+		reqLogger.Error(err, "Failed to update Organization with finalizer")
+		return err
+	}
+	return nil
+}
+
+func contains(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
+
+func remove(list []string, s string) []string {
+	for i, v := range list {
+		if v == s {
+			list = append(list[:i], list[i+1:]...)
+		}
+	}
+	return list
 }

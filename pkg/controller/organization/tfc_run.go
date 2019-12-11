@@ -39,14 +39,18 @@ func createTerraformConfiguration(workspace *v1alpha1.Organization) (*bytes.Buff
 		}
 	}
 	{{- range .Spec.Variables}}
+	{{- if not .EnvironmentVariable }}
 	variable "{{.Key}}" {}
+	{{- end}}
 	{{- end}}
 
 	module "operator" {
 		source = "{{.Spec.Module.Source}}"
 		version = "{{.Spec.Module.Version}}"
 		{{- range .Spec.Variables}}
+		{{- if not .EnvironmentVariable }}
 		{{.Key}} = var.{{.Key}}
+		{{- end}}
 		{{- end}}
 	}`)
 	if err != nil {

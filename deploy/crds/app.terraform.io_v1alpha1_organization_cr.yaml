@@ -2,6 +2,8 @@ apiVersion: app.terraform.io/v1alpha1
 kind: Organization
 metadata:
   name: rosemarycorp
+  finalizers:
+    - finalizer.app.terraform.io
 spec:
   secretsMountPath: "/tmp/secrets"
   module:
@@ -11,5 +13,10 @@ spec:
     - key: hello
       value: rosemary
       sensitive: false
+      environmentVariable: false
     - key: secret_key
       sensitive: true
+      environmentVariable: false
+    - key: AWS_SECRET_ACCESS_KEY
+      sensitive: true
+      environmentVariable: true
