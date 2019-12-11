@@ -24,9 +24,9 @@ type Variable struct {
 	EnvironmentVariable bool `json:"environmentVariable"`
 }
 
-// OrganizationSpec defines the desired state of Organization
+// WorkspaceSpec defines the desired state of Workspace
 // +k8s:openapi-gen=true
-type OrganizationSpec struct {
+type WorkspaceSpec struct {
 	// Module source and version to use
 	Module *Module `json:"module"`
 	// Variables as inputs to module
@@ -37,9 +37,9 @@ type OrganizationSpec struct {
 	SecretsMountPath string `json:"secretsMountPath"`
 }
 
-// OrganizationStatus defines the observed state of Organization
+// WorkspaceStatus defines the observed state of Workspace
 // +k8s:openapi-gen=true
-type OrganizationStatus struct {
+type WorkspaceStatus struct {
 	// Workspace ID
 	WorkspaceID string `json:"workspaceID"`
 	// Run ID
@@ -50,27 +50,27 @@ type OrganizationStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Organization is the Schema for the organizations API
+// Workspace is the Schema for the workspaces API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=organizations,scope=Namespaced
-type Organization struct {
+// +kubebuilder:resource:path=workspaces,scope=Namespaced
+type Workspace struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   OrganizationSpec   `json:"spec,omitempty"`
-	Status OrganizationStatus `json:"status,omitempty"`
+	Spec   WorkspaceSpec   `json:"spec,omitempty"`
+	Status WorkspaceStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// OrganizationList contains a list of Organization
-type OrganizationList struct {
+// WorkspaceList contains a list of Workspace
+type WorkspaceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Organization `json:"items"`
+	Items           []Workspace `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Organization{}, &OrganizationList{})
+	SchemeBuilder.Register(&Workspace{}, &WorkspaceList{})
 }

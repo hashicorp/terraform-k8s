@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"github.com/hashicorp/terraform-k8s/pkg/controller/organization"
+	"github.com/hashicorp/terraform-k8s/pkg/controller/workspace"
 )
 
 func init() {
 	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
-	AddToManagerFuncs = append(AddToManagerFuncs, organization.Add)
+	AddToManagerFuncs = append(AddToManagerFuncs, workspace.Add)
 }

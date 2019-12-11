@@ -1,9 +1,9 @@
 apiVersion: app.terraform.io/v1alpha1
-kind: Organization
+kind: Workspace
 metadata:
-  name: rosemarycorp
+  name: my-workspace
   finalizers:
-    - finalizer.app.terraform.io
+    - finalizer.workspace.app.terraform.io
 spec:
   secretsMountPath: "/tmp/secrets"
   module:

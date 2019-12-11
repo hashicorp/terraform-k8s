@@ -1,4 +1,4 @@
-package organization
+package workspace
 
 import (
 	"context"
@@ -17,16 +17,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_organization")
+var log = logf.Log.WithName("controller_workspace")
 
-const organizationFinalizer = "finalizer.app.terraform.io"
+const workspaceFinalizer = "finalizer.workspace.app.terraform.io"
 
 /**
 * USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
 * business logic.  Delete these comments after modifying this file.*
  */
 
-// Add creates a new Organization Controller and adds it to the Manager. The Manager will set fields on the Controller
+// Add creates a new Workspace Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
@@ -39,7 +39,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	if err != nil {
 		log.Error(err, "could not create Terraform Cloud client")
 	}
-	return &ReconcileOrganization{
+	return &ReconcileWorkspace{
 		client:   mgr.GetClient(),
 		scheme:   mgr.GetScheme(),
 		tfclient: tfclient,
@@ -49,22 +49,22 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("organization-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("workspace-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to primary resource Organization
-	err = c.Watch(&source.Kind{Type: &appv1alpha1.Organization{}}, &handler.EnqueueRequestForObject{})
+	// Watch for changes to primary resource Workspace
+	err = c.Watch(&source.Kind{Type: &appv1alpha1.Workspace{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Organization
+	// Watch for changes to secondary resource Pods and requeue the owner Workspace
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &appv1alpha1.Organization{},
+		OwnerType:    &appv1alpha1.Workspace{},
 	})
 	if err != nil {
 		return err
@@ -73,11 +73,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-// blank assignment to verify that ReconcileOrganization implements reconcile.Reconciler
-var _ reconcile.Reconciler = &ReconcileOrganization{}
+// blank assignment to verify that ReconcileWorkspace implements reconcile.Reconciler
+var _ reconcile.Reconciler = &ReconcileWorkspace{}
 
-// ReconcileOrganization reconciles a Organization object
-type ReconcileOrganization struct {
+// ReconcileWorkspace reconciles a Workspace object
+type ReconcileWorkspace struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client   client.Client
@@ -85,20 +85,21 @@ type ReconcileOrganization struct {
 	tfclient *TerraformCloudClient
 }
 
-// Reconcile reads that state of the cluster for a Organization object and makes changes based on the state read
-// and what is in the Organization.Spec
+// Reconcile reads that state of the cluster for a Workspace object and makes changes based on the state read
+// and what is in the Workspace.Spec
 // TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
 // a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileOrganization) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	organization := request.Name
 	workspace := request.Namespace
 	reqLogger := log.WithValues("Request.Organization", organization, "Request.Workspace", workspace)
 	reqLogger.Info("Reconciling Workspace")
 
-	instance := &appv1alpha1.Organization{}
+	// Fetch the Workspace instance
+	instance := &appv1alpha1.Workspace{}
 	r.tfclient.Organization = organization
 	r.tfclient.Workspace = workspace
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
@@ -113,18 +114,18 @@ func (r *ReconcileOrganization) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	// Check if the Organization instance is marked to be deleted, which is
+	// Check if the Workspace instance is marked to be deleted, which is
 	// indicated by the deletion timestamp being set.
 	markedForDeletion := instance.GetDeletionTimestamp() != nil
 	if markedForDeletion {
-		if contains(instance.GetFinalizers(), organizationFinalizer) {
-			if err := r.finalizeOrganization(reqLogger, instance); err != nil {
+		if contains(instance.GetFinalizers(), workspaceFinalizer) {
+			if err := r.finalizeWorkspace(reqLogger, instance); err != nil {
 				return reconcile.Result{}, err
 			}
 
-			// Remove organizationFinalizer. Once all finalizers have been
+			// Remove workspaceFinalizer. Once all finalizers have been
 			// removed, the object will be deleted.
-			instance.SetFinalizers(remove(instance.GetFinalizers(), organizationFinalizer))
+			instance.SetFinalizers(remove(instance.GetFinalizers(), workspaceFinalizer))
 			err := r.client.Update(context.TODO(), instance)
 			if err != nil {
 				return reconcile.Result{}, err
@@ -134,7 +135,7 @@ func (r *ReconcileOrganization) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// Add finalizer for this CR
-	if !contains(instance.GetFinalizers(), organizationFinalizer) {
+	if !contains(instance.GetFinalizers(), workspaceFinalizer) {
 		if err := r.addFinalizer(reqLogger, instance); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -189,8 +190,7 @@ func (r *ReconcileOrganization) Reconcile(request reconcile.Request) (reconcile.
 
 	return reconcile.Result{}, nil
 }
-
-func (r *ReconcileOrganization) finalizeOrganization(reqLogger logr.Logger, m *appv1alpha1.Organization) error {
+func (r *ReconcileWorkspace) finalizeWorkspace(reqLogger logr.Logger, m *appv1alpha1.Workspace) error {
 	reqLogger.Info("Deleting resources", "Organization", m.Name, "Name", m.Namespace)
 	err := r.tfclient.RunDelete(m.Namespace)
 	reqLogger.Info("Deleting workspace", "Organization", m.Name, "Name", m.Namespace)
@@ -202,14 +202,14 @@ func (r *ReconcileOrganization) finalizeOrganization(reqLogger logr.Logger, m *a
 	return nil
 }
 
-func (r *ReconcileOrganization) addFinalizer(reqLogger logr.Logger, m *appv1alpha1.Organization) error {
-	reqLogger.Info("Adding Finalizer for the Organization")
-	m.SetFinalizers(append(m.GetFinalizers(), organizationFinalizer))
+func (r *ReconcileWorkspace) addFinalizer(reqLogger logr.Logger, m *appv1alpha1.Workspace) error {
+	reqLogger.Info("Adding Finalizer for the Workspace")
+	m.SetFinalizers(append(m.GetFinalizers(), workspaceFinalizer))
 
 	// Update CR
 	err := r.client.Update(context.TODO(), m)
 	if err != nil {
-		reqLogger.Error(err, "Failed to update Organization with finalizer")
+		reqLogger.Error(err, "Failed to update Workspace with finalizer")
 		return err
 	}
 	return nil

@@ -1,4 +1,4 @@
-package organization
+package workspace
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ var (
 	interval              = 30 * time.Second
 )
 
-func createTerraformConfiguration(workspace *v1alpha1.Organization) (*bytes.Buffer, error) {
+func createTerraformConfiguration(workspace *v1alpha1.Workspace) (*bytes.Buffer, error) {
 	tfTemplate, err := template.New("main.tf").Parse(`terraform {
 		backend "remote" {
 			organization = "{{.ObjectMeta.Namespace}}"
@@ -94,7 +94,7 @@ func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*
 
 // CheckRunConfiguration examines if there is a change in the Terraform configuration and
 // runs the workspace if there is
-func (t *TerraformCloudClient) CheckRunConfiguration(workspace *v1alpha1.Organization, updatedVariables bool) error {
+func (t *TerraformCloudClient) CheckRunConfiguration(workspace *v1alpha1.Workspace, updatedVariables bool) error {
 	data, err := createTerraformConfiguration(workspace)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (t *TerraformCloudClient) CheckRunConfiguration(workspace *v1alpha1.Organiz
 }
 
 // CheckRunForError examines for errors in the run
-func (t *TerraformCloudClient) CheckRunForError(workspace *v1alpha1.Organization) error {
+func (t *TerraformCloudClient) CheckRunForError(workspace *v1alpha1.Workspace) error {
 	run, err := t.Client.Runs.Read(context.TODO(), workspace.Status.RunID)
 	if err != nil {
 		return err

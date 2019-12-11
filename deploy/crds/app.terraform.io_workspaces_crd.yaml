@@ -1,20 +1,20 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: organizations.app.terraform.io
+  name: workspaces.app.terraform.io
 spec:
   group: app.terraform.io
   names:
-    kind: Organization
-    listKind: OrganizationList
-    plural: organizations
-    singular: organization
+    kind: Workspace
+    listKind: WorkspaceList
+    plural: workspaces
+    singular: workspace
   scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Organization is the Schema for the organizations API
+      description: Workspace is the Schema for the workspaces API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -29,7 +29,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: OrganizationSpec defines the desired state of Organization
+          description: WorkspaceSpec defines the desired state of Workspace
           properties:
             module:
               description: Module source and version to use
@@ -74,7 +74,7 @@ spec:
           - secretsMountPath
           type: object
         status:
-          description: OrganizationStatus defines the observed state of Organization
+          description: WorkspaceStatus defines the observed state of Workspace
           properties:
             configHash:
               description: Configuration hash

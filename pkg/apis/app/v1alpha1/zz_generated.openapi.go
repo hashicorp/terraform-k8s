@@ -11,17 +11,17 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"./pkg/apis/app/v1alpha1.Organization":       schema_pkg_apis_app_v1alpha1_Organization(ref),
-		"./pkg/apis/app/v1alpha1.OrganizationSpec":   schema_pkg_apis_app_v1alpha1_OrganizationSpec(ref),
-		"./pkg/apis/app/v1alpha1.OrganizationStatus": schema_pkg_apis_app_v1alpha1_OrganizationStatus(ref),
+		"./pkg/apis/app/v1alpha1.Workspace":       schema_pkg_apis_app_v1alpha1_Workspace(ref),
+		"./pkg/apis/app/v1alpha1.WorkspaceSpec":   schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref),
+		"./pkg/apis/app/v1alpha1.WorkspaceStatus": schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref),
 	}
 }
 
-func schema_pkg_apis_app_v1alpha1_Organization(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_app_v1alpha1_Workspace(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Organization is the Schema for the organizations API",
+				Description: "Workspace is the Schema for the workspaces API",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -45,27 +45,27 @@ func schema_pkg_apis_app_v1alpha1_Organization(ref common.ReferenceCallback) com
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1alpha1.OrganizationSpec"),
+							Ref: ref("./pkg/apis/app/v1alpha1.WorkspaceSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1alpha1.OrganizationStatus"),
+							Ref: ref("./pkg/apis/app/v1alpha1.WorkspaceStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1alpha1.OrganizationSpec", "./pkg/apis/app/v1alpha1.OrganizationStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"./pkg/apis/app/v1alpha1.WorkspaceSpec", "./pkg/apis/app/v1alpha1.WorkspaceStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_app_v1alpha1_OrganizationSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "OrganizationSpec defines the desired state of Organization",
+				Description: "WorkspaceSpec defines the desired state of Workspace",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"module": {
@@ -108,11 +108,11 @@ func schema_pkg_apis_app_v1alpha1_OrganizationSpec(ref common.ReferenceCallback)
 	}
 }
 
-func schema_pkg_apis_app_v1alpha1_OrganizationStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "OrganizationStatus defines the observed state of Organization",
+				Description: "WorkspaceStatus defines the observed state of Workspace",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"workspaceID": {
