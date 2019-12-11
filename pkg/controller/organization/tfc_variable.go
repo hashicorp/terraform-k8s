@@ -15,14 +15,12 @@ const (
 	PageSize = 500
 )
 
-var (
-	// TerraformVariable is a variable
-	TerraformVariable = tfc.CategoryTerraform
-	// EnvironmentVariable is an environment variable
-	EnvironmentVariable = tfc.CategoryEnv
-	// Sensitive defaults to false
-	Sensitive = false
-)
+func setVariableType(isEnvironmentVariable bool) tfc.CategoryType {
+	if isEnvironmentVariable {
+		return tfc.CategoryTerraform
+	}
+	return tfc.CategoryEnv
+}
 
 func changeTypeToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
 	tfcVariables := []*tfc.Variable{}
@@ -31,16 +29,54 @@ func changeTypeToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable
 			Key:       variable.Key,
 			Value:     variable.Value,
 			Sensitive: variable.Sensitive,
+			Category:  setVariableType(variable.EnvironmentVariable),
 		})
 	}
 	return tfcVariables
 }
 
+// CheckSecretsMountPath ensure the secrets mount path actually exists
 func (t *TerraformCloudClient) CheckSecretsMountPath() error {
 	if _, err := os.Stat(t.SecretsMountPath); os.IsNotExist(err) {
 		return fmt.Errorf("Secrets Mount Path is invalid: %s", t.SecretsMountPath)
 	}
 	return nil
+}
+
+func (t *TerraformCloudClient) deleteVariablesFromTFC(specTFCVariables []*tfc.Variable, workspaceVariables []*tfc.Variable) error {
+	for _, v := range workspaceVariables {
+		index := find(specTFCVariables, v.Key)
+		if index < 0 {
+			err := t.DeleteVariable(v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (t *TerraformCloudClient) updateVariablesOnTFC(workspace *tfc.Workspace, specTFCVariables []*tfc.Variable, workspaceVariables []*tfc.Variable) (bool, error) {
+	variablesUpdated := false
+	for _, v := range specTFCVariables {
+		index := find(workspaceVariables, v.Key)
+		if index < 0 {
+			err := t.CreateTerraformVariable(workspace, v)
+			if err != nil {
+				return variablesUpdated, err
+			}
+			variablesUpdated = true
+			continue
+		}
+		if v.Value != workspaceVariables[index].Value {
+			err := t.UpdateTerraformVariable(workspaceVariables[index], v.Value)
+			if err != nil {
+				return variablesUpdated, err
+			}
+			variablesUpdated = true
+		}
+	}
+	return variablesUpdated, nil
 }
 
 // CheckVariables creates, updates, or deletes variables as needed
@@ -55,34 +91,10 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specVariables []
 	if err != nil {
 		return variablesUpdated, err
 	}
-	for _, v := range workspaceVariables {
-		index := find(specTFCVariables, v.Key)
-		if index < 0 {
-			err := t.DeleteVariable(v)
-			if err != nil {
-				return variablesUpdated, err
-			}
-		}
+	if err := t.deleteVariablesFromTFC(specTFCVariables, workspaceVariables); err != nil {
+		return variablesUpdated, err
 	}
-	for _, v := range specTFCVariables {
-		index := find(workspaceVariables, v.Key)
-		if index < 0 {
-			err := t.CreateTerraformVariable(tfcWorkspace, v)
-			if err != nil {
-				return variablesUpdated, err
-			}
-			variablesUpdated = true
-			continue
-		}
-		if v.Value != workspaceVariables[index].Value {
-			err := t.UpdateTerraformVariable(workspaceVariables[index], v.Value)
-			if err != nil {
-				return true, err
-			}
-			variablesUpdated = true
-		}
-	}
-	return variablesUpdated, nil
+	return t.updateVariablesOnTFC(tfcWorkspace, specTFCVariables, workspaceVariables)
 }
 
 func find(tfcVariables []*tfc.Variable, key string) int {
@@ -119,8 +131,9 @@ func (t *TerraformCloudClient) DeleteVariable(variable *tfc.Variable) error {
 // UpdateTerraformVariable updates a variable
 func (t *TerraformCloudClient) UpdateTerraformVariable(variable *tfc.Variable, newValue string) error {
 	options := tfc.VariableUpdateOptions{
-		Key:   &variable.Key,
-		Value: &newValue,
+		Key:       &variable.Key,
+		Value:     &newValue,
+		Sensitive: &variable.Sensitive,
 	}
 	_, err := t.Client.Variables.Update(context.TODO(), variable.ID, options)
 	if err != nil {
@@ -148,7 +161,7 @@ func (t *TerraformCloudClient) CreateTerraformVariable(workspace *tfc.Workspace,
 	options := tfc.VariableCreateOptions{
 		Key:       &variable.Key,
 		Value:     &variable.Value,
-		Category:  &TerraformVariable,
+		Category:  &variable.Category,
 		Sensitive: &variable.Sensitive,
 		Workspace: workspace,
 	}

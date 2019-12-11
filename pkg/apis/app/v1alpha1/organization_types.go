@@ -20,6 +20,8 @@ type Variable struct {
 	Value string `json:"value"`
 	// Variable is a secret and should be retrieved from file
 	Sensitive bool `json:"sensitive"`
+	// EnvironmentVariable denotes if this variable should be created as environment variable
+	EnvironmentVariable bool `json:"environmentVariable"`
 }
 
 // OrganizationSpec defines the desired state of Organization

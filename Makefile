@@ -1,4 +1,4 @@
-NAMESPACE='example-workspace'
+NAMESPACE='test-operator'
 
 test:
 	TF_CLI_CONFIG_FILE=credentials OPERATOR_NAME=terraform-k8s operator-sdk up local --namespace=$(NAMESPACE)

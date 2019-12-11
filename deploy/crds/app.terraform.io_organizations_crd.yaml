@@ -49,6 +49,10 @@ spec:
               description: Variables as inputs to module
               items:
                 properties:
+                  environmentVariable:
+                    description: EnvironmentVariable denotes if this variable should
+                      be created as environment variable
+                    type: boolean
                   key:
                     description: Variable name
                     type: string
@@ -60,6 +64,7 @@ spec:
                     description: Variable value
                     type: string
                 required:
+                - environmentVariable
                 - key
                 - sensitive
                 type: object
