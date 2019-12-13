@@ -4,6 +4,7 @@ import (
 	"os"
 
 	cmdVersion "github.com/hashicorp/terraform-k8s/subcommand/version"
+	cmdSyncWorkspace "github.com/hashicorp/terraform-k8s/subcommand/workspace"
 	"github.com/hashicorp/terraform-k8s/version"
 	"github.com/mitchellh/cli"
 )
@@ -15,6 +16,9 @@ func init() {
 	ui := &cli.BasicUi{Writer: os.Stdout, ErrorWriter: os.Stderr}
 
 	Commands = map[string]cli.CommandFactory{
+		"sync-workspace": func() (cli.Command, error) {
+			return &cmdSyncWorkspace.Command{UI: ui}, nil
+		},
 		"version": func() (cli.Command, error) {
 			return &cmdVersion.Command{UI: ui, Version: version.GetHumanVersion()}, nil
 		},

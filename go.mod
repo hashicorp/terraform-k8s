@@ -3,10 +3,21 @@ module github.com/hashicorp/terraform-k8s
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.17.2
+	github.com/hashicorp/consul v1.5.0
+	github.com/hashicorp/consul-k8s v0.9.5
+	github.com/hashicorp/consul/api v1.1.0
+	github.com/hashicorp/consul/sdk v0.1.1
+	github.com/hashicorp/go-discover v0.0.0-20191202160150-7ec2cfbda7a2 // indirect
+	github.com/hashicorp/go-hclog v0.9.1
+	github.com/hashicorp/go-memdb v1.0.4 // indirect
 	github.com/hashicorp/go-tfe v0.3.27
+	github.com/hashicorp/raft v1.1.1 // indirect
+	github.com/hashicorp/raft-boltdb v0.0.0-20191021154308-4207f1bf0617 // indirect
 	github.com/hashicorp/terraform v0.12.16
 	github.com/mitchellh/cli v1.0.0
 	github.com/operator-framework/operator-sdk v0.12.1-0.20191127152849-96dd1d2d5de1
+	github.com/radovskyb/watcher v1.0.2
+	github.com/shirou/gopsutil v2.19.11+incompatible // indirect
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.3.0
 	k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
