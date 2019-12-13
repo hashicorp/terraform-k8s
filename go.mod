@@ -3,11 +3,9 @@ module github.com/hashicorp/terraform-k8s
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.17.2
-	github.com/golang/protobuf v1.3.2
-	github.com/google/martian v2.1.0+incompatible
-	github.com/google/uuid v1.1.1
 	github.com/hashicorp/go-tfe v0.3.27
 	github.com/hashicorp/terraform v0.12.16
+	github.com/mitchellh/cli v1.0.0
 	github.com/operator-framework/operator-sdk v0.12.1-0.20191127152849-96dd1d2d5de1
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.3.0

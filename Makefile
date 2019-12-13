@@ -1,40 +1,117 @@
-NAMESPACE='dev'
+SHELL = bash
+
+GOOS?=$(shell go env GOOS)
+GOARCH?=$(shell go env GOARCH)
+GOPATH=$(shell go env GOPATH)
+GOTAGS ?=
+GOTOOLS = \
+	github.com/magiconair/vendorfmt/cmd/vendorfmt \
+	github.com/mitchellh/gox \
+	golang.org/x/tools/cmd/cover \
+	golang.org/x/tools/cmd/stringer
+
+DEV_IMAGE?=terraform-k8s-dev
+GO_BUILD_TAG?=terraform-k8s-build-go
+GIT_COMMIT?=$(shell git rev-parse --short HEAD)
+GIT_DIRTY?=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
+GIT_DESCRIBE?=$(shell git describe --tags --always)
+GIT_IMPORT=github.com/hashicorp/terraform-k8s/version
+GOLDFLAGS=-X $(GIT_IMPORT).GitCommit=$(GIT_COMMIT)$(GIT_DIRTY) -X $(GIT_IMPORT).GitDescribe=$(GIT_DESCRIBE)
+
+export GIT_COMMIT
+export GIT_DIRTY
+export GIT_DESCRIBE
+export GOLDFLAGS
+export GOTAGS
+
+DIST_TAG?=1
+DIST_BUILD?=1
+DIST_SIGN?=1
+
+ifdef DIST_VERSION
+DIST_VERSION_ARG=-v "$(DIST_VERSION)"
+else
+DIST_VERSION_ARG=
+endif
+
+ifdef DIST_RELEASE_DATE
+DIST_DATE_ARG=-d "$(DIST_RELEASE_DATE)"
+else
+DIST_DATE_ARG=
+endif
+
+ifdef DIST_PRERELEASE
+DIST_REL_ARG=-r "$(DIST_PRERELEASE)"
+else
+DIST_REL_ARG=
+endif
+
+PUB_GIT?=1
+PUB_WEBSITE?=1
+
+ifeq ($(PUB_GIT),1)
+PUB_GIT_ARG=-g
+else
+PUB_GIT_ARG=
+endif
+
+ifeq ($(PUB_WEBSITE),1)
+PUB_WEBSITE_ARG=-w
+else
+PUB_WEBSITE_ARG=
+endif
+
+DEV_PUSH?=0
+ifeq ($(DEV_PUSH),1)
+DEV_PUSH_ARG=
+else
+DEV_PUSH_ARG=--no-push
+endif
+
+all: bin
+
+bin:
+	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh
+
+dev:
+	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh -o $(GOOS) -a $(GOARCH)
+
+dev-docker:
+	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh -o linux -a amd64
+	@docker build -t '$(DEV_IMAGE)' --build-arg 'GIT_COMMIT=$(GIT_COMMIT)' --build-arg 'GIT_DIRTY=$(GIT_DIRTY)' --build-arg 'GIT_DESCRIBE=$(GIT_DESCRIBE)' -f $(CURDIR)/build-support/docker/Dev.dockerfile $(CURDIR)
+
+dev-tree:
+	@$(SHELL) $(CURDIR)/build-support/scripts/dev.sh $(DEV_PUSH_ARG)
 
 test:
-	TF_CLI_CONFIG_FILE=credentials OPERATOR_NAME=terraform-k8s operator-sdk up local --namespace=$(NAMESPACE)
+	go test ./...
 
-crd:
-	operator-sdk generate k8s
-	operator-sdk generate openapi
+cov:
+	go test ./... -coverprofile=coverage.out
+	go tool cover -html=coverage.out
 
-docker:
-	operator-sdk build joatmon08/operator-terraform
-	docker push joatmon08/operator-terraform
+tools:
+	go get -u -v $(GOTOOLS)
 
-setup:
-	kubectl create ns $(NAMESPACE) || true
-	kubectl -n $(NAMESPACE) create secret generic terraformrc --from-file=./credentials || true
-	kubectl -n $(NAMESPACE) create secret generic workspace-secrets --from-literal=secret_key=abc123 || true
-	kubectl -n $(NAMESPACE) create -f deploy/service_account.yaml || true
-	kubectl -n $(NAMESPACE) create -f deploy/role.yaml || true
-	kubectl -n $(NAMESPACE) create -f deploy/role_binding.yaml || true
-	kubectl -n $(NAMESPACE) create -f deploy/crds/app.terraform.io_workspaces_crd.yaml || true
+# dist builds binaries for all platforms and packages them for distribution
+# make dist DIST_VERSION=<Desired Version> DIST_RELEASE_DATE=<release date>
+# date is in "month day, year" format.
+dist:
+	@$(SHELL) $(CURDIR)/build-support/scripts/release.sh -t '$(DIST_TAG)' -b '$(DIST_BUILD)' -S '$(DIST_SIGN)' $(DIST_VERSION_ARG) $(DIST_DATE_ARG) $(DIST_REL_ARG)
 
-operator: docker setup
-	kubectl -n $(NAMESPACE) create -f deploy/operator.yaml || true
+publish:
+	@$(SHELL) $(CURDIR)/build-support/scripts/publish.sh $(PUB_GIT_ARG) $(PUB_WEBSITE_ARG)
 
-workspace:
-	kubectl -n $(NAMESPACE) apply -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml
+docker-images: go-build-image
 
-clean-workspace:
-	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml --ignore-not-found
+go-build-image:
+	@echo "Building Golang build container"
+	@docker build $(NOCACHE) $(QUIET) --build-arg 'GOTOOLS=$(GOTOOLS)' -t $(GO_BUILD_TAG) - < build-support/docker/Build-Go.dockerfile
 
-clean: clean-workspace
-	kubectl -n $(NAMESPACE) delete -f deploy/operator.yaml --ignore-not-found
-	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_workspaces_crd.yaml --ignore-not-found
-	kubectl -n $(NAMESPACE) delete -f deploy/role_binding.yaml --ignore-not-found
-	kubectl -n $(NAMESPACE) delete -f deploy/role.yaml --ignore-not-found
-	kubectl -n $(NAMESPACE) delete -f deploy/service_account.yaml --ignore-not-found
-	kubectl -n $(NAMESPACE) delete secret workspace-secrets --ignore-not-found
-	kubectl -n $(NAMESPACE) delete secret terraformrc --ignore-not-found
-	kubectl delete ns $(NAMESPACE) --ignore-not-found
+clean:
+	@rm -rf \
+		$(CURDIR)/bin \
+		$(CURDIR)/pkg
+
+
+.PHONY: all bin clean dev dist docker-images go-build-image test tools
