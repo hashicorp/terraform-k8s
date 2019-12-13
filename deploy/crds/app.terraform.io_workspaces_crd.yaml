@@ -45,6 +45,21 @@ spec:
             organization:
               description: Terraform Cloud organization
               type: string
+            outputs:
+              description: Outputs denote outputs wanted
+              items:
+                properties:
+                  attribute:
+                    description: Attribute name in module
+                    type: string
+                  key:
+                    description: Output name
+                    type: string
+                required:
+                - attribute
+                - key
+                type: object
+              type: array
             secretsMountPath:
               description: File path within operator pod to load workspace secrets
               type: string
@@ -86,12 +101,20 @@ spec:
             runID:
               description: Run ID
               type: string
+            runStatus:
+              description: Run Status gets the run status
+              type: string
+            stateDownloadURL:
+              description: State Version download URL
+              type: string
             workspaceID:
               description: Workspace ID
               type: string
           required:
           - configHash
           - runID
+          - runStatus
+          - stateDownloadURL
           - workspaceID
           type: object
       type: object

@@ -68,7 +68,11 @@ func CreateTerraformTemplate(workspace *v1alpha1.Workspace) ([]byte, error) {
 	variable "{{.Key}}" {}
 	{{- end}}
 	{{- end}}
-
+	{{- range .Spec.Outputs}}
+	output "{{.Key}}" {
+		value = module.operator.{{.Attribute}}
+	}
+	{{- end}}
 	module "operator" {
 		source = "{{.Spec.Module.Source}}"
 		version = "{{.Spec.Module.Version}}"
@@ -120,18 +124,33 @@ func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1a
 	return nil
 }
 
-// CheckRunForError examines for errors in the run
-func (t *TerraformCloudClient) CheckRunForError(workspace *v1alpha1.Workspace) error {
+// CheckRun gets the run status
+func (t *TerraformCloudClient) CheckRun(workspace *v1alpha1.Workspace) error {
 	run, err := t.Client.Runs.Read(context.TODO(), workspace.Status.RunID)
 	if err != nil {
 		return err
 	}
 
-	if run.Status == tfc.RunErrored {
-		return fmt.Errorf("run has error, runID, %s", run.ID)
-	}
-
+	workspace.Status.RunStatus = string(run.Status)
 	return nil
+}
+
+func isPending(status string) bool {
+	state := tfc.RunStatus(status)
+	switch state {
+	case tfc.RunApplied:
+		return false
+	case tfc.RunPlannedAndFinished:
+		return false
+	case tfc.RunErrored:
+		return false
+	case tfc.RunCanceled:
+		return false
+	case tfc.RunDiscarded:
+		return false
+	default:
+		return true
+	}
 }
 
 // CreateRun generates a run with the last config version

@@ -12,6 +12,13 @@ type Module struct {
 	Version string `json:"version"`
 }
 
+type Output struct {
+	// Output name
+	Key string `json:"key"`
+	// Attribute name in module
+	Attribute string `json:"attribute"`
+}
+
 type Variable struct {
 	// Variable name
 	Key string `json:"key"`
@@ -37,17 +44,26 @@ type WorkspaceSpec struct {
 	Variables []*Variable `json:"variables"`
 	// File path within operator pod to load workspace secrets
 	SecretsMountPath string `json:"secretsMountPath"`
+	// Outputs denote outputs wanted
+	// +listType=set
+	// +optional
+	Outputs []*Output `json:"outputs"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace
 // +k8s:openapi-gen=true
 type WorkspaceStatus struct {
+	// Run Status gets the run status
+	RunStatus string `json:"runStatus"`
 	// Workspace ID
 	WorkspaceID string `json:"workspaceID"`
 	// Run ID
 	RunID string `json:"runID"`
 	// Configuration hash
 	ConfigHash string `json:"configHash"`
+	// State Version download URL
+	StateDownloadURL string `json:"stateDownloadURL"`
+	// Outputs from state file
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

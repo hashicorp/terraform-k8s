@@ -169,6 +169,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
+	reqLogger.Info("Creating terraform template", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
 	terraform, err := CreateTerraformTemplate(instance)
 	if err != nil {
 		reqLogger.Error(err, "Could not create Terraform configuration")
@@ -191,10 +192,17 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			reqLogger.Error(err, "Could not run new variable changes")
 			return reconcile.Result{}, err
 		}
-	} else {
-		reqLogger.Info("Checking last run status", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-		if err := r.tfclient.CheckRunForError(instance); err != nil {
-			reqLogger.Error(err, "Run has error")
+	}
+
+	reqLogger.Info("Update run status", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+	for isPending(instance.Status.RunStatus) {
+		if err := r.tfclient.CheckRun(instance); err != nil {
+			reqLogger.Error(err, "could not get run information")
+			return reconcile.Result{}, err
+		}
+
+		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+			reqLogger.Error(err, "Failed to update Workspace status")
 			return reconcile.Result{}, err
 		}
 	}

@@ -106,12 +106,30 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"outputs": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Outputs denote outputs wanted",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/app/v1alpha1.Output"),
+									},
+								},
+							},
+						},
+					},
 				},
 				Required: []string{"organization", "module", "secretsMountPath"},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1alpha1.Module", "./pkg/apis/app/v1alpha1.Variable"},
+			"./pkg/apis/app/v1alpha1.Module", "./pkg/apis/app/v1alpha1.Output", "./pkg/apis/app/v1alpha1.Variable"},
 	}
 }
 
@@ -122,6 +140,13 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 				Description: "WorkspaceStatus defines the observed state of Workspace",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"runStatus": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Run Status gets the run status",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"workspaceID": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Workspace ID",
@@ -143,8 +168,15 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"stateDownloadURL": {
+						SchemaProps: spec.SchemaProps{
+							Description: "State Version download URL",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"workspaceID", "runID", "configHash"},
+				Required: []string{"runStatus", "workspaceID", "runID", "configHash", "stateDownloadURL"},
 			},
 		},
 	}

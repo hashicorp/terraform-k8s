@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestShouldCreateTerraformWithMultipleVariables(t *testing.T) {
+func TestShouldCreateTerraformWithVariables(t *testing.T) {
 	expectedFile := `terraform {
 		backend "remote" {
 			organization = "world"
@@ -20,7 +20,6 @@ func TestShouldCreateTerraformWithMultipleVariables(t *testing.T) {
 	}
 	variable "some_var" {}
 	variable "hello" {}
-
 	module "operator" {
 		source = "my_source"
 		version = "0.3.2"
@@ -69,7 +68,6 @@ func TestShouldCreateTerraformWithNoVariables(t *testing.T) {
 			}
 		}
 	}
-
 	module "operator" {
 		source = "my_source"
 		version = "0.3.2"
@@ -102,7 +100,6 @@ func TestShouldCreateTerraformWithNoEnvironmentVariables(t *testing.T) {
 			}
 		}
 	}
-
 	module "operator" {
 		source = "my_source"
 		version = "0.3.2"
@@ -124,6 +121,54 @@ func TestShouldCreateTerraformWithNoEnvironmentVariables(t *testing.T) {
 					Value:               "here",
 					Sensitive:           false,
 					EnvironmentVariable: true,
+				},
+			},
+		},
+	}
+	terraformFile, err := CreateTerraformTemplate(workspace)
+	assert.Nil(t, err)
+	assert.Equal(t, expectedFile, string(terraformFile))
+}
+
+func TestShouldCreateTerraformWithOutputs(t *testing.T) {
+	expectedFile := `terraform {
+		backend "remote" {
+			organization = "world"
+	
+			workspaces {
+				name = "hello"
+			}
+		}
+	}
+	output "module_output" {
+		value = module.operator.my_output
+	}
+	output "ip" {
+		value = module.operator.ip_address
+	}
+	module "operator" {
+		source = "my_source"
+		version = "0.3.2"
+	}`
+
+	workspace := &v1alpha1.Workspace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "hello",
+			Namespace: "world",
+		},
+		Spec: v1alpha1.WorkspaceSpec{
+			Module: &v1alpha1.Module{
+				Source:  "my_source",
+				Version: "0.3.2",
+			},
+			Outputs: []*v1alpha1.Output{
+				&v1alpha1.Output{
+					Key:       "module_output",
+					Attribute: "my_output",
+				},
+				&v1alpha1.Output{
+					Key:       "ip",
+					Attribute: "ip_address",
 				},
 			},
 		},
