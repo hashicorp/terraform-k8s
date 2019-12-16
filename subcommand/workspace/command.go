@@ -160,12 +160,6 @@ func (c *Command) Help() string {
 	return c.help
 }
 
-// interrupt sends os.Interrupt signal to the command
-// so it can exit gracefully. This function is needed for tests
-func (c *Command) interrupt() {
-	c.sigCh <- os.Interrupt
-}
-
 const synopsis = "Sync Workspace and Terraform Cloud."
 const help = `
 Usage: terraform-k8s sync-workspace [options]
