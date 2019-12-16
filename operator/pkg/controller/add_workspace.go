@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/hashicorp/terraform-k8s/pkg/controller/workspace"
+	"github.com/hashicorp/terraform-k8s/operator/pkg/controller/workspace"
 )
 
 func init() {

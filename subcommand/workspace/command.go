@@ -2,23 +2,38 @@ package workspace
 
 import (
 	"context"
-	"flag"
 	"fmt"
-	"net/http"
 	"os"
-	"os/signal"
 	"sync"
-	"time"
 
-	"github.com/hashicorp/consul/command/flags"
+	flag "github.com/spf13/pflag"
+
 	tfc "github.com/hashicorp/go-tfe"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/terraform/command/cliconfig"
+	"github.com/hashicorp/terraform-k8s/operator/pkg/apis"
+	"github.com/hashicorp/terraform-k8s/operator/pkg/controller"
 	"github.com/mitchellh/cli"
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
+	"github.com/operator-framework/operator-sdk/pkg/leader"
+	"github.com/operator-framework/operator-sdk/pkg/log/zap"
+	"github.com/operator-framework/operator-sdk/pkg/metrics"
+	"github.com/operator-framework/operator-sdk/pkg/restmapper"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+)
+
+var (
+	metricsHost               = "0.0.0.0"
+	metricsPort         int32 = 8383
+	operatorMetricsPort int32 = 8686
+	log                       = logf.Log.WithName("operator")
 )
 
 // Command is the command for syncing the K8S and Consul service
@@ -26,8 +41,9 @@ import (
 type Command struct {
 	UI cli.Ui
 
-	flags        *flag.FlagSet
-	flagLogLevel string
+	flags                 *flag.FlagSet
+	flagLogLevel          string
+	flagK8sWatchNamespace string
 
 	tfcClient *tfc.Client
 	clientset kubernetes.Interface
@@ -39,151 +55,102 @@ type Command struct {
 
 func (c *Command) init() {
 	c.flags = flag.NewFlagSet("", flag.ContinueOnError)
-	c.flags.StringVar(&c.flagLogLevel, "log-level", "info",
-		"Log verbosity level. Supported values (in order of detail) are \"trace\", "+
-			"\"debug\", \"info\", \"warn\", and \"error\".")
+	c.flags.StringVar(&c.flagK8sWatchNamespace, "k8s-watch-namespace", metav1.NamespaceAll,
+		"The Kubernetes namespace to watch for service changes and sync to Terraform Cloud. "+
+			"If this is not set then it will default to all namespaces.")
 
-	c.help = flags.Usage(help, c.flags)
+	zapFlags := zap.FlagSet()
+	c.help = fmt.Sprintf("%s\n%s\n%s", help, c.flags, zapFlags.FlagUsages())
+
+	flag.CommandLine.AddFlagSet(zapFlags)
+	flag.CommandLine.AddFlagSet(c.flags)
+	flag.Parse()
+
+	logf.SetLogger(zap.Logger())
 }
 
 func (c *Command) Run(args []string) int {
-	c.once.Do(c.init)
-	if err := c.flags.Parse(args); err != nil {
-		return 1
-	}
-	if len(c.flags.Args()) > 0 {
-		c.UI.Error(fmt.Sprintf("Should have no non-flag arguments."))
-		return 1
-	}
+	c.init()
 
-	// Setup TerraformCloud client
-	if c.tfcClient == nil {
-		var err error
-		tfConfig, diag := cliconfig.LoadConfig()
-		if diag.Err() != nil {
-			c.UI.Error(fmt.Sprintf("Error finding Terraform Cloud configuration: %s", diag.Err()))
-			return 1
-		}
+	namespace := c.flagK8sWatchNamespace
 
-		config := &tfc.Config{
-			Token: fmt.Sprintf("%v", tfConfig.Credentials["app.terraform.io"]["token"]),
-		}
-
-		c.tfcClient, err = tfc.NewClient(config)
-		if err != nil {
-			c.UI.Error(fmt.Sprintf("Error connecting to Terraform Cloud: %s", err))
-			return 1
-		}
-	}
-
-	level := hclog.LevelFromString(c.flagLogLevel)
-	if level == hclog.NoLevel {
-		c.UI.Error(fmt.Sprintf("Unknown log level: %s", c.flagLogLevel))
-		return 1
-	}
-	logger := hclog.New(&hclog.LoggerOptions{
-		Level:  level,
-		Output: os.Stderr,
-	})
-
-	// Get the sync interval
-	var syncInterval time.Duration
-
-	// Create the context we'll use to cancel everything
-	ctx, cancelF := context.WithCancel(context.Background())
-
-	// Start the K8S-to-TFC syncer
-	var toTFCCh chan struct{}
-
-	// Build the TFC workspace sync and start it
-	syncer := &catalogtoconsul.ConsulSyncer{
-		Client:            c.consulClient,
-		Log:               logger.Named("to-consul/sink"),
-		Namespace:         c.flagK8SSourceNamespace,
-		SyncPeriod:        syncInterval,
-		ServicePollPeriod: syncInterval * 2,
-		ConsulK8STag:      c.flagConsulK8STag,
-	}
-	go syncer.Run(ctx)
-
-	// Build the controller and start it
-	ctl := &controller.Controller{
-		Log: logger.Named("to-consul/controller"),
-		Resource: &catalogtoconsul.ServiceResource{
-			Log:                   logger.Named("to-consul/source"),
-			Client:                c.clientset,
-			Syncer:                syncer,
-			Namespace:             c.flagK8SSourceNamespace,
-			ExplicitEnable:        !c.flagK8SDefault,
-			ClusterIPSync:         c.flagSyncClusterIPServices,
-			NodePortSync:          catalogtoconsul.NodePortSyncType(c.flagNodePortSyncType),
-			ConsulK8STag:          c.flagConsulK8STag,
-			ConsulServicePrefix:   c.flagConsulServicePrefix,
-			AddK8SNamespaceSuffix: c.flagAddK8SNamespaceSuffix,
-		},
-	}
-
-	toConsulCh = make(chan struct{})
-	go func() {
-		defer close(toConsulCh)
-		ctl.Run(ctx.Done())
-	}()
-
-	// Start healthcheck handler
-	go func() {
-		mux := http.NewServeMux()
-		mux.HandleFunc("/health/ready", c.handleReady)
-		var handler http.Handler = mux
-
-		c.UI.Info(fmt.Sprintf("Listening on %q...", c.flagListen))
-		if err := http.ListenAndServe(c.flagListen, handler); err != nil {
-			c.UI.Error(fmt.Sprintf("Error listening: %s", err))
-		}
-	}()
-
-	// Wait on an interrupt to exit
-	c.sigCh = make(chan os.Signal, 1)
-	signal.Notify(c.sigCh, os.Interrupt)
-	select {
-	// Unexpected exit
-	case <-toConsulCh:
-		cancelF()
-		if toK8SCh != nil {
-			<-toK8SCh
-		}
-		return 1
-
-	// Unexpected exit
-	case <-toK8SCh:
-		cancelF()
-		if toConsulCh != nil {
-			<-toConsulCh
-		}
-		return 1
-
-	// Interrupted, gracefully exit
-	case <-c.sigCh:
-		cancelF()
-		if toConsulCh != nil {
-			<-toConsulCh
-		}
-		if toK8SCh != nil {
-			<-toK8SCh
-		}
-		return 0
-	}
-}
-
-func (c *Command) handleReady(rw http.ResponseWriter, req *http.Request) {
-	// The main readiness check is whether sync can talk to
-	// the consul cluster, in this case querying for the leader
-	_, err := c.consulClient.Status().Leader()
+	// Get a config to talk to the apiserver
+	cfg, err := config.GetConfig()
 	if err != nil {
-		c.UI.Error(fmt.Sprintf("[GET /health/ready] Error getting leader status: %s", err))
-		rw.WriteHeader(500)
-		return
+		log.Error(err, "")
+		return 1
 	}
-	rw.WriteHeader(204)
+
+	ctx := context.TODO()
+	// Become the leader before proceeding
+	err = leader.Become(ctx, "workspace-lock")
+	if err != nil {
+		log.Error(err, "")
+		return 1
+	}
+
+	// Create a new Cmd to provide shared dependencies and start components
+	mgr, err := manager.New(cfg, manager.Options{
+		Namespace:          namespace,
+		MapperProvider:     restmapper.NewDynamicRESTMapper,
+		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+	})
+	if err != nil {
+		log.Error(err, "")
+		return 1
+	}
+
+	log.Info("Registering Components.")
+
+	// Setup Scheme for all resources
+	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+		log.Error(err, "")
+		return 1
+	}
+
+	// Setup all Controllers
+	if err := controller.AddToManager(mgr); err != nil {
+		log.Info("Could not generate and serve custom resource metrics", "error", err.Error())
+		return 1
+	}
+
+	if err = serveCRMetrics(cfg); err != nil {
+		log.Info("Error generating and serving metrics", "error", err.Error())
+	}
+
+	// Add to the below struct any other metrics ports you want to expose.
+	servicePorts := []v1.ServicePort{
+		{Port: metricsPort, Name: metrics.OperatorPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort}},
+		{Port: operatorMetricsPort, Name: metrics.CRPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: operatorMetricsPort}},
+	}
+	// Create Service object to expose the metrics port(s).
+	service, err := metrics.CreateMetricsService(ctx, cfg, servicePorts)
+	if err != nil {
+		log.Error(err, "Could not create metrics Service")
+	}
+
+	// CreateServiceMonitors will automatically create the prometheus-operator ServiceMonitor resources
+	// necessary to configure Prometheus to scrape metrics from this operator.
+	services := []*v1.Service{service}
+	_, err = metrics.CreateServiceMonitors(cfg, namespace, services)
+	if err != nil {
+		log.Info("Could not create ServiceMonitor object", "error", err.Error())
+		// If this operator is deployed to a cluster without the prometheus-operator running, it will return
+		// ErrServiceMonitorNotPresent, which can be used to safely skip ServiceMonitor creation.
+		if err == metrics.ErrServiceMonitorNotPresent {
+			log.Info("Install prometheus-operator in your cluster to create ServiceMonitor objects", "error", err.Error())
+		}
+	}
+
+	log.Info("Starting the Cmd.")
+
+	// Start the Cmd
+	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
+		log.Error(err, "Manager exited non-zero")
+		return 1
+	}
+
+	return 0
 }
 
 func (c *Command) Synopsis() string { return synopsis }
@@ -206,3 +173,27 @@ Usage: terraform-k8s sync-workspace [options]
 	This enables Workspaces in Kubernetes to manage infrastructure resources
 	created by Terraform Cloud.
 `
+
+// serveCRMetrics gets the Operator/CustomResource GVKs and generates metrics based on those types.
+// It serves those metrics on "http://metricsHost:operatorMetricsPort".
+func serveCRMetrics(cfg *rest.Config) error {
+	// Below function returns filtered operator/CustomResource specific GVKs.
+	// For more control override the below GVK list with your own custom logic.
+	filteredGVK, err := k8sutil.GetGVKsFromAddToScheme(apis.AddToScheme)
+	if err != nil {
+		return err
+	}
+	// Get the namespace the operator is currently deployed in.
+	operatorNs, err := k8sutil.GetOperatorNamespace()
+	if err != nil {
+		return err
+	}
+	// To generate metrics in other namespaces, add the values below.
+	ns := []string{operatorNs}
+	// Generate and serve custom resource specific metrics.
+	err = kubemetrics.GenerateAndServeCRMetrics(cfg, ns, filteredGVK, metricsHost, operatorMetricsPort)
+	if err != nil {
+		return err
+	}
+	return nil
+}

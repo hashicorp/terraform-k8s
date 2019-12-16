@@ -3,7 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
+	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 )
 
 func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspace *v1alpha1.Workspace) error {
