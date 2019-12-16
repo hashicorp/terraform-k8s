@@ -60,7 +60,7 @@ func (c *Command) init() {
 			"If this is not set then it will default to all namespaces.")
 
 	zapFlags := zap.FlagSet()
-	c.help = fmt.Sprintf("%s\n%s\n%s", help, c.flags, zapFlags.FlagUsages())
+	c.help = fmt.Sprintf("%s\n%s\n%s", help, c.flags.FlagUsages(), zapFlags.FlagUsages())
 
 	flag.CommandLine.AddFlagSet(zapFlags)
 	flag.CommandLine.AddFlagSet(c.flags)
@@ -69,6 +69,7 @@ func (c *Command) init() {
 	logf.SetLogger(zap.Logger())
 }
 
+// Run starts the operator to synchronize workspaces.
 func (c *Command) Run(args []string) int {
 	c.init()
 
