@@ -13,7 +13,7 @@ spec:
       attribute: pet
   variables:
     - key: hello
-      value: rosemary
+      value: xander
       sensitive: false
       environmentVariable: false
     - key: secret_key

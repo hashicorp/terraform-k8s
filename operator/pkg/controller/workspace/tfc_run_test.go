@@ -14,7 +14,7 @@ func TestShouldCreateTerraformWithVariables(t *testing.T) {
 			organization = "world"
 	
 			workspaces {
-				name = "hello"
+				name = "prod-hello"
 			}
 		}
 	}
@@ -30,9 +30,10 @@ func TestShouldCreateTerraformWithVariables(t *testing.T) {
 	workspace := &v1alpha1.Workspace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "hello",
-			Namespace: "world",
+			Namespace: "prod",
 		},
 		Spec: v1alpha1.WorkspaceSpec{
+			Organization: "world",
 			Module: &v1alpha1.Module{
 				Source:  "my_source",
 				Version: "0.3.2",
@@ -64,7 +65,7 @@ func TestShouldCreateTerraformWithNoVariables(t *testing.T) {
 			organization = "world"
 	
 			workspaces {
-				name = "hello"
+				name = "prod-hello"
 			}
 		}
 	}
@@ -76,9 +77,10 @@ func TestShouldCreateTerraformWithNoVariables(t *testing.T) {
 	workspace := &v1alpha1.Workspace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "hello",
-			Namespace: "world",
+			Namespace: "prod",
 		},
 		Spec: v1alpha1.WorkspaceSpec{
+			Organization: "world",
 			Module: &v1alpha1.Module{
 				Source:  "my_source",
 				Version: "0.3.2",
@@ -96,7 +98,7 @@ func TestShouldCreateTerraformWithNoEnvironmentVariables(t *testing.T) {
 			organization = "world"
 	
 			workspaces {
-				name = "hello"
+				name = "prod-hello"
 			}
 		}
 	}
@@ -108,9 +110,10 @@ func TestShouldCreateTerraformWithNoEnvironmentVariables(t *testing.T) {
 	workspace := &v1alpha1.Workspace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "hello",
-			Namespace: "world",
+			Namespace: "prod",
 		},
 		Spec: v1alpha1.WorkspaceSpec{
+			Organization: "world",
 			Module: &v1alpha1.Module{
 				Source:  "my_source",
 				Version: "0.3.2",
@@ -136,7 +139,7 @@ func TestShouldCreateTerraformWithOutputs(t *testing.T) {
 			organization = "world"
 	
 			workspaces {
-				name = "hello"
+				name = "prod-hello"
 			}
 		}
 	}
@@ -154,9 +157,10 @@ func TestShouldCreateTerraformWithOutputs(t *testing.T) {
 	workspace := &v1alpha1.Workspace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "hello",
-			Namespace: "world",
+			Namespace: "prod",
 		},
 		Spec: v1alpha1.WorkspaceSpec{
+			Organization: "world",
 			Module: &v1alpha1.Module{
 				Source:  "my_source",
 				Version: "0.3.2",

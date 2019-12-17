@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 )
 
+// GetStateVersionDownloadURL retrieves download URL for state file
 func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspace *v1alpha1.Workspace) error {
 	workspaceID := workspace.Status.WorkspaceID
 	runID := workspace.Status.RunID
@@ -23,6 +24,7 @@ func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspace *v1alpha1.Wo
 	return nil
 }
 
+// GetOutputsFromState gets list of outputs from state file
 func (t *TerraformCloudClient) GetOutputsFromState(workspace *v1alpha1.Workspace) error {
 	if workspace.Status.StateDownloadURL == "" {
 		return fmt.Errorf("could not download blank state")

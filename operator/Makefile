@@ -13,21 +13,21 @@ docker:
 
 setup:
 	kubectl create ns $(NAMESPACE) || true
-	kubectl -n $(NAMESPACE) create secret generic terraformrc --from-file=./credentials || true
+	kubectl -n $(NAMESPACE) create secret generic terraformrc --from-file=../credentials || true
 	kubectl -n $(NAMESPACE) create secret generic workspace-secrets --from-literal=secret_key=abc123 || true
 	kubectl -n $(NAMESPACE) create -f deploy/service_account.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/role.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/role_binding.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/crds/app.terraform.io_workspaces_crd.yaml || true
 
-operator: docker setup
+operator:
 	kubectl -n $(NAMESPACE) create -f deploy/operator.yaml || true
 
 workspace:
 	kubectl -n $(NAMESPACE) apply -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml
 
 clean-workspace:
-	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml --ignore-not-found
+	kubectl -n prod delete -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml --ignore-not-found
 
 clean: clean-workspace
 	kubectl -n $(NAMESPACE) delete -f deploy/operator.yaml --ignore-not-found

@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
@@ -111,7 +112,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 	organization := instance.Spec.Organization
 	r.tfclient.Organization = organization
-	workspace := request.Name
+	workspace := fmt.Sprintf("%s-%s", request.Namespace, request.Name)
 
 	if err := r.tfclient.CheckOrganization(); err != nil {
 		reqLogger.Error(err, "Could not find organization")
@@ -221,11 +222,11 @@ func (r *ReconcileWorkspace) finalizeWorkspace(reqLogger logr.Logger, workspace 
 		return err
 	}
 	reqLogger.Info("Deleting resources in workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
-	if err := r.tfclient.DeleteResources(workspace.Name); err != nil {
+	if err := r.tfclient.DeleteResources(workspace.Status.WorkspaceID); err != nil {
 		return err
 	}
 	reqLogger.Info("Deleting workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
-	if err := r.tfclient.DeleteWorkspace(workspace.Name); err != nil {
+	if err := r.tfclient.DeleteWorkspace(workspace.Status.WorkspaceID); err != nil {
 		reqLogger.Error(err, "Could not delete workspace")
 	}
 	reqLogger.Info("Successfully finalized organization")

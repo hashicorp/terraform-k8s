@@ -56,10 +56,10 @@ func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*
 func CreateTerraformTemplate(workspace *v1alpha1.Workspace) ([]byte, error) {
 	tfTemplate, err := template.New("main.tf").Parse(`terraform {
 		backend "remote" {
-			organization = "{{.ObjectMeta.Namespace}}"
+			organization = "{{.Spec.Organization}}"
 	
 			workspaces {
-				name = "{{.ObjectMeta.Name}}"
+				name = "{{.ObjectMeta.Namespace}}-{{.ObjectMeta.Name}}"
 			}
 		}
 	}
@@ -196,8 +196,8 @@ func (t *TerraformCloudClient) DeleteRuns(workspaceID string) error {
 }
 
 // DeleteResources destroys the resources in a workspace
-func (t *TerraformCloudClient) DeleteResources(workspace string) error {
-	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
+func (t *TerraformCloudClient) DeleteResources(workspaceID string) error {
+	ws, err := t.Client.Workspaces.ReadByID(context.TODO(), workspaceID)
 	if err != nil {
 		return err
 	}

@@ -74,8 +74,8 @@ func (t *TerraformCloudClient) CreateWorkspace(workspace string) (string, error)
 }
 
 // DeleteWorkspace removes the workspace from Terraform Cloud
-func (t *TerraformCloudClient) DeleteWorkspace(workspace string) error {
-	err := t.Client.Workspaces.Delete(context.TODO(), t.Organization, workspace)
+func (t *TerraformCloudClient) DeleteWorkspace(workspaceID string) error {
+	err := t.Client.Workspaces.DeleteByID(context.TODO(), workspaceID)
 	if err != nil {
 		return err
 	}
