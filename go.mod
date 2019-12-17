@@ -1,5 +1,7 @@
 module github.com/hashicorp/terraform-k8s
 
+go 1.12
+
 require (
 	github.com/aws/aws-sdk-go v1.25.41 // indirect
 	github.com/go-logr/logr v0.1.0
@@ -39,5 +41,3 @@ replace (
 )
 
 replace github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.11.0
-
-go 1.13

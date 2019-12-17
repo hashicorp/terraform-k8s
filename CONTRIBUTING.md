@@ -1,6 +1,6 @@
 # Contributing
 
-To build and install `terraform-k8s` locally, Go version 1.12.3+ is required.
+To build and install `terraform-k8s` locally, Go version 1.12.13+ is required.
 You will also need to install the Docker engine:
 
 - [Docker for Mac](https://docs.docker.com/engine/installation/mac/)
