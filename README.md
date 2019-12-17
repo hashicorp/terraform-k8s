@@ -1,97 +1,35 @@
-# Terraform + Kubernetes (terraform-k8s)
-This is a Kubernetes operator for [Terraform Cloud](https://app.terraform.io). Using this operator, you can define your Terraform Cloud organization and configuration along with your Kubernetes manifest files.
+# Terraform Cloud + Kubernetes (terraform-k8s)
 
-## Example Usage
+The `terraform-k8s` binary includes first-class integrations between Terraform and
+Kubernetes. The project encapsulates multiple use cases, including a Terraform Cloud Operator
+that synchronizes a Kubernetes Workspace (Custom Resource) to a Terraform Cloud Workspace.
+The Kubernetes integrations with Terraform Cloud are
+[documented directly on the Terraform Cloud website]().
+This README will present a basic overview of each use case, but for full
+documentation please reference the Terraform Cloud website.
 
-1. Deploy roles and service accounts. `kubectl apply -n $NAMESPACE -f deploy/<file>.yaml`
+This project is versioned separately from Terraform. Supported Terraform versions
+must be above version 0.12. By versioning this project separately,
+we can iterate on Kubernetes integrations more quickly and release new versions
+without forcing Terraform users to do a full Terraform upgrade.
 
-1. Create a Kubernetes secret for the Terraform API token and workspace secrets.
+## Features
 
-1. Deploy the custom resource definition to our cluster for
-   the workspace. `kubectl apply -n $NAMESPACE -f deploy/crds/app.terraform.io_workspaces_crd.yaml`
+  * [**Terraform Cloud Workspace Sync**]():
+    Create and manage a Kubernetes Workspace that automatically synchronizes to Terraform Cloud.
+    This enables Kubernetes to deploy infrastructure configured by Terraform
+    _(Requires Terraform 0.12+)_
 
-1. Create an `operator.yaml` that deploys the operator. It must mounts the Terraform API token
-   and any workspace secrets we created in the previous step.
-   ```yaml
-   apiVersion: apps/v1
-   kind: Deployment
-   metadata:
-     name: terraform-k8s
-   spec:
-     replicas: 1
-     selector:
-       matchLabels:
-         name: terraform-k8s
-     template:
-       metadata:
-         labels:
-           name: terraform-k8s
-       spec:
-         serviceAccountName: terraform-k8s
-         containers:
-           - name: terraform-k8s
-             image: joatmon08/operator-terraform
-             command:
-             - terraform-k8s
-             imagePullPolicy: Always
-             env:
-               - name: WATCH_NAMESPACE
-                 valueFrom:
-                   fieldRef:
-                     fieldPath: metadata.namespace
-               - name: POD_NAME
-                 valueFrom:
-                   fieldRef:
-                     fieldPath: metadata.name
-               - name: OPERATOR_NAME
-                 value: "terraform-k8s"
-               - name: TF_CLI_CONFIG_FILE
-                 value: "/etc/terraform/.terraformrc"
-             volumeMounts:
-             - name: terraformrc
-               mountPath: "/etc/terraform"
-               readOnly: true
-             - name: workspacesecrets
-               mountPath: "/tmp/secrets"
-               readOnly: true
-         volumes:
-           - name: terraformrc
-             secret:
-               secretName: terraformrc
-               items:
-               - key: credentials
-                 path: ".terraformrc"
-           - name: workspacesecrets
-             secret:
-               secretName: workspace-secrets
-   ```
+## Installation
 
-1. Deploy the Workspace custom resource. Make sure the `secretsMountPath`
-   points to the file path we used to mount workspace secrets.
-   ```yaml
-   apiVersion: app.terraform.io/v1alpha1
-   kind: Workspace
-   metadata:
-     name: my-workspace
-   spec:
-     organization: rosemaryagain
-     secretsMountPath: "/tmp/secrets"
-     module:
-       source: "app.terraform.io/rosemaryagain/hello/random"
-       version: "2.0.1"
-     variables:
-       - key: hello
-         value: rosemary
-         sensitive: false
-         environmentVariable: false
-       - key: secret_key
-         sensitive: true
-         environmentVariable: false
-       - key: AWS_SECRET_ACCESS_KEY
-         sensitive: true
-         environmentVariable: true
-       - key: CONFIRM_DESTROY
-         value: "1"
-         sensitive: false
-         environmentVariable: true
-   ```
+`terraform-k8s` is distributed in multiple forms:
+
+  * The recommended installation method is the official
+    [Terraform Helm chart](https://github.com/hashicorp/terraform-helm). This will
+    automatically configure the Terraform and Kubernetes integration to run within
+    an existing Kubernetes cluster.
+
+  * A [Docker image `hashicorp/terraform-k8s`]() is available. This can be used to manually run `terraform-k8s` within a scheduled environment.
+
+  * Raw binaries are available in the [HashiCorp releases directory]().
+    These can be used to run `terraform-k8s` directly or build custom packages.

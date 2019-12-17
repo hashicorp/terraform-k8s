@@ -36,8 +36,8 @@ var (
 	log                       = logf.Log.WithName("operator")
 )
 
-// Command is the command for syncing the K8S and Consul service
-// catalogs (one or both directions).
+// Command is the command for syncing the K8S and Terraform
+// Cloud workspaces.
 type Command struct {
 	UI cli.Ui
 
