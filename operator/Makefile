@@ -27,7 +27,7 @@ workspace:
 	kubectl -n $(NAMESPACE) apply -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml
 
 clean-workspace:
-	kubectl -n prod delete -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml --ignore-not-found
+	kubectl -n $(NAMESPACE) delete -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml --ignore-not-found
 
 clean: clean-workspace
 	kubectl -n $(NAMESPACE) delete -f deploy/operator.yaml --ignore-not-found
