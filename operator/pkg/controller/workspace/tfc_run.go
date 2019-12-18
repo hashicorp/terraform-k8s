@@ -176,12 +176,7 @@ func (t *TerraformCloudClient) DeleteRuns(workspaceID string) error {
 		return err
 	}
 	for _, run := range runs.Items {
-		switch status := run.Status; status {
-		case tfc.RunApplied:
-			continue
-		case tfc.RunPlannedAndFinished:
-			continue
-		default:
+		if isPending(string(run.Status)) {
 			err := t.Client.Runs.ForceCancel(context.TODO(), run.ID, tfc.RunForceCancelOptions{
 				Comment: &message,
 			})

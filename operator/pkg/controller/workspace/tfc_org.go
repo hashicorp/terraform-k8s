@@ -73,6 +73,12 @@ func (t *TerraformCloudClient) CreateWorkspace(workspace string) (string, error)
 	return ws.ID, nil
 }
 
+// CheckWorkspacebyID checks a workspace by ID
+func (t *TerraformCloudClient) CheckWorkspacebyID(workspaceID string) error {
+	_, err := t.Client.Workspaces.ReadByID(context.TODO(), workspaceID)
+	return err
+}
+
 // DeleteWorkspace removes the workspace from Terraform Cloud
 func (t *TerraformCloudClient) DeleteWorkspace(workspaceID string) error {
 	err := t.Client.Workspaces.DeleteByID(context.TODO(), workspaceID)

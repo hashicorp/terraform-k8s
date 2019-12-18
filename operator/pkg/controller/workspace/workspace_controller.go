@@ -121,19 +121,22 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	reqLogger.Info("Checking workspace", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-	workspaceID, err := r.tfclient.CheckWorkspace(workspace)
-	if err != nil {
-		reqLogger.Error(err, "Could not update workspace")
-		return reconcile.Result{}, err
+	if instance.Status.WorkspaceID == "" {
+		reqLogger.Info("Checking workspace", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+		workspaceID, err := r.tfclient.CheckWorkspace(workspace)
+		if err != nil {
+			reqLogger.Error(err, "Could not update workspace")
+			return reconcile.Result{}, err
+		}
+		reqLogger.Info("Found workspace", "Organization", organization, "Name", workspace, "ID", workspaceID, "Namespace", request.Namespace)
+		instance.Status.WorkspaceID = workspaceID
 	}
-	reqLogger.Info("Found workspace", "Organization", organization, "Name", workspace, "ID", workspaceID, "Namespace", request.Namespace)
-	instance.Status.WorkspaceID = workspaceID
 
 	// Check if the Workspace instance is marked to be deleted, which is
 	// indicated by the deletion timestamp being set.
 	markedForDeletion := instance.GetDeletionTimestamp() != nil
-	if markedForDeletion {
+	err = r.tfclient.CheckWorkspacebyID(instance.Status.WorkspaceID)
+	if markedForDeletion || err != nil {
 		if contains(instance.GetFinalizers(), workspaceFinalizer) {
 			if err := r.finalizeWorkspace(reqLogger, instance); err != nil {
 				return reconcile.Result{}, err
@@ -239,17 +242,19 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 }
 
 func (r *ReconcileWorkspace) finalizeWorkspace(reqLogger logr.Logger, workspace *appv1alpha1.Workspace) error {
-	reqLogger.Info("Deleting runs in workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
-	if err := r.tfclient.DeleteRuns(workspace.Status.WorkspaceID); err != nil {
-		return err
-	}
-	reqLogger.Info("Deleting resources in workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
-	if err := r.tfclient.DeleteResources(workspace.Status.WorkspaceID); err != nil {
-		return err
-	}
-	reqLogger.Info("Deleting workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
-	if err := r.tfclient.DeleteWorkspace(workspace.Status.WorkspaceID); err != nil {
-		reqLogger.Error(err, "Could not delete workspace")
+	if err := r.tfclient.CheckWorkspacebyID(workspace.Status.WorkspaceID); err == nil {
+		reqLogger.Info("Deleting runs in workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
+		if err := r.tfclient.DeleteRuns(workspace.Status.WorkspaceID); err != nil {
+			return err
+		}
+		reqLogger.Info("Deleting resources in workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
+		if err := r.tfclient.DeleteResources(workspace.Status.WorkspaceID); err != nil {
+			return err
+		}
+		reqLogger.Info("Deleting workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
+		if err := r.tfclient.DeleteWorkspace(workspace.Status.WorkspaceID); err != nil {
+			reqLogger.Error(err, "Could not delete workspace")
+		}
 	}
 	reqLogger.Info("Successfully finalized organization")
 	return nil
