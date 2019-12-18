@@ -14,9 +14,14 @@ type Module struct {
 
 type Output struct {
 	// Output name
+	// +optional
 	Key string `json:"key"`
 	// Attribute name in module
+	// +optional
 	Attribute string `json:"attribute"`
+	// Value
+	// +optional
+	Value string `json:"value"`
 }
 
 type Variable struct {
@@ -61,9 +66,10 @@ type WorkspaceStatus struct {
 	RunID string `json:"runID"`
 	// Configuration hash
 	ConfigHash string `json:"configHash"`
-	// State Version download URL
-	StateDownloadURL string `json:"stateDownloadURL"`
 	// Outputs from state file
+	// +listType=set
+	// +optional
+	Outputs []*Output `json:"outputs"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

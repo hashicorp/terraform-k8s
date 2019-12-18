@@ -1,37 +1,45 @@
 package workspace
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+
 	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
+	"github.com/hashicorp/terraform/states/statefile"
 )
 
 // GetStateVersionDownloadURL retrieves download URL for state file
-func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspace *v1alpha1.Workspace) error {
-	workspaceID := workspace.Status.WorkspaceID
-	runID := workspace.Status.RunID
+func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspaceID string, runID string) (string, error) {
 
 	stateVersion, err := t.Client.StateVersions.Current(context.TODO(), workspaceID)
 	if err != nil {
-		return fmt.Errorf("could not get current state version, WorkspaceID, %s, Error, %v", workspaceID, err)
+		return "", fmt.Errorf("could not get current state version, WorkspaceID, %s, Error, %v", workspaceID, err)
 	}
 	if stateVersion.Run.ID != runID {
-		return fmt.Errorf("current state does not match runID, StateVersionRunID, %s, RunID, %s", stateVersion.Run.ID, runID)
+		return "", fmt.Errorf("current state does not match runID, StateVersionRunID, %s, RunID, %s", stateVersion.Run.ID, runID)
 	}
 
-	workspace.Status.StateDownloadURL = stateVersion.DownloadURL
-
-	return nil
+	return stateVersion.DownloadURL, nil
 }
 
 // GetOutputsFromState gets list of outputs from state file
-func (t *TerraformCloudClient) GetOutputsFromState(workspace *v1alpha1.Workspace) error {
-	if workspace.Status.StateDownloadURL == "" {
-		return fmt.Errorf("could not download blank state")
+func (t *TerraformCloudClient) GetOutputsFromState(stateDownloadURL string) ([]*v1alpha1.Output, error) {
+	if stateDownloadURL == "" {
+		return nil, fmt.Errorf("could not download blank state")
 	}
-	_, err := t.Client.StateVersions.Download(context.TODO(), workspace.Status.StateDownloadURL)
+	data, err := t.Client.StateVersions.Download(context.TODO(), stateDownloadURL)
 	if err != nil {
-		return fmt.Errorf("could not download state, Error, %v", err)
+		return nil, fmt.Errorf("could not download state, Error, %v", err)
 	}
-	return nil
+	reader := bytes.NewReader(data)
+	file, err := statefile.Read(reader)
+	outputValues := file.State.Modules[""].OutputValues
+	outputs := []*v1alpha1.Output{}
+	for key, value := range outputValues {
+		if !value.Sensitive {
+			outputs = append(outputs, &v1alpha1.Output{Attribute: key, Value: value.Value.AsString()})
+		}
+	}
+	return outputs, nil
 }

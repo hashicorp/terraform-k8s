@@ -168,16 +168,29 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
-					"stateDownloadURL": {
+					"outputs": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
-							Description: "State Version download URL",
-							Type:        []string{"string"},
-							Format:      "",
+							Description: "Outputs from state file",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/app/v1alpha1.Output"),
+									},
+								},
+							},
 						},
 					},
 				},
-				Required: []string{"runStatus", "workspaceID", "runID", "configHash", "stateDownloadURL"},
+				Required: []string{"runStatus", "workspaceID", "runID", "configHash"},
 			},
 		},
+		Dependencies: []string{
+			"./pkg/apis/app/v1alpha1.Output"},
 	}
 }

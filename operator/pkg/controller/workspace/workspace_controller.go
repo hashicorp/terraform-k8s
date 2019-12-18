@@ -3,8 +3,10 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
+	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -197,10 +199,13 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 
 	reqLogger.Info("Update run status", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
 	for isPending(instance.Status.RunStatus) {
-		if err := r.tfclient.CheckRun(instance); err != nil {
+		runStatus, err := r.tfclient.CheckRun(instance.Status.RunID)
+		if err != nil {
 			reqLogger.Error(err, "could not get run information")
 			return reconcile.Result{}, err
 		}
+		instance.Status.RunStatus = runStatus
+		instance.Status.Outputs = []*v1alpha1.Output{}
 
 		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
 			reqLogger.Error(err, "Failed to update Workspace status")
@@ -208,9 +213,26 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
-		reqLogger.Error(err, "Failed to update Workspace status")
+	reqLogger.Info("Get outputs", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+	stateDownloadURL, err := r.tfclient.GetStateVersionDownloadURL(instance.Status.WorkspaceID, instance.Status.RunID)
+	if err != nil {
+		reqLogger.Error(err, "Unable to get state")
 		return reconcile.Result{}, err
+	}
+
+	outputs, err := r.tfclient.GetOutputsFromState(stateDownloadURL)
+	if err != nil {
+		reqLogger.Error(err, "Unable to get outputs from state")
+		return reconcile.Result{}, err
+	}
+
+	if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
+		instance.Status.Outputs = outputs
+		err := r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Workspace status")
+			return reconcile.Result{}, err
+		}
 	}
 
 	return reconcile.Result{}, nil

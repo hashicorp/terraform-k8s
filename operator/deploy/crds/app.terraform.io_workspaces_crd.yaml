@@ -55,9 +55,9 @@ spec:
                   key:
                     description: Output name
                     type: string
-                required:
-                - attribute
-                - key
+                  value:
+                    description: Value
+                    type: string
                 type: object
               type: array
             secretsMountPath:
@@ -98,14 +98,28 @@ spec:
             configHash:
               description: Configuration hash
               type: string
+            outputs:
+              description: Outputs from state file
+              items:
+                properties:
+                  attribute:
+                    description: Attribute name in module
+                    type: string
+                  key:
+                    description: Output name
+                    type: string
+                  value:
+                    description: Value
+                    type: string
+                required:
+                - attribute
+                type: object
+              type: array
             runID:
               description: Run ID
               type: string
             runStatus:
               description: Run Status gets the run status
-              type: string
-            stateDownloadURL:
-              description: State Version download URL
               type: string
             workspaceID:
               description: Workspace ID
@@ -114,7 +128,6 @@ spec:
           - configHash
           - runID
           - runStatus
-          - stateDownloadURL
           - workspaceID
           type: object
       type: object

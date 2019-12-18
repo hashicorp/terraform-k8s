@@ -125,14 +125,12 @@ func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1a
 }
 
 // CheckRun gets the run status
-func (t *TerraformCloudClient) CheckRun(workspace *v1alpha1.Workspace) error {
-	run, err := t.Client.Runs.Read(context.TODO(), workspace.Status.RunID)
+func (t *TerraformCloudClient) CheckRun(runID string) (string, error) {
+	run, err := t.Client.Runs.Read(context.TODO(), runID)
 	if err != nil {
-		return err
+		return "", err
 	}
-
-	workspace.Status.RunStatus = string(run.Status)
-	return nil
+	return string(run.Status), nil
 }
 
 func isPending(status string) bool {
