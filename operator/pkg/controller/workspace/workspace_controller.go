@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
+	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -127,6 +128,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		r.reqLogger.Info("Found workspace", "Organization", organization)
 		instance.Status.WorkspaceID = workspaceID
+		instance.Status.Outputs = []*v1alpha1.Output{}
 	}
 
 	// Check if the Workspace instance is marked to be deleted, which is
@@ -171,7 +173,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		return reconcile.Result{Requeue: true}, nil
 	}
-	
+
 	if instance.Status.RunID != "" {
 		r.reqLogger.Info("Get outputs", "Organization", organization)
 		stateDownloadURL, err := r.tfclient.GetStateVersionDownloadURL(instance.Status.WorkspaceID, instance.Status.RunID)
@@ -232,7 +234,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			r.reqLogger.Error(err, "Failed to update run ID")
 			return reconcile.Result{}, err
 		}
-		return reconcile.Result{Requeue:true}, nil
+		return reconcile.Result{Requeue: true}, nil
 	}
 
 	return reconcile.Result{}, nil
