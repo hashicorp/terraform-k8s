@@ -21,6 +21,42 @@ var (
 	interval              = 30 * time.Second
 )
 
+// UpsertRunID examines if the workspace already has a current run
+// and updates the ID
+func (r *ReconcileWorkspace) UpsertRunID(found *v1alpha1.Workspace) error {
+	ws, err := r.tfclient.ReadWorkspaceByID(found.Status.WorkspaceID)
+	if err != nil || ws.CurrentRun == nil {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	if found.Status.RunID != ws.CurrentRun.ID {
+		r.reqLogger.Info("Updating current run", "WorkspaceID", ws.ID, "RunID", ws.CurrentRun.ID)
+		found.Status.RunID = ws.CurrentRun.ID
+		if err := r.client.Update(context.TODO(), found); err != nil {
+			r.reqLogger.Error(err, "Failed to update run ID", "Namespace", found.Namespace, "Name", found.Name)
+			return err
+		}
+	}
+	return nil
+}
+
+// GetRunStatus gets the run status
+func (r *ReconcileWorkspace) GetRunStatus(found *v1alpha1.Workspace) (string, error) {
+	if found.Status.RunID == "" {
+		return "", nil
+	}
+	run, err := r.tfclient.Client.Runs.Read(context.TODO(), found.Status.RunID)
+	if err != nil && err == tfc.ErrResourceNotFound {
+		return "", nil
+	} else if err != nil {
+		return "", err
+	}
+
+	return string(run.Status), nil
+}
+
 // UploadConfigurationFile uploads the main.tf to a configuration version
 func (t *TerraformCloudClient) UploadConfigurationFile(uploadURL string) error {
 	if err := t.Client.ConfigurationVersions.Upload(context.TODO(), uploadURL, moduleDirectory); err != nil {
@@ -76,15 +112,6 @@ func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terrafor
 	return nil
 }
 
-// CheckRun gets the run status
-func (t *TerraformCloudClient) CheckRun(runID string) (string, error) {
-	run, err := t.Client.Runs.Read(context.TODO(), runID)
-	if err != nil {
-		return "", err
-	}
-	return string(run.Status), nil
-}
-
 func isPending(status string) bool {
 	state := tfc.RunStatus(status)
 	switch state {
@@ -97,6 +124,8 @@ func isPending(status string) bool {
 	case tfc.RunCanceled:
 		return false
 	case tfc.RunDiscarded:
+		return false
+	case "":
 		return false
 	default:
 		return true
