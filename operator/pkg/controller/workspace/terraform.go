@@ -75,22 +75,21 @@ func (r *ReconcileWorkspace) UpsertConfigMap(w *v1alpha1.Workspace, template []b
 	updated := false
 	found := &v1.ConfigMap{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: w.Name, Namespace: w.Namespace}, found)
+	configMap := configMapForTerraform(w, template)
+	controllerutil.SetControllerReference(w, configMap, r.scheme)
 	if err != nil && errors.IsNotFound(err) {
-		configMap := configMapForTerraform(w, template)
-		controllerutil.SetControllerReference(w, configMap, r.scheme)
 		r.reqLogger.Info("Writing terraform to new ConfigMap")
 		if err := r.client.Create(context.TODO(), configMap); err != nil {
 			r.reqLogger.Error(err, "Failed to create new ConfigMap")
 			return updated, err
 		}
-		return true, nil
 	} else if err != nil {
 		r.reqLogger.Error(err, "Failed to get ConfigMap")
 		return updated, err
 	}
 
-	if found.Data[TerraformConfigMap] != string(template) {
-		found.Data[TerraformConfigMap] = string(template)
+	if found.Data[TerraformConfigMap] != configMap.Data[TerraformConfigMap] {
+		found.Data = configMap.Data
 		if err := r.client.Update(context.TODO(), found); err != nil {
 			r.reqLogger.Error(err, "Failed to update ConfigMap", "ConfigMap.Namespace", found.Namespace, "ConfigMap.Name", found.Name)
 			return updated, err
