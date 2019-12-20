@@ -95,7 +95,7 @@ func (r *ReconcileWorkspace) UpsertConfigMap(w *v1alpha1.Workspace, template []b
 	if found.Data[TerraformConfigMap] != string(template) {
 		found.Data[TerraformConfigMap] = string(template)
 		if err := r.client.Update(context.TODO(), found); err != nil {
-			r.reqLogger.Error(err, "Failed to update ConfigMap", "Namespace", found.Namespace, "Name", found.Name)
+			r.reqLogger.Error(err, "Failed to update ConfigMap", "ConfigMap.Namespace", found.Namespace, "ConfigMap.Name", found.Name)
 			return updated, err
 		}
 		return true, nil

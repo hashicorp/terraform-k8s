@@ -113,9 +113,15 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.UpsertWorkspace(instance, workspace); err != nil {
-		r.reqLogger.Error(err, "Error with creating workspace")
-		return reconcile.Result{}, err
+	if instance.Status.WorkspaceID == "" {
+		r.reqLogger.Info("Checking workspace", "Organization", organization)
+		workspaceID, err := r.tfclient.CheckWorkspace(workspace)
+		if err != nil {
+			r.reqLogger.Error(err, "Could not update workspace")
+			return reconcile.Result{}, err
+		}
+		r.reqLogger.Info("Found workspace", "Organization", organization)
+		instance.Status.WorkspaceID = workspaceID
 	}
 
 	// Check if the Workspace instance is marked to be deleted, which is
