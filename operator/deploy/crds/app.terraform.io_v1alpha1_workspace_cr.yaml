@@ -10,7 +10,7 @@ spec:
     version: "3.0.0"
   outputs:
     - key: my_pet
-      attribute: pet
+      moduleOutputName: pet
   variables:
     - key: hello
       value: rosemary
