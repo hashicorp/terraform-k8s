@@ -225,7 +225,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 
 	if updatedTerraform || updatedVariables {
 		r.reqLogger.Info("Starting run because template changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-		if err := r.tfclient.CreateRunForTerraformConfiguration(instance, terraform); err != nil {
+		if err := r.tfclient.CreateRun(instance, terraform); err != nil {
 			r.reqLogger.Error(err, "Could not run new Terraform configuration")
 			return reconcile.Result{}, err
 		}
