@@ -23,11 +23,6 @@ var log = logf.Log.WithName(TerraformOperator)
 
 const workspaceFinalizer = "finalizer.workspace.app.terraform.io"
 
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
-
 // Add creates a new Workspace Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
@@ -222,8 +217,8 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	if updatedTerraform || updatedVariables {
-		r.reqLogger.Info("Starting run because template changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-		if err := r.tfclient.CreateRunForTerraformConfiguration(instance, terraform); err != nil {
+		r.reqLogger.Info("Starting run", "Organization", organization)
+		if err := r.tfclient.CreateRun(instance, terraform); err != nil {
 			r.reqLogger.Error(err, "Could not run new Terraform configuration")
 			return reconcile.Result{}, err
 		}

@@ -42,8 +42,8 @@ func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*
 	return configVersion, nil
 }
 
-// CreateRunForTerraformConfiguration runs a new Terraform Cloud configuration
-func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1alpha1.Workspace, terraform []byte) error {
+// CreateRun runs a new Terraform Cloud configuration
+func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terraform []byte) error {
 	configVersion, err := t.CreateConfigurationVersion(workspace.Status.WorkspaceID)
 	if err != nil {
 		return err
@@ -72,6 +72,7 @@ func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1a
 	}
 	workspace.Status.RunID = run.ID
 	workspace.Status.RunStatus = string(run.Status)
+	workspace.Status.Outputs = []*v1alpha1.Output{}
 	return nil
 }
 
@@ -100,23 +101,6 @@ func isPending(status string) bool {
 	default:
 		return true
 	}
-}
-
-// CreateRun generates a run with the last config version
-func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace) error {
-	message := fmt.Sprintf("operator, apply, variable change")
-	options := tfc.RunCreateOptions{
-		Message: &message,
-		Workspace: &tfc.Workspace{
-			ID: workspace.Status.WorkspaceID,
-		},
-	}
-	run, err := t.Client.Runs.Create(context.TODO(), options)
-	if err != nil {
-		return err
-	}
-	workspace.Status.RunID = run.ID
-	return nil
 }
 
 // DeleteRuns cancels runs that haven't been applied or planned
