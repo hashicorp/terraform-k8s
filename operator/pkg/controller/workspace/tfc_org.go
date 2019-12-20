@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	tfc "github.com/hashicorp/go-tfe"
-	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	"github.com/hashicorp/terraform/command/cliconfig"
 )
 
@@ -52,6 +51,21 @@ func (t *TerraformCloudClient) readWorkspace(workspace string) (*tfc.Workspace, 
 
 func (t *TerraformCloudClient) readWorkspaceByID(workspaceID string) (*tfc.Workspace, error) {
 	return t.Client.Workspaces.ReadByID(context.TODO(), workspaceID)
+}
+
+// CheckWorkspace looks for a workspace
+func (t *TerraformCloudClient) CheckWorkspace(workspace string) (string, error) {
+	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
+	if err != nil && err == tfc.ErrResourceNotFound {
+		id, err := t.CreateWorkspace(workspace)
+		if err != nil {
+			return "", err
+		}
+		return id, nil
+	} else if err != nil {
+		return "", err
+	}
+	return ws.ID, err
 }
 
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
