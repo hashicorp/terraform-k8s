@@ -37,7 +37,7 @@ func CreateTerraformTemplate(workspace *v1alpha1.Workspace) ([]byte, error) {
 	{{- end}}
 	{{- range .Spec.Outputs}}
 	output "{{.Key}}" {
-		value = module.operator.{{.Attribute}}
+		value = module.operator.{{.ModuleOutputName}}
 	}
 	{{- end}}
 	module "operator" {
@@ -71,6 +71,7 @@ func configMapForTerraform(w *v1alpha1.Workspace, template []byte) *corev1.Confi
 	}
 }
 
+// UpsertConfigMap creates a ConfigMap for the Terraform template if it doesn't exist already
 func (r *ReconcileWorkspace) UpsertConfigMap(w *v1alpha1.Workspace, template []byte) (bool, error) {
 	updated := false
 	found := &v1.ConfigMap{}

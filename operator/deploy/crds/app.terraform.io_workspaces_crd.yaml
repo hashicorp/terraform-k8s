@@ -49,15 +49,12 @@ spec:
               description: Outputs denote outputs wanted
               items:
                 properties:
-                  attribute:
-                    description: Attribute name in module
-                    type: string
                   key:
                     description: Output name
                     type: string
-                required:
-                - attribute
-                - key
+                  moduleOutputName:
+                    description: Attribute name in module
+                    type: string
                 type: object
               type: array
             secretsMountPath:
@@ -99,14 +96,12 @@ spec:
               description: Outputs from state file
               items:
                 properties:
-                  attribute:
+                  key:
                     description: Attribute name in module
                     type: string
                   value:
                     description: Value
                     type: string
-                required:
-                - attribute
                 type: object
               type: array
             runID:

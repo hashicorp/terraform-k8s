@@ -38,7 +38,7 @@ func (t *TerraformCloudClient) GetOutputsFromState(stateDownloadURL string) ([]*
 	outputs := []*v1alpha1.OutputStatus{}
 	for key, value := range outputValues {
 		if !value.Sensitive {
-			outputs = append(outputs, &v1alpha1.OutputStatus{Attribute: key, Value: value.Value.AsString()})
+			outputs = append(outputs, &v1alpha1.OutputStatus{Key: key, Value: value.Value.AsString()})
 		}
 	}
 	return outputs, nil

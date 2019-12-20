@@ -18,13 +18,13 @@ type OutputSpec struct {
 	Key string `json:"key"`
 	// Attribute name in module
 	// +optional
-	Attribute string `json:"attribute"`
+	ModuleOutputName string `json:"moduleOutputName"`
 }
 
 type OutputStatus struct {
 	// Attribute name in module
 	// +optional
-	Attribute string `json:"attribute"`
+	Key string `json:"key"`
 	// Value
 	// +optional
 	Value string `json:"value"`
