@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
-	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -20,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_workspace")
+var log = logf.Log.WithName(TerraformOperator)
 
 const workspaceFinalizer = "finalizer.workspace.app.terraform.io"
 
@@ -43,9 +42,10 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		log.Error(err, "could not create Terraform Cloud client")
 	}
 	return &ReconcileWorkspace{
-		client:   mgr.GetClient(),
-		scheme:   mgr.GetScheme(),
-		tfclient: tfclient,
+		client:    mgr.GetClient(),
+		scheme:    mgr.GetScheme(),
+		tfclient:  tfclient,
+		reqLogger: log,
 	}
 }
 
@@ -83,9 +83,10 @@ var _ reconcile.Reconciler = &ReconcileWorkspace{}
 type ReconcileWorkspace struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client   client.Client
-	scheme   *runtime.Scheme
-	tfclient *TerraformCloudClient
+	client    client.Client
+	scheme    *runtime.Scheme
+	tfclient  *TerraformCloudClient
+	reqLogger logr.Logger
 }
 
 // Reconcile reads that state of the cluster for a Workspace object and makes changes based on the state read
@@ -96,9 +97,7 @@ type ReconcileWorkspace struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Name", request.Name, "Request.Namespace", request.Namespace)
-	reqLogger.Info("Reconciling Workspace")
-
+	r.reqLogger.WithValues("Name", request.Name, "Namespace", request.Namespace)
 	// Fetch the Workspace instance
 	instance := &appv1alpha1.Workspace{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
@@ -117,18 +116,18 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	workspace := fmt.Sprintf("%s-%s", request.Namespace, request.Name)
 
 	if err := r.tfclient.CheckOrganization(); err != nil {
-		reqLogger.Error(err, "Could not find organization")
+		r.reqLogger.Error(err, "Could not find organization")
 		return reconcile.Result{}, nil
 	}
 
 	if instance.Status.WorkspaceID == "" {
-		reqLogger.Info("Checking workspace", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+		r.reqLogger.Info("Checking workspace", "Organization", organization)
 		workspaceID, err := r.tfclient.CheckWorkspace(workspace)
 		if err != nil {
-			reqLogger.Error(err, "Could not update workspace")
+			r.reqLogger.Error(err, "Could not update workspace")
 			return reconcile.Result{}, err
 		}
-		reqLogger.Info("Found workspace", "Organization", organization, "Name", workspace, "ID", workspaceID, "Namespace", request.Namespace)
+		r.reqLogger.Info("Found workspace", "Organization", organization)
 		instance.Status.WorkspaceID = workspaceID
 	}
 
@@ -138,7 +137,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	err = r.tfclient.CheckWorkspacebyID(instance.Status.WorkspaceID)
 	if markedForDeletion || err != nil {
 		if contains(instance.GetFinalizers(), workspaceFinalizer) {
-			if err := r.finalizeWorkspace(reqLogger, instance); err != nil {
+			if err := r.finalizeWorkspace(r.reqLogger, instance); err != nil {
 				return reconcile.Result{}, err
 			}
 
@@ -155,77 +154,76 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 
 	// Add finalizer for this CR
 	if !contains(instance.GetFinalizers(), workspaceFinalizer) {
-		if err := r.addFinalizer(reqLogger, instance); err != nil {
+		if err := r.addFinalizer(r.reqLogger, instance); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
 
-	r.tfclient.SecretsMountPath = instance.Spec.SecretsMountPath
-
-	if err := r.tfclient.CheckSecretsMountPath(); err != nil {
-		reqLogger.Error(err, "Could not find secrets mount path")
-		return reconcile.Result{}, nil
-	}
-
-	reqLogger.Info("Check variables exist in workspace", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
-	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables)
-	if err != nil {
-		reqLogger.Error(err, "Could not update variables")
-		return reconcile.Result{}, err
-	}
-
-	reqLogger.Info("Creating terraform template", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-	terraform, err := CreateTerraformTemplate(instance)
-	if err != nil {
-		reqLogger.Error(err, "Could not create Terraform configuration")
-		return reconcile.Result{}, err
-	}
-
-	md5 := GetMD5Hash(terraform)
-	if instance.Status.ConfigHash != md5 {
-		reqLogger.Info("Starting run because template changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-		err := r.tfclient.CreateRunForTerraformConfiguration(instance, terraform)
-		if err != nil {
-			reqLogger.Error(err, "Could not run new Terraform configuration")
-			return reconcile.Result{}, err
-		}
-		instance.Status.ConfigHash = md5
-	} else if updatedVariables {
-		reqLogger.Info("Starting run because variable changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-		err := r.tfclient.CreateRun(instance)
-		if err != nil {
-			reqLogger.Error(err, "Could not run new variable changes")
-			return reconcile.Result{}, err
-		}
-	}
-
-	reqLogger.Info("Update run status", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-	for isPending(instance.Status.RunStatus) {
+	if instance.Status.RunID != "" && isPending(instance.Status.RunStatus) {
+		r.reqLogger.Info("Run still pending", "Organization", organization, "RunID", instance.Status.RunID)
 		runStatus, err := r.tfclient.CheckRun(instance.Status.RunID)
 		if err != nil {
-			reqLogger.Error(err, "could not get run information")
+			r.reqLogger.Error(err, "could not get run information")
 			return reconcile.Result{}, err
 		}
 		instance.Status.RunStatus = runStatus
-		instance.Status.Outputs = []*v1alpha1.Output{}
-
 		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
-			reqLogger.Error(err, "Failed to update Workspace status")
+			r.reqLogger.Error(err, "Failed to update Workspace status")
 			return reconcile.Result{}, err
 		}
+		return reconcile.Result{Requeue: true}, nil
 	}
 
-	reqLogger.Info("Get outputs", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+	r.tfclient.SecretsMountPath = instance.Spec.SecretsMountPath
+	if err := r.tfclient.CheckSecretsMountPath(); err != nil {
+		r.reqLogger.Error(err, "Could not find secrets mount path")
+		return reconcile.Result{}, nil
+	}
+
+	terraform, err := CreateTerraformTemplate(instance)
+	if err != nil {
+		r.reqLogger.Error(err, "Could not create Terraform configuration")
+		return reconcile.Result{}, err
+	}
+
+	updatedTerraform, err := r.UpsertConfigMap(instance, terraform)
+	if err != nil {
+		r.reqLogger.Error(err, "Error with creating ConfigMap for Terraform Configuration")
+		return reconcile.Result{}, err
+	}
+
+	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
+	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables)
+	if err != nil {
+		r.reqLogger.Error(err, "Could not update variables")
+		return reconcile.Result{}, err
+	}
+
+	runStatus, err := r.tfclient.CheckRun(instance.Status.RunID)
+	if err != nil {
+		r.reqLogger.Error(err, "could not get run information")
+		return reconcile.Result{}, err
+	}
+	if instance.Status.RunStatus != runStatus {
+		instance.Status.RunStatus = runStatus
+		err := r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			r.reqLogger.Error(err, "Failed to update run status")
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{Requeue: true}, err
+	}
+
+	r.reqLogger.Info("Get outputs", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
 	stateDownloadURL, err := r.tfclient.GetStateVersionDownloadURL(instance.Status.WorkspaceID, instance.Status.RunID)
 	if err != nil {
-		reqLogger.Error(err, "Unable to get state")
+		r.reqLogger.Error(err, "Unable to get state")
 		return reconcile.Result{}, err
 	}
 
 	outputs, err := r.tfclient.GetOutputsFromState(stateDownloadURL)
 	if err != nil {
-		reqLogger.Error(err, "Unable to get outputs from state")
+		r.reqLogger.Error(err, "Unable to get outputs from state")
 		return reconcile.Result{}, err
 	}
 
@@ -233,7 +231,21 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		instance.Status.Outputs = outputs
 		err := r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update Workspace status")
+			r.reqLogger.Error(err, "Failed to update output status")
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{Requeue: true}, err
+	}
+
+	if updatedTerraform || updatedVariables {
+		r.reqLogger.Info("Starting run because template changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
+		if err := r.tfclient.CreateRunForTerraformConfiguration(instance, terraform); err != nil {
+			r.reqLogger.Error(err, "Could not run new Terraform configuration")
+			return reconcile.Result{}, err
+		}
+		err := r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			r.reqLogger.Error(err, "Failed to update run ID")
 			return reconcile.Result{}, err
 		}
 	}
@@ -243,7 +255,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 
 func (r *ReconcileWorkspace) finalizeWorkspace(reqLogger logr.Logger, workspace *appv1alpha1.Workspace) error {
 	if err := r.tfclient.CheckWorkspacebyID(workspace.Status.WorkspaceID); err == nil {
-		reqLogger.Info("Deleting runs in workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
+		reqLogger.Info("Stopping runs in workspace", "Name", workspace.Name, "Namespace", workspace.Namespace)
 		if err := r.tfclient.DeleteRuns(workspace.Status.WorkspaceID); err != nil {
 			return err
 		}
@@ -256,7 +268,7 @@ func (r *ReconcileWorkspace) finalizeWorkspace(reqLogger logr.Logger, workspace 
 			reqLogger.Error(err, "Could not delete workspace")
 		}
 	}
-	reqLogger.Info("Successfully finalized organization")
+	reqLogger.Info("Successfully finalized workspace")
 	return nil
 }
 
@@ -271,22 +283,4 @@ func (r *ReconcileWorkspace) addFinalizer(reqLogger logr.Logger, workspace *appv
 		return err
 	}
 	return nil
-}
-
-func contains(list []string, s string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
-}
-
-func remove(list []string, s string) []string {
-	for i, v := range list {
-		if v == s {
-			list = append(list[:i], list[i+1:]...)
-		}
-	}
-	return list
 }

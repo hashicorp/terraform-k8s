@@ -1,14 +1,10 @@
 package workspace
 
 import (
-	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"text/template"
 	"time"
 
 	tfc "github.com/hashicorp/go-tfe"
@@ -24,12 +20,6 @@ var (
 	configurationFilePath = fmt.Sprintf("%s/%s", moduleDirectory, "main.tf")
 	interval              = 30 * time.Second
 )
-
-// GetMD5Hash retrieves the md5sum for a byte array
-func GetMD5Hash(data []byte) string {
-	hash := md5.Sum(data)
-	return hex.EncodeToString(hash[:])
-}
 
 // UploadConfigurationFile uploads the main.tf to a configuration version
 func (t *TerraformCloudClient) UploadConfigurationFile(uploadURL string) error {
@@ -52,46 +42,6 @@ func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*
 	return configVersion, nil
 }
 
-// CreateTerraformTemplate creates a template for the Terraform configuration
-func CreateTerraformTemplate(workspace *v1alpha1.Workspace) ([]byte, error) {
-	tfTemplate, err := template.New("main.tf").Parse(`terraform {
-		backend "remote" {
-			organization = "{{.Spec.Organization}}"
-	
-			workspaces {
-				name = "{{.ObjectMeta.Namespace}}-{{.ObjectMeta.Name}}"
-			}
-		}
-	}
-	{{- range .Spec.Variables}}
-	{{- if not .EnvironmentVariable }}
-	variable "{{.Key}}" {}
-	{{- end}}
-	{{- end}}
-	{{- range .Spec.Outputs}}
-	output "{{.Key}}" {
-		value = module.operator.{{.Attribute}}
-	}
-	{{- end}}
-	module "operator" {
-		source = "{{.Spec.Module.Source}}"
-		version = "{{.Spec.Module.Version}}"
-		{{- range .Spec.Variables}}
-		{{- if not .EnvironmentVariable }}
-		{{.Key}} = var.{{.Key}}
-		{{- end}}
-		{{- end}}
-	}`)
-	if err != nil {
-		return nil, err
-	}
-	var tpl bytes.Buffer
-	if err := tfTemplate.Execute(&tpl, workspace); err != nil {
-		return nil, err
-	}
-	return tpl.Bytes(), nil
-}
-
 // CreateRunForTerraformConfiguration runs a new Terraform Cloud configuration
 func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1alpha1.Workspace, terraform []byte) error {
 	configVersion, err := t.CreateConfigurationVersion(workspace.Status.WorkspaceID)
@@ -108,7 +58,7 @@ func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1a
 		return err
 	}
 
-	message := fmt.Sprintf("operator, apply, configHash, %s", GetMD5Hash(terraform))
+	message := fmt.Sprintf("%s, apply", TerraformOperator)
 	options := tfc.RunCreateOptions{
 		Message:              &message,
 		ConfigurationVersion: configVersion,
@@ -121,6 +71,7 @@ func (t *TerraformCloudClient) CreateRunForTerraformConfiguration(workspace *v1a
 		return err
 	}
 	workspace.Status.RunID = run.ID
+	workspace.Status.RunStatus = string(run.Status)
 	return nil
 }
 

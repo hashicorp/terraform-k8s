@@ -7,13 +7,13 @@ spec:
   secretsMountPath: "/tmp/secrets"
   module:
     source: "app.terraform.io/rosemaryagain/hello/random"
-    version: "2.0.1"
+    version: "3.0.0"
   outputs:
     - key: my_pet
       attribute: pet
   variables:
     - key: hello
-      value: xander
+      value: rosemary
       sensitive: false
       environmentVariable: false
     - key: secret_key
