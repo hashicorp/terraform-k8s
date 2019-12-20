@@ -63,9 +63,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Workspace
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &appv1alpha1.Workspace{},
 	})
@@ -173,6 +171,30 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		return reconcile.Result{Requeue: true}, nil
 	}
+	
+	if instance.Status.RunID != "" {
+		r.reqLogger.Info("Get outputs", "Organization", organization)
+		stateDownloadURL, err := r.tfclient.GetStateVersionDownloadURL(instance.Status.WorkspaceID, instance.Status.RunID)
+		if err != nil {
+			r.reqLogger.Error(err, "Unable to get state")
+			return reconcile.Result{}, err
+		}
+
+		outputs, err := r.tfclient.GetOutputsFromState(stateDownloadURL)
+		if err != nil {
+			r.reqLogger.Error(err, "Unable to get outputs from state")
+			return reconcile.Result{}, err
+		}
+
+		if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
+			instance.Status.Outputs = outputs
+			err := r.client.Status().Update(context.TODO(), instance)
+			if err != nil {
+				r.reqLogger.Error(err, "Failed to update output status")
+				return reconcile.Result{}, err
+			}
+		}
+	}
 
 	r.tfclient.SecretsMountPath = instance.Spec.SecretsMountPath
 	if err := r.tfclient.CheckSecretsMountPath(); err != nil {
@@ -199,44 +221,6 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	runStatus, err := r.tfclient.CheckRun(instance.Status.RunID)
-	if err != nil {
-		r.reqLogger.Error(err, "could not get run information")
-		return reconcile.Result{}, err
-	}
-	if instance.Status.RunStatus != runStatus {
-		instance.Status.RunStatus = runStatus
-		err := r.client.Status().Update(context.TODO(), instance)
-		if err != nil {
-			r.reqLogger.Error(err, "Failed to update run status")
-			return reconcile.Result{}, err
-		}
-		return reconcile.Result{Requeue: true}, err
-	}
-
-	r.reqLogger.Info("Get outputs", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-	stateDownloadURL, err := r.tfclient.GetStateVersionDownloadURL(instance.Status.WorkspaceID, instance.Status.RunID)
-	if err != nil {
-		r.reqLogger.Error(err, "Unable to get state")
-		return reconcile.Result{}, err
-	}
-
-	outputs, err := r.tfclient.GetOutputsFromState(stateDownloadURL)
-	if err != nil {
-		r.reqLogger.Error(err, "Unable to get outputs from state")
-		return reconcile.Result{}, err
-	}
-
-	if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
-		instance.Status.Outputs = outputs
-		err := r.client.Status().Update(context.TODO(), instance)
-		if err != nil {
-			r.reqLogger.Error(err, "Failed to update output status")
-			return reconcile.Result{}, err
-		}
-		return reconcile.Result{Requeue: true}, err
-	}
-
 	if updatedTerraform || updatedVariables {
 		r.reqLogger.Info("Starting run because template changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
 		if err := r.tfclient.CreateRunForTerraformConfiguration(instance, terraform); err != nil {
@@ -248,6 +232,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			r.reqLogger.Error(err, "Failed to update run ID")
 			return reconcile.Result{}, err
 		}
+		return reconcile.Result{Requeue:true}, nil
 	}
 
 	return reconcile.Result{}, nil

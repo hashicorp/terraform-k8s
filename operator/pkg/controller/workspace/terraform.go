@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -63,9 +64,6 @@ func configMapForTerraform(w *v1alpha1.Workspace, template []byte) *corev1.Confi
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      w.Name,
 			Namespace: w.Namespace,
-			Labels: map[string]string{
-				"owned-by": TerraformOperator,
-			},
 		},
 		Data: map[string]string{
 			TerraformConfigMap: string(template),
@@ -78,6 +76,7 @@ func (r *ReconcileWorkspace) UpsertConfigMap(w *v1alpha1.Workspace, template []b
 	found := &v1.ConfigMap{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: w.Name, Namespace: w.Namespace}, found)
 	configMap := configMapForTerraform(w, template)
+	controllerutil.SetControllerReference(w, configMap, r.scheme)
 	if err != nil && errors.IsNotFound(err) {
 		r.reqLogger.Info("Writing terraform to new ConfigMap")
 		if err := r.client.Create(context.TODO(), configMap); err != nil {

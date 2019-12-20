@@ -148,7 +148,7 @@ func (t *TerraformCloudClient) DeleteResources(workspaceID string) error {
 	if ws.CurrentRun == nil {
 		return nil
 	}
-	message := "operator, destroy, latest"
+	message := fmt.Sprintf("%s, destroy", TerraformOperator)
 	options := tfc.RunCreateOptions{
 		IsDestroy: &isDestroy,
 		Message:   &message,
@@ -163,7 +163,7 @@ func (t *TerraformCloudClient) DeleteResources(workspaceID string) error {
 		if err != nil || checkRun.Status == tfc.RunErrored {
 			return fmt.Errorf("destroy had error: %v", err)
 		}
-		if checkRun.Status == tfc.RunApplied {
+		if !isPending(string(checkRun.Status)) {
 			return nil
 		}
 		time.Sleep(interval)
