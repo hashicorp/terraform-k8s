@@ -119,20 +119,21 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	if instance.Status.WorkspaceID == "" {
-		r.reqLogger.Info("Checking workspace", "Organization", organization)
-		workspaceID, err := r.tfclient.CheckWorkspace(workspace)
-		if err != nil {
-			r.reqLogger.Error(err, "Could not update workspace")
-			return reconcile.Result{}, err
-		}
-		r.reqLogger.Info("Found workspace", "Organization", organization)
+	r.reqLogger.Info("Checking workspace", "Organization", organization)
+	workspaceID, err := r.tfclient.CheckWorkspace(workspace)
+	if err != nil {
+		r.reqLogger.Error(err, "Could not update workspace")
+		return reconcile.Result{}, err
+	}
+
+	if instance.Status.WorkspaceID != workspaceID {
 		instance.Status.WorkspaceID = workspaceID
 		instance.Status.Outputs = []*v1alpha1.OutputStatus{}
 		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
 			r.reqLogger.Error(err, "Failed to update output status")
 			return reconcile.Result{}, err
 		}
+		r.reqLogger.Info("Updated workspace ID", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID)
 	}
 
 	// Check if the Workspace instance is marked to be deleted, which is
