@@ -128,7 +128,11 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		r.reqLogger.Info("Found workspace", "Organization", organization)
 		instance.Status.WorkspaceID = workspaceID
-		instance.Status.Outputs = []*v1alpha1.Output{}
+		instance.Status.Outputs = []*v1alpha1.OutputStatus{}
+		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+			r.reqLogger.Error(err, "Failed to update output status")
+			return reconcile.Result{}, err
+		}
 	}
 
 	// Check if the Workspace instance is marked to be deleted, which is

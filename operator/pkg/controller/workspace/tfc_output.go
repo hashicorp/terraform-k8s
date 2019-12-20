@@ -24,7 +24,7 @@ func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspaceID string, ru
 }
 
 // GetOutputsFromState gets list of outputs from state file
-func (t *TerraformCloudClient) GetOutputsFromState(stateDownloadURL string) ([]*v1alpha1.Output, error) {
+func (t *TerraformCloudClient) GetOutputsFromState(stateDownloadURL string) ([]*v1alpha1.OutputStatus, error) {
 	if stateDownloadURL == "" {
 		return nil, fmt.Errorf("could not download blank state")
 	}
@@ -35,10 +35,10 @@ func (t *TerraformCloudClient) GetOutputsFromState(stateDownloadURL string) ([]*
 	reader := bytes.NewReader(data)
 	file, err := statefile.Read(reader)
 	outputValues := file.State.Modules[""].OutputValues
-	outputs := []*v1alpha1.Output{}
+	outputs := []*v1alpha1.OutputStatus{}
 	for key, value := range outputValues {
 		if !value.Sensitive {
-			outputs = append(outputs, &v1alpha1.Output{Attribute: key, Value: value.Value.AsString()})
+			outputs = append(outputs, &v1alpha1.OutputStatus{Attribute: key, Value: value.Value.AsString()})
 		}
 	}
 	return outputs, nil

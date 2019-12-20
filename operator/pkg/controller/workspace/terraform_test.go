@@ -165,12 +165,12 @@ func TestShouldCreateTerraformWithOutputs(t *testing.T) {
 				Source:  "my_source",
 				Version: "0.3.2",
 			},
-			Outputs: []*v1alpha1.Output{
-				&v1alpha1.Output{
+			Outputs: []*v1alpha1.OutputSpec{
+				&v1alpha1.OutputSpec{
 					Key:       "module_output",
 					Attribute: "my_output",
 				},
-				&v1alpha1.Output{
+				&v1alpha1.OutputSpec{
 					Key:       "ip",
 					Attribute: "ip_address",
 				},

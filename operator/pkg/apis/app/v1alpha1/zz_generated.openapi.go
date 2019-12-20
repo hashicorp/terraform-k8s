@@ -118,7 +118,7 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("./pkg/apis/app/v1alpha1.Output"),
+										Ref: ref("./pkg/apis/app/v1alpha1.OutputSpec"),
 									},
 								},
 							},
@@ -129,7 +129,7 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceSpec(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1alpha1.Module", "./pkg/apis/app/v1alpha1.Output", "./pkg/apis/app/v1alpha1.Variable"},
+			"./pkg/apis/app/v1alpha1.Module", "./pkg/apis/app/v1alpha1.OutputSpec", "./pkg/apis/app/v1alpha1.Variable"},
 	}
 }
 
@@ -173,7 +173,7 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("./pkg/apis/app/v1alpha1.Output"),
+										Ref: ref("./pkg/apis/app/v1alpha1.OutputStatus"),
 									},
 								},
 							},
@@ -184,6 +184,6 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1alpha1.Output"},
+			"./pkg/apis/app/v1alpha1.OutputStatus"},
 	}
 }

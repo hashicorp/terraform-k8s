@@ -55,9 +55,9 @@ spec:
                   key:
                     description: Output name
                     type: string
-                  value:
-                    description: Value
-                    type: string
+                required:
+                - attribute
+                - key
                 type: object
               type: array
             secretsMountPath:
@@ -101,9 +101,6 @@ spec:
                 properties:
                   attribute:
                     description: Attribute name in module
-                    type: string
-                  key:
-                    description: Output name
                     type: string
                   value:
                     description: Value

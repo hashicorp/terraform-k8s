@@ -12,10 +12,16 @@ type Module struct {
 	Version string `json:"version"`
 }
 
-type Output struct {
+type OutputSpec struct {
 	// Output name
 	// +optional
 	Key string `json:"key"`
+	// Attribute name in module
+	// +optional
+	Attribute string `json:"attribute"`
+}
+
+type OutputStatus struct {
 	// Attribute name in module
 	// +optional
 	Attribute string `json:"attribute"`
@@ -52,7 +58,7 @@ type WorkspaceSpec struct {
 	// Outputs denote outputs wanted
 	// +listType=set
 	// +optional
-	Outputs []*Output `json:"outputs"`
+	Outputs []*OutputSpec `json:"outputs"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace
@@ -67,7 +73,7 @@ type WorkspaceStatus struct {
 	// Outputs from state file
 	// +listType=set
 	// +optional
-	Outputs []*Output `json:"outputs"`
+	Outputs []*OutputStatus `json:"outputs"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
