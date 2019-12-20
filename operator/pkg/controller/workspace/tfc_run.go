@@ -145,6 +145,9 @@ func (t *TerraformCloudClient) DeleteResources(workspaceID string) error {
 	if err != nil {
 		return err
 	}
+	if ws.CurrentRun == nil {
+		return nil
+	}
 	message := "operator, destroy, latest"
 	options := tfc.RunCreateOptions{
 		IsDestroy: &isDestroy,

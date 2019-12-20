@@ -161,13 +161,6 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
-					"configHash": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Configuration hash",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"outputs": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -187,7 +180,7 @@ func schema_pkg_apis_app_v1alpha1_WorkspaceStatus(ref common.ReferenceCallback) 
 						},
 					},
 				},
-				Required: []string{"runStatus", "workspaceID", "runID", "configHash"},
+				Required: []string{"runStatus", "workspaceID", "runID"},
 			},
 		},
 		Dependencies: []string{

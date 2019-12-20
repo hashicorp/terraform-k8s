@@ -64,8 +64,6 @@ type WorkspaceStatus struct {
 	WorkspaceID string `json:"workspaceID"`
 	// Run ID
 	RunID string `json:"runID"`
-	// Configuration hash
-	ConfigHash string `json:"configHash"`
 	// Outputs from state file
 	// +listType=set
 	// +optional

@@ -95,9 +95,6 @@ spec:
         status:
           description: WorkspaceStatus defines the observed state of Workspace
           properties:
-            configHash:
-              description: Configuration hash
-              type: string
             outputs:
               description: Outputs from state file
               items:
@@ -125,7 +122,6 @@ spec:
               description: Workspace ID
               type: string
           required:
-          - configHash
           - runID
           - runStatus
           - workspaceID
