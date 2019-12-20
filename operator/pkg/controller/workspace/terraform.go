@@ -15,8 +15,10 @@ import (
 )
 
 const (
+	// TerraformConfigMap refers to configmap
 	TerraformConfigMap = "terraform"
-	TerraformOperator  = "terraform-k8s"
+	// TerraformOperator used for labelling
+	TerraformOperator = "terraform-k8s"
 )
 
 // CreateTerraformTemplate creates a template for the Terraform configuration
@@ -71,6 +73,7 @@ func configMapForTerraform(w *v1alpha1.Workspace, template []byte) *corev1.Confi
 	}
 }
 
+// UpsertConfigMap creates a configMap or updates it
 func (r *ReconcileWorkspace) UpsertConfigMap(w *v1alpha1.Workspace, template []byte) (bool, error) {
 	updated := false
 	found := &v1.ConfigMap{}

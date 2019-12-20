@@ -17,7 +17,7 @@ var (
 // UpsertWorkspace looks for a workspace
 func (r *ReconcileWorkspace) UpsertWorkspace(found *v1alpha1.Workspace, workspace string) error {
 	workspaceID := ""
-	ws, err := r.tfclient.ReadWorkspace(workspace)
+	ws, err := r.tfclient.readWorkspace(workspace)
 	if err != nil && err == tfc.ErrResourceNotFound {
 		r.reqLogger.Info("Creating new workspace", "Name", workspace)
 		workspaceID, err = r.tfclient.CreateWorkspace(workspace)
@@ -73,11 +73,11 @@ func (t *TerraformCloudClient) CheckOrganization() error {
 	return err
 }
 
-func (t *TerraformCloudClient) ReadWorkspace(workspace string) (*tfc.Workspace, error) {
+func (t *TerraformCloudClient) readWorkspace(workspace string) (*tfc.Workspace, error) {
 	return t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 }
 
-func (t *TerraformCloudClient) ReadWorkspaceByID(workspaceID string) (*tfc.Workspace, error) {
+func (t *TerraformCloudClient) readWorkspaceByID(workspaceID string) (*tfc.Workspace, error) {
 	return t.Client.Workspaces.ReadByID(context.TODO(), workspaceID)
 }
 

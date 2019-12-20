@@ -24,7 +24,7 @@ var (
 // UpsertRunID examines if the workspace already has a current run
 // and updates the ID
 func (r *ReconcileWorkspace) UpsertRunID(found *v1alpha1.Workspace) error {
-	ws, err := r.tfclient.ReadWorkspaceByID(found.Status.WorkspaceID)
+	ws, err := r.tfclient.readWorkspaceByID(found.Status.WorkspaceID)
 	if err != nil || ws.CurrentRun == nil {
 		return nil
 	} else if err != nil {
