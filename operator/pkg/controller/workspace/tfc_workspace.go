@@ -14,33 +14,6 @@ var (
 	AutoApply = true
 )
 
-// UpsertWorkspace looks for a workspace
-func (r *ReconcileWorkspace) UpsertWorkspace(found *v1alpha1.Workspace, workspace string) error {
-	workspaceID := ""
-	ws, err := r.tfclient.ReadWorkspace(workspace)
-	if err != nil && err == tfc.ErrResourceNotFound {
-		r.reqLogger.Info("Creating new workspace", "Name", workspace)
-		workspaceID, err = r.tfclient.CreateWorkspace(workspace)
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	} else {
-		workspaceID = ws.ID
-	}
-
-	if found.Status.WorkspaceID != workspaceID {
-		found.Status.WorkspaceID = workspaceID
-		r.reqLogger.Info("Updating workspace", "WorkspaceID", found.Status.WorkspaceID)
-		if err := r.client.Update(context.TODO(), found); err != nil {
-			r.reqLogger.Error(err, "Failed to update workspace", "Namespace", found.Namespace, "Name", found.Name)
-			return err
-		}
-	}
-	return nil
-}
-
 // TerraformCloudClient has a TFC Client and organization
 type TerraformCloudClient struct {
 	Client           *tfc.Client
@@ -73,12 +46,36 @@ func (t *TerraformCloudClient) CheckOrganization() error {
 	return err
 }
 
-func (t *TerraformCloudClient) ReadWorkspace(workspace string) (*tfc.Workspace, error) {
-	return t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
+// UpsertWorkspace looks for a workspace
+func (r *ReconcileWorkspace) UpsertWorkspace(found *v1alpha1.Workspace, workspace string) error {
+	var workspaceID string
+	ws, err := r.tfclient.ReadWorkspace(workspace)
+	if err != nil && err == tfc.ErrResourceNotFound {
+		r.reqLogger.Info("Creating new workspace", "Name", workspace)
+		workspaceID, err = r.tfclient.CreateWorkspace(workspace)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else {
+		workspaceID = ws.ID
+	}
+
+	if found.Status.WorkspaceID != workspaceID {
+		r.reqLogger.Info("Updating workspace ID", "WorkspaceID", workspaceID)
+		found.Status.WorkspaceID = workspaceID
+		if err := r.client.Update(context.TODO(), found); err != nil {
+			r.reqLogger.Error(err, "Failed to update workspace", "Namespace", found.Namespace, "Name", found.Name)
+			return err
+		}
+		return nil
+	}
+	return nil
 }
 
-func (t *TerraformCloudClient) ReadWorkspaceByID(workspaceID string) (*tfc.Workspace, error) {
-	return t.Client.Workspaces.ReadByID(context.TODO(), workspaceID)
+func (t *TerraformCloudClient) ReadWorkspace(workspace string) (*tfc.Workspace, error) {
+	return t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 }
 
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies

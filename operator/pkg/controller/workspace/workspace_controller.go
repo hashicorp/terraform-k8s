@@ -146,24 +146,18 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	if err := r.UpsertRunID(instance); err != nil {
-		r.reqLogger.Error(err, "Error with updating run status")
-		return reconcile.Result{}, err
-	}
-
-	if isPending(instance.Status.RunStatus) {
-		status, err := r.GetRunStatus(instance)
+	if instance.Status.RunID != "" && isPending(instance.Status.RunStatus) {
+		r.reqLogger.Info("Run still pending", "Organization", organization, "RunID", instance.Status.RunID)
+		runStatus, err := r.tfclient.CheckRun(instance.Status.RunID)
 		if err != nil {
-			r.reqLogger.Error(err, "Error with updating run status")
+			r.reqLogger.Error(err, "could not get run information")
 			return reconcile.Result{}, err
 		}
-		instance.Status.RunStatus = status
-
+		instance.Status.RunStatus = runStatus
 		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
-			r.reqLogger.Error(err, "Failed to update run status")
+			r.reqLogger.Error(err, "Failed to update Workspace status")
 			return reconcile.Result{}, err
 		}
-
 		return reconcile.Result{Requeue: true}, nil
 	}
 
