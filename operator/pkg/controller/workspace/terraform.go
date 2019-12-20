@@ -15,8 +15,10 @@ import (
 )
 
 const (
+	// TerraformConfigMap names the Terraform template ConfigMap
 	TerraformConfigMap = "terraform"
-	TerraformOperator  = "terraform-k8s"
+	// TerraformOperator is for labelling
+	TerraformOperator = "terraform-k8s"
 )
 
 // CreateTerraformTemplate creates a template for the Terraform configuration
