@@ -10,16 +10,11 @@ import (
 )
 
 // GetStateVersionDownloadURL retrieves download URL for state file
-func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspaceID string, runID string) (string, error) {
-
+func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspaceID string) (string, error) {
 	stateVersion, err := t.Client.StateVersions.Current(context.TODO(), workspaceID)
 	if err != nil {
 		return "", fmt.Errorf("could not get current state version, WorkspaceID, %s, Error, %v", workspaceID, err)
 	}
-	if stateVersion.Run.ID != runID {
-		return "", fmt.Errorf("current state does not match runID, StateVersionRunID, %s, RunID, %s", stateVersion.Run.ID, runID)
-	}
-
 	return stateVersion.DownloadURL, nil
 }
 
@@ -41,5 +36,24 @@ func (t *TerraformCloudClient) GetOutputsFromState(stateDownloadURL string) ([]*
 			outputs = append(outputs, &v1alpha1.OutputStatus{Key: key, Value: value.Value.AsString()})
 		}
 	}
+	return outputs, nil
+}
+
+// CheckOutputs retrieves outputs for a run.
+func (t *TerraformCloudClient) CheckOutputs(workspaceID string, runID string) ([]*v1alpha1.OutputStatus, error) {
+	outputs := []*v1alpha1.OutputStatus{}
+	if runID == "" {
+		return outputs, nil
+	}
+	stateDownloadURL, err := t.GetStateVersionDownloadURL(workspaceID)
+	if err != nil {
+		return outputs, err
+	}
+
+	outputs, err = t.GetOutputsFromState(stateDownloadURL)
+	if err != nil {
+		return outputs, err
+	}
+
 	return outputs, nil
 }

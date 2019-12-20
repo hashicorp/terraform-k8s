@@ -119,7 +119,12 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	r.reqLogger.Info("Checking workspace", "Organization", organization)
+	r.tfclient.SecretsMountPath = instance.Spec.SecretsMountPath
+	if err := r.tfclient.CheckSecretsMountPath(); err != nil {
+		r.reqLogger.Error(err, "Could not find secrets mount path")
+		return reconcile.Result{}, nil
+	}
+
 	workspaceID, err := r.tfclient.CheckWorkspace(workspace)
 	if err != nil {
 		r.reqLogger.Error(err, "Could not update workspace")
@@ -164,49 +169,39 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	if instance.Status.RunID != "" && isPending(instance.Status.RunStatus) {
-		r.reqLogger.Info("Run still pending", "Organization", organization, "RunID", instance.Status.RunID)
+	if isPending(instance.Status.RunStatus) {
+		r.reqLogger.Info("Run incomplete", "Organization", organization, "RunID", instance.Status.RunID, "RunStatus", instance.Status.RunStatus)
 		runStatus, err := r.tfclient.CheckRun(instance.Status.RunID)
 		if err != nil {
-			r.reqLogger.Error(err, "could not get run information")
+			r.reqLogger.Error(err, "Could not get run ID")
 			return reconcile.Result{}, err
 		}
-		instance.Status.RunStatus = runStatus
-		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
-			r.reqLogger.Error(err, "Failed to update Workspace status")
-			return reconcile.Result{}, err
+
+		if instance.Status.RunStatus != runStatus {
+			instance.Status.RunStatus = runStatus
+			if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+				r.reqLogger.Error(err, "Failed to update Workspace status")
+				return reconcile.Result{}, err
+			}
 		}
 		return reconcile.Result{Requeue: true}, nil
 	}
 
-	if instance.Status.RunID != "" {
-		r.reqLogger.Info("Get outputs", "Organization", organization)
-		stateDownloadURL, err := r.tfclient.GetStateVersionDownloadURL(instance.Status.WorkspaceID, instance.Status.RunID)
-		if err != nil {
-			r.reqLogger.Error(err, "Unable to get state")
-			return reconcile.Result{}, err
-		}
-
-		outputs, err := r.tfclient.GetOutputsFromState(stateDownloadURL)
-		if err != nil {
-			r.reqLogger.Error(err, "Unable to get outputs from state")
-			return reconcile.Result{}, err
-		}
-
-		if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
-			instance.Status.Outputs = outputs
-			err := r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				r.reqLogger.Error(err, "Failed to update output status")
-				return reconcile.Result{}, err
-			}
-		}
+	r.reqLogger.Info("Checking outputs", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID, "RunID", instance.Status.RunID)
+	outputs, err := r.tfclient.CheckOutputs(instance.Status.WorkspaceID, instance.Status.RunID)
+	if err != nil {
+		r.reqLogger.Error(err, "Could not get run ID")
+		return reconcile.Result{}, err
 	}
 
-	r.tfclient.SecretsMountPath = instance.Spec.SecretsMountPath
-	if err := r.tfclient.CheckSecretsMountPath(); err != nil {
-		r.reqLogger.Error(err, "Could not find secrets mount path")
-		return reconcile.Result{}, nil
+	if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
+		instance.Status.Outputs = outputs
+		err := r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			r.reqLogger.Error(err, "Failed to update output status")
+			return reconcile.Result{}, err
+		}
+		r.reqLogger.Info("Updated outputs", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID)
 	}
 
 	terraform, err := CreateTerraformTemplate(instance)
