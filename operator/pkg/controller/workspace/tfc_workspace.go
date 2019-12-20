@@ -14,6 +14,33 @@ var (
 	AutoApply = true
 )
 
+// UpsertWorkspace looks for a workspace
+func (r *ReconcileWorkspace) UpsertWorkspace(found *v1alpha1.Workspace, workspace string) error {
+	workspaceID := ""
+	ws, err := r.tfclient.readWorkspace(workspace)
+	if err != nil && err == tfc.ErrResourceNotFound {
+		r.reqLogger.Info("Creating new workspace", "Name", workspace)
+		workspaceID, err = r.tfclient.CreateWorkspace(workspace)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else {
+		workspaceID = ws.ID
+	}
+
+	if found.Status.WorkspaceID != workspaceID {
+		found.Status.WorkspaceID = workspaceID
+		r.reqLogger.Info("Updating workspace", "WorkspaceID", found.Status.WorkspaceID)
+		if err := r.client.Update(context.TODO(), found); err != nil {
+			r.reqLogger.Error(err, "Failed to update workspace", "Namespace", found.Namespace, "Name", found.Name)
+			return err
+		}
+	}
+	return nil
+}
+
 // TerraformCloudClient has a TFC Client and organization
 type TerraformCloudClient struct {
 	Client           *tfc.Client
