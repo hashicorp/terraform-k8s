@@ -113,15 +113,9 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	if instance.Status.WorkspaceID == "" {
-		r.reqLogger.Info("Checking workspace", "Organization", organization)
-		workspaceID, err := r.tfclient.CheckWorkspace(workspace)
-		if err != nil {
-			r.reqLogger.Error(err, "Could not update workspace")
-			return reconcile.Result{}, err
-		}
-		r.reqLogger.Info("Found workspace", "Organization", organization)
-		instance.Status.WorkspaceID = workspaceID
+	if err := r.UpsertWorkspace(instance, workspace); err != nil {
+		r.reqLogger.Error(err, "Error with creating workspace")
+		return reconcile.Result{}, err
 	}
 
 	// Check if the Workspace instance is marked to be deleted, which is
@@ -166,7 +160,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		return reconcile.Result{Requeue: true}, nil
 	}
-	
+
 	if instance.Status.RunID != "" {
 		r.reqLogger.Info("Get outputs", "Organization", organization)
 		stateDownloadURL, err := r.tfclient.GetStateVersionDownloadURL(instance.Status.WorkspaceID, instance.Status.RunID)
@@ -227,7 +221,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			r.reqLogger.Error(err, "Failed to update run ID")
 			return reconcile.Result{}, err
 		}
-		return reconcile.Result{Requeue:true}, nil
+		return reconcile.Result{Requeue: true}, nil
 	}
 
 	return reconcile.Result{}, nil
