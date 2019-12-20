@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	tfc "github.com/hashicorp/go-tfe"
-	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	"github.com/hashicorp/terraform/command/cliconfig"
 )
 
@@ -46,36 +45,19 @@ func (t *TerraformCloudClient) CheckOrganization() error {
 	return err
 }
 
-// UpsertWorkspace looks for a workspace
-func (r *ReconcileWorkspace) UpsertWorkspace(found *v1alpha1.Workspace, workspace string) error {
-	var workspaceID string
-	ws, err := r.tfclient.ReadWorkspace(workspace)
+// CheckWorkspace looks for a workspace
+func (t *TerraformCloudClient) CheckWorkspace(workspace string) (string, error) {
+	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil && err == tfc.ErrResourceNotFound {
-		r.reqLogger.Info("Creating new workspace", "Name", workspace)
-		workspaceID, err = r.tfclient.CreateWorkspace(workspace)
+		id, err := t.CreateWorkspace(workspace)
 		if err != nil {
-			return err
+			return "", err
 		}
+		return id, nil
 	} else if err != nil {
-		return err
-	} else {
-		workspaceID = ws.ID
+		return "", err
 	}
-
-	if found.Status.WorkspaceID != workspaceID {
-		r.reqLogger.Info("Updating workspace ID", "WorkspaceID", workspaceID)
-		found.Status.WorkspaceID = workspaceID
-		if err := r.client.Update(context.TODO(), found); err != nil {
-			r.reqLogger.Error(err, "Failed to update workspace", "Namespace", found.Namespace, "Name", found.Name)
-			return err
-		}
-		return nil
-	}
-	return nil
-}
-
-func (t *TerraformCloudClient) ReadWorkspace(workspace string) (*tfc.Workspace, error) {
-	return t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
+	return ws.ID, err
 }
 
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
