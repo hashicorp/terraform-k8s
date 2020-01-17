@@ -216,6 +216,12 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
+	for _, variable := range instance.Spec.Variables {
+		err := r.GetConfigMapForVariable(request.Namespace, variable)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
 	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
 	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables)
 	if err != nil {
