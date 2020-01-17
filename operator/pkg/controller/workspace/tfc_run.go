@@ -107,6 +107,10 @@ func isPending(status string) bool {
 	}
 }
 
+func isError(status string) bool {
+	return tfc.RunStatus(status) == tfc.RunErrored
+}
+
 // DeleteRuns cancels runs that haven't been applied or planned
 func (t *TerraformCloudClient) DeleteRuns(workspaceID string) error {
 	message := "operator, finalizer, cancelling run"

@@ -188,20 +188,23 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	r.reqLogger.Info("Checking outputs", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID, "RunID", instance.Status.RunID)
-	outputs, err := r.tfclient.CheckOutputs(instance.Status.WorkspaceID, instance.Status.RunID)
-	if err != nil {
-		r.reqLogger.Error(err, "Could not get run ID")
-		return reconcile.Result{}, err
-	}
-
-	if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
-		instance.Status.Outputs = outputs
-		err := r.client.Status().Update(context.TODO(), instance)
+	if !isError(instance.Status.RunStatus) {
+		outputs, err := r.tfclient.CheckOutputs(instance.Status.WorkspaceID, instance.Status.RunID)
 		if err != nil {
-			r.reqLogger.Error(err, "Failed to update output status")
+			r.reqLogger.Error(err, "Could not get run ID")
 			return reconcile.Result{}, err
 		}
-		r.reqLogger.Info("Updated outputs", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID)
+
+		if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
+			instance.Status.Outputs = outputs
+			err := r.client.Status().Update(context.TODO(), instance)
+			if err != nil {
+				r.reqLogger.Error(err, "Failed to update output status")
+				return reconcile.Result{}, err
+			}
+			r.reqLogger.Info("Updated outputs", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID)
+		}
+
 	}
 
 	terraform, err := CreateTerraformTemplate(instance)
