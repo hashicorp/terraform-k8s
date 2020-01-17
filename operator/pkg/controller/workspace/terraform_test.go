@@ -181,3 +181,34 @@ func TestShouldCreateTerraformWithOutputs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, expectedFile, string(terraformFile))
 }
+
+func TestShouldCreateTerraformWithNoModuleVersion(t *testing.T) {
+	expectedFile := `terraform {
+		backend "remote" {
+			organization = "world"
+	
+			workspaces {
+				name = "prod-hello"
+			}
+		}
+	}
+	module "operator" {
+		source = "my_source"
+	}`
+
+	workspace := &v1alpha1.Workspace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "hello",
+			Namespace: "prod",
+		},
+		Spec: v1alpha1.WorkspaceSpec{
+			Organization: "world",
+			Module: &v1alpha1.Module{
+				Source: "my_source",
+			},
+		},
+	}
+	terraformFile, err := CreateTerraformTemplate(workspace)
+	assert.Nil(t, err)
+	assert.Equal(t, expectedFile, string(terraformFile))
+}

@@ -44,7 +44,9 @@ func CreateTerraformTemplate(workspace *v1alpha1.Workspace) ([]byte, error) {
 	{{- end}}
 	module "operator" {
 		source = "{{.Spec.Module.Source}}"
+		{{- if .Spec.Module.Version }}
 		version = "{{.Spec.Module.Version}}"
+		{{- end}}
 		{{- range .Spec.Variables}}
 		{{- if not .EnvironmentVariable }}
 		{{.Key}} = var.{{.Key}}

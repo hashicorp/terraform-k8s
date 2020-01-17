@@ -8,7 +8,10 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type Module struct {
-	Source  string `json:"source"`
+	// Any remote module source (version control, registry)
+	Source string `json:"source"`
+	// Module version for registry modules
+	// +optional
 	Version string `json:"version"`
 }
 

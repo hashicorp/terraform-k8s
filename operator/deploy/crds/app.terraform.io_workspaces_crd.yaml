@@ -35,12 +35,13 @@ spec:
               description: Module source and version to use
               properties:
                 source:
+                  description: Any remote module source (version control, registry)
                   type: string
                 version:
+                  description: Module version for registry modules
                   type: string
               required:
               - source
-              - version
               type: object
             organization:
               description: Terraform Cloud organization
