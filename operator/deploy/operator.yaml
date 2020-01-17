@@ -45,5 +45,5 @@ spec:
               path: ".terraformrc"
         - name: workspacesecrets
           secret:
-            secretName: workspace-secrets
+            secretName: workspacesecrets
         

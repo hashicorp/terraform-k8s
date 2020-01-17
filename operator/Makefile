@@ -14,7 +14,7 @@ docker:
 setup:
 	kubectl create ns $(NAMESPACE) || true
 	kubectl -n $(NAMESPACE) create secret generic terraformrc --from-file=../credentials || true
-	kubectl -n $(NAMESPACE) create secret generic workspace-secrets --from-literal=secret_key=abc123 || true
+	kubectl -n $(NAMESPACE) create secret generic workspacesecrets --from-literal=secret_key=abc123 || true
 	kubectl -n $(NAMESPACE) create -f deploy/service_account.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/role.yaml || true
 	kubectl -n $(NAMESPACE) create -f deploy/role_binding.yaml || true
