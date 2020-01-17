@@ -1,12 +1,14 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// Module references a Terraform module
 type Module struct {
 	// Any remote module source (version control, registry)
 	Source string `json:"source"`
@@ -15,6 +17,7 @@ type Module struct {
 	Version string `json:"version"`
 }
 
+// OutputSpec specifies which values need to be output
 type OutputSpec struct {
 	// Output name
 	// +optional
@@ -24,6 +27,7 @@ type OutputSpec struct {
 	ModuleOutputName string `json:"moduleOutputName"`
 }
 
+// OutputStatus outputs the values of Terraform output
 type OutputStatus struct {
 	// Attribute name in module
 	// +optional
@@ -33,12 +37,16 @@ type OutputStatus struct {
 	Value string `json:"value"`
 }
 
+// Variable denotes an input to the module
 type Variable struct {
 	// Variable name
 	Key string `json:"key"`
 	// Variable value
 	// +optional
 	Value string `json:"value"`
+	// Source for the variable's value. Cannot be used if value is not empty.
+	// +optional
+	ValueFrom *corev1.EnvVarSource `json:"valueFrom,omitempty"`
 	// Variable is a secret and should be retrieved from file
 	Sensitive bool `json:"sensitive"`
 	// EnvironmentVariable denotes if this variable should be created as environment variable
