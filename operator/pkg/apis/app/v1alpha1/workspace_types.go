@@ -55,13 +55,13 @@ type WorkspaceSpec struct {
 	// Variables as inputs to module
 	// +listType=set
 	// +optional
-	Variables []*Variable `json:"variables"`
+	Variables []*Variable `json:"variables,omitempty"`
 	// File path within operator pod to load workspace secrets
 	SecretsMountPath string `json:"secretsMountPath"`
 	// Outputs denote outputs wanted
 	// +listType=set
 	// +optional
-	Outputs []*OutputSpec `json:"outputs"`
+	Outputs []*OutputSpec `json:"outputs,omitempty"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace
@@ -76,7 +76,7 @@ type WorkspaceStatus struct {
 	// Outputs from state file
 	// +listType=set
 	// +optional
-	Outputs []*OutputStatus `json:"outputs"`
+	Outputs []*OutputStatus `json:"outputs,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
