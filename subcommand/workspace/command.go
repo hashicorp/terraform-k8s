@@ -27,6 +27,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	appv1alpha1 "github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 )
 
 var (
@@ -88,6 +91,11 @@ func (c *Command) Run(args []string) int {
 	if err != nil {
 		log.Error(err, "")
 		return 1
+	}
+
+	// Create CRDs
+	if err := createCustomResourceDefinitions(cfg); err != nil {
+		log.Error(err, "Could not create CRDs")
 	}
 
 	// Create a new Cmd to provide shared dependencies and start components
@@ -190,5 +198,18 @@ func serveCRMetrics(cfg *rest.Config) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func createCustomResourceDefinitions(cfg *rest.Config) error {
+	apiextensionsClientSet, err := apiextensionsclient.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+
+	if _, err := appv1alpha1.CreateCustomResourceDefinition(apiextensionsClientSet); err != nil {
+		return err
+	}
+
 	return nil
 }
