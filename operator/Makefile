@@ -23,6 +23,9 @@ setup:
 operator:
 	kubectl -n $(NAMESPACE) create -f deploy/operator.yaml || true
 
+clean-operator:
+	kubectl -n $(NAMESPACE) delete -f deploy/operator.yaml --ignore-not-found
+
 workspace:
 	kubectl -n $(NAMESPACE) apply -f deploy/crds/app.terraform.io_v1alpha1_workspace_cr.yaml
 
