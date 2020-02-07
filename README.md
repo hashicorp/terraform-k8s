@@ -3,8 +3,6 @@
 The `terraform-k8s` binary includes first-class integrations between Terraform and
 Kubernetes. The project encapsulates multiple use cases, including a Terraform Cloud Operator
 that synchronizes a Kubernetes Workspace (Custom Resource) to a Terraform Cloud Workspace.
-The Kubernetes integrations with Terraform Cloud are
-[documented directly on the Terraform Cloud website]().
 This README will present a basic overview of each use case, but for full
 documentation please reference the Terraform Cloud website.
 
@@ -15,9 +13,9 @@ without forcing Terraform users to do a full Terraform upgrade.
 
 ## Features
 
-  * [**Terraform Cloud Workspace Sync**]():
+  * [**Terraform Cloud Workspace Sync**](docs/workspace-sync.html.md):
     Create and manage a Kubernetes Workspace that automatically synchronizes to Terraform Cloud.
-    This enables Kubernetes to deploy infrastructure configured by Terraform
+    This enables Kubernetes to deploy infrastructure configured by Terraform.
     _(Requires Terraform 0.12+)_
 
 ## Installation
