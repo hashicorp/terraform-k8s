@@ -31,9 +31,11 @@ are two categories of sensitive variables related to Terraform Cloud:
 1. Terraform Cloud API Token: used to log in and execute runs for Terraform
    Cloud
 2. Workspace Sensitive Variables: secrets that execution requires to log into
-   providers (e.g., credentials) See the [Authentication](#authentication) and
-   [Workspace Sensitive Variables](#workspace-sensitive-variables) sections for
-   how these are handled.
+   providers (e.g., credentials).
+   
+See the [Authentication](#authentication) and
+[Workspace Sensitive Variables](#workspace-sensitive-variables) sections for
+how these are handled.
 
 ## Installation and Configuration
 
@@ -68,9 +70,9 @@ In order to scope the operator to a namespace, you must assign a role and
 service account to the namespace.
 
 ```shell
-> kubectl -n $NAMESPACE apply -f deploy/role_binding.yaml
-> kubectl -n $NAMESPACE apply -f deploy/role.yaml
-> kubectl -n $NAMESPACE apply -f deploy/service_account.yaml
+> kubectl -n $NAMESPACE apply -f operator/deploy/role_binding.yaml
+> kubectl -n $NAMESPACE apply -f operator/deploy/role.yaml
+> kubectl -n $NAMESPACE apply -f operator/deploy/service_account.yaml
 ```
 
 Generally, the role must have access to Pods, Secrets, Services, and ConfigMaps.
