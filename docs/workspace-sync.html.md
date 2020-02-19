@@ -21,10 +21,10 @@ infrastructure configuration and Terraform Cloud non-sensitive variables.
 
 **How does it work?** The workspace sync uses a Kubernetes Operator for
 Terraform in the [terraform-k8s
-project](https://github.com/hashicorp/terraform-k8s). The Terraform Operator
-must run within a Kubernetes cluster and be scoped to a namespace. The
-deployment of the operator and resource definition is automated by a [Helm
-chart](https://github.com/hashicorp/terraform-helm).
+project](https://github.com/hashicorp/terraform-k8s). The Operator must run
+within a Kubernetes cluster and be scoped to a namespace. A [Helm
+chart](https://github.com/hashicorp/terraform-helm) automatically deploys the
+operator and resource definition.
 
 **How does the operator handle sensitive variables for Terraform Cloud?** There
 are two categories of sensitive variables related to Terraform Cloud:
