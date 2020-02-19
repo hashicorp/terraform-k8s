@@ -1,13 +1,12 @@
 # Syncing Kubernetes and Terraform Cloud Workspaces
 
-By creating the definition of a Workspace Custom Resource in Kubernetes,
-workspace definitions in Kubernetes can be automatically synced to those in
-Terraform Cloud by the Kubernetes [Operator
-pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/). This
-functionality is provided by the [terraform-k8s
-project](https://github.com/hashicorp/terraform-k8s) and can be automatically
-installed and configured using the [Terraform Helm
-chart](https://github.com/hashicorp/terraform-helm).
+The [terraform-k8s project](https://github.com/hashicorp/terraform-k8s) allows
+you to define a a Workspace Custom Resource in Kubernetes that automatically
+syncs workspace definitions in Kubernetes to workspaces in Terraform Cloud,
+using the Kubernetes [Operator
+pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/). You
+can automatically install and configure the terraform-k8s project using the
+[Terraform Helm chart](https://github.com/hashicorp/terraform-helm).
 
 **Why create a Terraform Cloud Workspace Custom Resource Definition for
 Kubernetes?** Applications deployed in Kubernetes will have the ability to
@@ -32,7 +31,7 @@ are two categories of sensitive variables related to Terraform Cloud:
    Cloud
 2. Workspace Sensitive Variables: secrets that execution requires to log into
    providers (e.g., credentials).
-   
+
 See the [Authentication](#authentication) and
 [Workspace Sensitive Variables](#workspace-sensitive-variables) sections for
 how these are handled.
