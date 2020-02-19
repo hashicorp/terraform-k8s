@@ -8,11 +8,11 @@ pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/). You
 can automatically install and configure the terraform-k8s project using the
 [Terraform Helm chart](https://github.com/hashicorp/terraform-helm).
 
-**Why create a Terraform Cloud Workspace Custom Resource Definition for
-Kubernetes?** Applications deployed in Kubernetes will have the ability to
-define infrastructure configuration using a Workspace in Kubernetes. The
-functionality depends on Terraform Cloud to ensure consistent approaches to
-state locking, state storage, and execution.
+**Why create a Terraform Cloud Workspace Custom Resource Definition (CRD) for
+Kubernetes?** The Terraform Cloud Workspace CRD allows applications deployed in
+Kubernetes to define their own infrastructure configuration using Kubernetes
+workspaces. The functionality depends on Terraform Cloud to ensure consistent
+approaches to state locking, state storage, and execution.
 
 **Why sync Kubernetes workspaces to Terraform Cloud?** This functionality will
 re-execute updates to infrastructure and Terraform Cloud non-sensitive
