@@ -19,11 +19,12 @@ workspaces to Terraform Cloud provides a first-class Kubernetes interface for
 updating infrastructure managed by Terraform Cloud by re-executing updates to
 infrastructure configuration and Terraform Cloud non-sensitive variables.
 
-**How does it work?** The workspace sync is done using a Terraform Operator in
-the [terraform-k8s project](https://github.com/hashicorp/terraform-k8s). The
-Terraform Operator must run within a Kubernetes cluster and be scoped to a
-namespace. The deployment of the operator and resource definition is automated
-by a [Helm chart](https://github.com/hashicorp/terraform-helm).
+**How does it work?** The workspace sync uses a Kubernetes Operator for
+Terraform in the [terraform-k8s
+project](https://github.com/hashicorp/terraform-k8s). The Terraform Operator
+must run within a Kubernetes cluster and be scoped to a namespace. The
+deployment of the operator and resource definition is automated by a [Helm
+chart](https://github.com/hashicorp/terraform-helm).
 
 **How does the operator handle sensitive variables for Terraform Cloud?** There
 are two categories of sensitive variables related to Terraform Cloud:
