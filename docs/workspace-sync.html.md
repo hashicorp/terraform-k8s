@@ -14,10 +14,10 @@ Kubernetes to define their own infrastructure configuration using Kubernetes
 workspaces. The functionality depends on Terraform Cloud to ensure consistent
 approaches to state locking, state storage, and execution.
 
-**Why sync Kubernetes workspaces to Terraform Cloud?** This functionality will
-re-execute updates to infrastructure and Terraform Cloud non-sensitive
-variables. It provides a first-class Kubernetes interface to updating Terraform
-Cloud.
+**Why sync Kubernetes workspaces to Terraform Cloud?** Syncing Kubernetes
+workspaces to Terraform Cloud provides a first-class Kubernetes interface for
+updating infrastructure managed by Terraform Cloud by re-executing updates to
+infrastructure configuration and Terraform Cloud non-sensitive variables.
 
 **How does it work?** The workspace sync is done using a Terraform Operator in
 the [terraform-k8s project](https://github.com/hashicorp/terraform-k8s). The
