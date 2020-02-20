@@ -40,8 +40,7 @@ how these are handled.
 ## Installation and Configuration
 
 For a full set of Kubernetes manifests related to the operator, see the
-`operator/deploy/` directory. Otherwise, a fully automated deployment can be
-found at the [Helm chart](https://github.com/hashicorp/terraform-helm).
+`operator/deploy/` directory. Otherwise, find a fully automated deployment in the [Helm chart](https://github.com/hashicorp/terraform-helm) repository.
 
 ### Namespace
 
