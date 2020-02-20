@@ -81,7 +81,9 @@ Generally, the role must have access to Pods, Secrets, Services, and ConfigMaps.
 The operator must authenticate to Terraform Cloud. Note that `terraform-k8s`
 must run within the cluster, which means that it already handles Kubernetes
 authentication. Generate a Terraform Cloud API token at
-`https://app.terraform.io/app/${ORGANIZATION}/settings/teams`, where `${ORGANIZATION}` is your organization name. Insert the generated token into a file formatted for Terraform credentials.
+`https://app.terraform.io/app/${ORGANIZATION}/settings/teams`, where
+`${ORGANIZATION}` is your organization name. Insert the generated token into a
+file formatted for Terraform credentials.
 
 ```hcl
 credentials app.terraform.io {
@@ -89,11 +91,11 @@ credentials app.terraform.io {
 }
 ```
 
-Note that the Terraform Cloud API token is a broad-spectrum token. It allows
-creation of workspaces and execution of runs. It will not offer access control
-on the workspace level or roles within the team. In order to support a
-first-class Kubernetes experience, security and access control to this token
-must be enforced by [Kubernetes Role-Based Access Control
+Note that the Terraform Cloud API token is a broad-spectrum token. It allows the
+token holder to create workspaces and execute Terraform runs. You cannot limit
+the access it provides to a single workspace or role within a team. In order to
+support a first-class Kubernetes experience, security and access control to this
+token must be enforced by [Kubernetes Role-Based Access Control
 (RBAC)](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) policies.
 
 As long as there is an environment variable called `TF_CLI_CONFIG_FILE` and the
