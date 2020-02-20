@@ -79,10 +79,9 @@ Generally, the role must have access to Pods, Secrets, Services, and ConfigMaps.
 ### Authentication
 
 The operator must authenticate to Terraform Cloud. Note that `terraform-k8s`
-must run within the cluster, which means already handles Kubernetes
-authentication. The Terraform Cloud API token can be generated under
-`https://app.terraform.io/app/${ORGANIZATION}/settings/teams`. Once generating
-this token, insert it into a file formatted for Terraform credentials.
+must run within the cluster, which means that it already handles Kubernetes
+authentication. Generate a Terraform Cloud API token at
+`https://app.terraform.io/app/${ORGANIZATION}/settings/teams`, where `${ORGANIZATION}` is your organization name. Insert the generated token into a file formatted for Terraform credentials.
 
 ```hcl
 credentials app.terraform.io {
