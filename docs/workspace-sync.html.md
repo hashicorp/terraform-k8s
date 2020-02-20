@@ -44,7 +44,7 @@ For a full set of Kubernetes manifests related to the operator, see the
 
 ### Namespace
 
-Create the namespace to which you would like to deploy the Operator, Secrets,
+Create the namespace where you will deploy the Operator, Secrets,
 and Workspace resources.
 
 ```shell
