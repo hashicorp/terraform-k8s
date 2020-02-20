@@ -48,7 +48,7 @@ Create the namespace where you will deploy the Operator, Secrets,
 and Workspace resources.
 
 ```shell
-> kubectl create ns $NAMESPACE
+$ kubectl create ns $NAMESPACE
 ```
 
 ### Custom Resource Definition
@@ -57,7 +57,7 @@ Before running the operator, you must deploy the Custom Resource Definition for
 the Workspace. Custom Resource Definitions extend the Kubernetes API.
 
 ```shell
-> kubectl apply -f operator/deploy/crds/app.terraform.io_workspaces_crd.yaml
+$ kubectl apply -f operator/deploy/crds/app.terraform.io_workspaces_crd.yaml
 ```
 
 The Custom Resource Definition defines that the Workspace Custom Resource
@@ -69,9 +69,9 @@ In order to scope the operator to a namespace, you must assign a role and
 service account to the namespace.
 
 ```shell
-> kubectl -n $NAMESPACE apply -f operator/deploy/role_binding.yaml
-> kubectl -n $NAMESPACE apply -f operator/deploy/role.yaml
-> kubectl -n $NAMESPACE apply -f operator/deploy/service_account.yaml
+$ kubectl -n $NAMESPACE apply -f operator/deploy/role_binding.yaml
+$ kubectl -n $NAMESPACE apply -f operator/deploy/role.yaml
+$ kubectl -n $NAMESPACE apply -f operator/deploy/service_account.yaml
 ```
 
 Generally, the role must have access to Pods, Secrets, Services, and ConfigMaps.
@@ -359,7 +359,7 @@ When deleting the Workspace CustomResource, the command line will wait for
 a few moments.
 
 ```shell
-> kubectl delete workspace.app.terraform.io/my-workspace
+$ kubectl delete workspace.app.terraform.io/my-workspace
 ```
 
 This is because the operator is running a
