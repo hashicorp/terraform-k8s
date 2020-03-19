@@ -6,7 +6,7 @@
 The `terraform-k8s` binary includes first-class integrations between Terraform
 and Kubernetes. Currently, this project only includes the Terraform Cloud
 Operator, which synchronizes a Kubernetes Workspace (Custom Resource) to a
-Terraform Cloud Workspace.You can read more about this project and its potential use cases on our [blog](https://www.hashicorp.com/blog/creating-workspaces-with-the-hashicorp-terraform-operator-for-kubernetes/).
+Terraform Cloud Workspace. You can read more about this project and its potential use cases on our [blog](https://www.hashicorp.com/blog/creating-workspaces-with-the-hashicorp-terraform-operator-for-kubernetes/).
 We are actively considering other possible use cases to add to this project outside of the operator, and welcome your feedback. 
 
 This project is versioned separately from Terraform. Supported Terraform
