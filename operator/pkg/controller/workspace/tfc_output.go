@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	"github.com/hashicorp/terraform/states/statefile"
+	"github.com/zclconf/go-cty/cty"
+	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
 // GetStateVersionDownloadURL retrieves download URL for state file
@@ -16,6 +20,103 @@ func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspaceID string) (s
 		return "", fmt.Errorf("could not get current state version, WorkspaceID, %s, Error, %v", workspaceID, err)
 	}
 	return stateVersion.DownloadURL, nil
+}
+
+func convertValueToString(val cty.Value) string {
+	ty := val.Type()
+	switch {
+	case ty.IsPrimitiveType():
+		switch ty {
+		case cty.String:
+			{
+				// Special behavior for JSON strings containing array or object
+				src := []byte(val.AsString())
+				ty, err := ctyjson.ImpliedType(src)
+				// check for the special case of "null", which decodes to nil,
+				// and just allow it to be printed out directly
+				if err == nil && !ty.IsPrimitiveType() && strings.TrimSpace(val.AsString()) != "null" {
+					jv, err := ctyjson.Unmarshal(src, ty)
+					if err == nil {
+						return jv.AsString()
+					}
+				}
+			}
+			return `"` + val.AsString() + `"`
+		case cty.Bool:
+			if val.True() {
+				return "true"
+			}
+			return "false"
+		case cty.Number:
+			bf := val.AsBigFloat()
+			return bf.Text('f', -1)
+		default:
+			return fmt.Sprintf("%#v", val)
+		}
+	case ty.IsListType() || ty.IsSetType() || ty.IsTupleType():
+		var b bytes.Buffer
+		b.WriteString("[")
+		i := 0
+		for it := val.ElementIterator(); it.Next(); {
+			_, value := it.Element()
+			b.WriteString(convertValueToString(value))
+			if i < (val.LengthInt() - 1) {
+				b.WriteString(",")
+			}
+			i++
+		}
+		b.WriteString("]")
+		return b.String()
+	case ty.IsMapType():
+		var b bytes.Buffer
+		b.WriteString("{")
+
+		i := 0
+		for it := val.ElementIterator(); it.Next(); {
+			key, value := it.Element()
+			b.WriteString(convertValueToString(key))
+			b.WriteString(":")
+			b.WriteString(convertValueToString(value))
+			if i < (val.LengthInt() - 1) {
+				b.WriteString(",")
+			}
+			i++
+		}
+
+		b.WriteString("}")
+		return b.String()
+	case ty.IsObjectType():
+		atys := ty.AttributeTypes()
+		attrNames := make([]string, 0, len(atys))
+		nameLen := 0
+		for attrName := range atys {
+			attrNames = append(attrNames, attrName)
+			if len(attrName) > nameLen {
+				nameLen = len(attrName)
+			}
+		}
+		sort.Strings(attrNames)
+
+		var b bytes.Buffer
+		b.WriteString("{")
+
+		i := 0
+		for _, attr := range attrNames {
+			b.WriteString(`"`)
+			b.WriteString(attr)
+			b.WriteString(`"`)
+			b.WriteString(":")
+			val := val.GetAttr(attr)
+			b.WriteString(convertValueToString(val))
+			if i < (len(atys) - 1) {
+				b.WriteString(",")
+			}
+			i++
+		}
+		b.WriteString("}")
+		return b.String()
+	}
+	return ""
 }
 
 // GetOutputsFromState gets list of outputs from state file
@@ -29,11 +130,17 @@ func (t *TerraformCloudClient) GetOutputsFromState(stateDownloadURL string) ([]*
 	}
 	reader := bytes.NewReader(data)
 	file, err := statefile.Read(reader)
+	if err != nil {
+		return nil, fmt.Errorf("could not read state file, Error, %v", err)
+	}
 	outputValues := file.State.Modules[""].OutputValues
 	outputs := []*v1alpha1.OutputStatus{}
 	for key, value := range outputValues {
 		if !value.Sensitive {
-			outputs = append(outputs, &v1alpha1.OutputStatus{Key: key, Value: value.Value.AsString()})
+			if err != nil {
+				return outputs, fmt.Errorf("output value could not be converted to string, Error, %v", err)
+			}
+			outputs = append(outputs, &v1alpha1.OutputStatus{Key: key, Value: convertValueToString(value.Value)})
 		}
 	}
 	return outputs, nil
