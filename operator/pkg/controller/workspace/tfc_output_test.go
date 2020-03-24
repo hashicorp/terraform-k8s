@@ -14,6 +14,13 @@ func TestShouldReturnStringFromNumber(t *testing.T) {
 	assert.Equal(t, expected, formatted)
 }
 
+func TestShouldReturnStringFromJSONStringNull(t *testing.T) {
+	expected := `""{\"hi\":null}""`
+	value := cty.Value(cty.StringVal(`"{\"hi\":null}"`))
+	formatted := convertValueToString(value)
+	assert.Equal(t, expected, formatted)
+}
+
 func TestShouldReturnStringFromBool(t *testing.T) {
 	expected := "true"
 	value := cty.Value(cty.BoolVal(true))

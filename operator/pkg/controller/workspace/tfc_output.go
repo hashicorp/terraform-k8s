@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
@@ -85,11 +86,22 @@ func convertValueToString(val cty.Value) string {
 		b.WriteString("}")
 		return b.String()
 	case ty.IsObjectType():
+		atys := ty.AttributeTypes()
+		attrNames := make([]string, 0, len(atys))
+		nameLen := 0
+		for attrName := range atys {
+			attrNames = append(attrNames, attrName)
+			if len(attrName) > nameLen {
+				nameLen = len(attrName)
+			}
+		}
+		sort.Strings(attrNames)
+
 		var b bytes.Buffer
 		b.WriteString("{")
-		atys := ty.AttributeTypes()
+
 		i := 0
-		for attr := range atys {
+		for _, attr := range attrNames {
 			b.WriteString(`"`)
 			b.WriteString(attr)
 			b.WriteString(`"`)
