@@ -1,0 +1,27 @@
+before:
+  hooks:
+    - go test ./...
+
+builds:
+  - 
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - '-s -w -X "github.com/hashicorp/terraform-k8s/version.Version={{ .Version }}" -X "github.com/hashicorp/terraform-k8s/version.Prerelease="'
+    targets:
+      - linux_amd64
+
+archives:
+  -
+    format: zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    wrap_in_directory: false
+    files: # Avoid packaging any extra (default) files
+      - none*
+
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
+  algorithm: sha256
+
+changelog:
+  skip: true
