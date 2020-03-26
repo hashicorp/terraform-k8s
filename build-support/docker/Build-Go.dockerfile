@@ -1,4 +1,4 @@
-ARG GOLANG_VERSION=1.12.13
+ARG GOLANG_VERSION=1.13.8
 FROM golang:${GOLANG_VERSION}
 
 ARG GOTOOLS="github.com/magiconair/vendorfmt/cmd/vendorfmt \

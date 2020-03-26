@@ -11,6 +11,7 @@ GOTOOLS = \
 	golang.org/x/tools/cmd/stringer
 
 DEV_IMAGE?=terraform-k8s-dev
+RELEASE_IMAGE?=hashicorp/terraform-k8s
 GO_BUILD_TAG?=terraform-k8s-build-go
 GIT_COMMIT?=$(shell git rev-parse --short HEAD)
 GIT_DIRTY?=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
@@ -79,6 +80,9 @@ dev:
 dev-docker:
 	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh -o linux -a amd64
 	@docker build -t '$(DEV_IMAGE)' --build-arg 'GIT_COMMIT=$(GIT_COMMIT)' --build-arg 'GIT_DIRTY=$(GIT_DIRTY)' --build-arg 'GIT_DESCRIBE=$(GIT_DESCRIBE)' -f $(CURDIR)/build-support/docker/Dev.dockerfile $(CURDIR)
+
+release:
+	docker build -t '$(RELEASE_IMAGE):$(GIT_DESCRIBE:v%=%)' --build-arg 'NAME=terraform-k8s' --build-arg 'VERSION=$(GIT_DESCRIBE)' -f $(CURDIR)/build-support/docker/Release.dockerfile $(CURDIR)
 
 dev-tree:
 	@$(SHELL) $(CURDIR)/build-support/scripts/dev.sh $(DEV_PUSH_ARG)
