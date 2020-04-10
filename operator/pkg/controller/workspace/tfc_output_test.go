@@ -209,7 +209,6 @@ func TestOutputsFromState(t *testing.T) {
 			cloud := &TerraformCloudClient{
 				Client: client,
 			}
-			assert.NoError(t, err)
 
 			outputs, err := cloud.GetOutputsFromState(srv.URL)
 			if (err != nil) != tt.wantErr {
