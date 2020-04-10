@@ -34,5 +34,7 @@ RUN set -eux && \
     apk del gnupg openssl && \
     rm -rf /root/.gnupg
 
+COPY pkg/bin/linux_amd64/terraform-k8s /bin
+
 USER ${NAME}
 ENTRYPOINT ["${NAME}"]
