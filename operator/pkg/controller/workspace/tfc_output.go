@@ -110,7 +110,6 @@ func convertValueToString(val cty.Value) string {
 		var b bytes.Buffer
 		i := 0
 		for _, attr := range attrNames {
-			k := attr
 			val := val.GetAttr(attr)
 			v := convertValueToString(val)
 			if v == "" {
@@ -118,7 +117,7 @@ func convertValueToString(val cty.Value) string {
 			}
 
 			b.WriteString(`"`)
-			b.WriteString(k)
+			b.WriteString(attr)
 			b.WriteString(`"`)
 			b.WriteString(":")
 			b.WriteString(v)
