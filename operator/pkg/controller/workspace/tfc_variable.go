@@ -58,6 +58,30 @@ func (t *TerraformCloudClient) deleteVariablesFromTFC(specTFCVariables []*tfc.Va
 	return nil
 }
 
+func (t *TerraformCloudClient) UpdateSensitiveBeforeRun(workspace string, specTFCVariables []*tfc.Variable) error {
+	workspaceVariables, err := t.listVariables(workspace)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range specTFCVariables {
+		if !v.Sensitive {
+			continue
+		}
+		index := find(workspaceVariables, v.Key)
+		err := t.checkAndRetrieveIfSensitive(v)
+		if err != nil {
+			return err
+		}
+		err = t.UpdateTerraformVariable(workspaceVariables[index], v.Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (t *TerraformCloudClient) updateVariablesOnTFC(workspace *tfc.Workspace, specTFCVariables []*tfc.Variable, workspaceVariables []*tfc.Variable) (bool, error) {
 	updated := false
 	for _, v := range specTFCVariables {
