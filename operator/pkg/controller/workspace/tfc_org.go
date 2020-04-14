@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 
 	tfc "github.com/hashicorp/go-tfe"
@@ -23,21 +24,43 @@ type TerraformCloudClient struct {
 	SecretsMountPath string
 }
 
+func createTerraformConfig(address string, tfConfig *cliconfig.Config) (*tfc.Config, error) {
+	if len(address) == 0 {
+		address = tfc.DefaultAddress
+	}
+	u, err := url.Parse(address)
+	if err != nil {
+		return nil, fmt.Errorf("Not a valid Terraform Cloud or Enterprise URL, %v", err)
+	}
+	host := u.Host
+
+	if len(tfConfig.Credentials[host]) == 0 {
+		return nil, fmt.Errorf("Define token for %s", host)
+	}
+
+	return &tfc.Config{
+		Address: address,
+		Token:   fmt.Sprintf("%v", tfConfig.Credentials[host]["token"]),
+	}, nil
+}
+
 // GetClient creates the configuration for Terraform Cloud
-func (t *TerraformCloudClient) GetClient() error {
+func (t *TerraformCloudClient) GetClient(tfEndpoint string) error {
 	tfConfig, diag := cliconfig.LoadConfig()
 	if diag.Err() != nil {
 		return diag.Err()
 	}
 
-	config := &tfc.Config{
-		Token: fmt.Sprintf("%v", tfConfig.Credentials["app.terraform.io"]["token"]),
+	config, err := createTerraformConfig(tfEndpoint, tfConfig)
+	if err != nil {
+		return err
 	}
 
 	client, err := tfc.NewClient(config)
 	if err != nil {
 		return diag.Err()
 	}
+
 	t.Client = client
 	return nil
 }
