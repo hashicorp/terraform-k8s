@@ -47,6 +47,9 @@ type Variable struct {
 	// Source for the variable's value. Cannot be used if value is not empty.
 	// +optional
 	ValueFrom *corev1.EnvVarSource `json:"valueFrom,omitempty"`
+	// String input should be an HCL-formatted variable
+	// +optional
+	HCL bool `json:"hcl"`
 	// Variable is a secret and should be retrieved from file
 	Sensitive bool `json:"sensitive"`
 	// EnvironmentVariable denotes if this variable should be created as environment variable
