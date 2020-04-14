@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 
 	"github.com/go-logr/logr"
@@ -33,9 +34,10 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	tfclient := &TerraformCloudClient{}
-	err := tfclient.GetClient()
+	err := tfclient.GetClient(os.Getenv("TF_URL"))
 	if err != nil {
-		log.Error(err, "could not create Terraform Cloud client")
+		log.Error(err, "could not create Terraform Cloud or Enterprise client")
+		panic(err)
 	}
 	return &ReconcileWorkspace{
 		client:    mgr.GetClient(),
@@ -92,6 +94,7 @@ type ReconcileWorkspace struct {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	r.reqLogger.WithValues("Name", request.Name, "Namespace", request.Namespace)
+
 	// Fetch the Workspace instance
 	instance := &appv1alpha1.Workspace{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)

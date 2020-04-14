@@ -88,7 +88,7 @@ dev-tree:
 	@$(SHELL) $(CURDIR)/build-support/scripts/dev.sh $(DEV_PUSH_ARG)
 
 test:
-	go test ./...
+	go test ./... -v
 
 cov:
 	go test ./... -coverprofile=coverage.out
