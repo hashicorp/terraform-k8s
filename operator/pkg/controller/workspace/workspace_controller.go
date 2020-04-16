@@ -125,7 +125,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	workspaceID, err := r.tfclient.CheckWorkspace(workspace)
+	workspaceID, err := r.tfclient.CheckWorkspace(workspace, instance)
 	if err != nil {
 		r.reqLogger.Error(err, "Could not update workspace")
 		return reconcile.Result{}, err

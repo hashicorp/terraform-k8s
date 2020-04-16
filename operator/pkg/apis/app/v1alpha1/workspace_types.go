@@ -70,6 +70,9 @@ type WorkspaceSpec struct {
 	// +listType=set
 	// +optional
 	Outputs []*OutputSpec `json:"outputs,omitempty"`
+	// SSH Key ID
+	SSHKeyID string `json:"sshKeyID"`
+	// +optional
 }
 
 // WorkspaceStatus defines the observed state of Workspace
