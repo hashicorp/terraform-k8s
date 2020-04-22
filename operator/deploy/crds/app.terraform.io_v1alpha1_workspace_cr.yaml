@@ -40,3 +40,8 @@ spec:
       value: "1"
       sensitive: false
       environmentVariable: true
+  additionalProviders:
+  - name: "confluentcloud"
+    source: "https://github.com/parkside-securities/terraform-provider-confluentcloud/releases/download/v.0.0.2/terraform-provider-confluentcloud-v0.0.2-linux-amd64.tar.gz"
+  - name: "kafka"
+    source: "https://github.com/Mongey/terraform-provider-kafka/releases/download/v0.2.4/terraform-provider-kafka_0.2.4_linux_amd64.tar.gz?checksum=file:https://github.com/Mongey/terraform-provider-kafka/releases/download/v0.2.4/checksums.txt"

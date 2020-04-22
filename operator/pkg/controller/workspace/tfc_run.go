@@ -5,20 +5,24 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 	"time"
 
+	getter "github.com/hashicorp/go-getter"
 	tfc "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 )
 
 var (
-	autoQueueRuns         = false
-	speculative           = false
-	isDestroy             = true
-	basepath              = "/tmp"
-	moduleDirectory       = fmt.Sprintf("%s/%s", basepath, "module")
-	configurationFilePath = fmt.Sprintf("%s/%s", moduleDirectory, "main.tf")
-	interval              = 30 * time.Second
+	autoQueueRuns           = false
+	speculative             = false
+	isDestroy               = true
+	basepath                = "/tmp"
+	moduleDirectory         = fmt.Sprintf("%s/%s", basepath, "module")
+	pluginDirectory         = fmt.Sprintf("%s/%s", moduleDirectory, ".terraform/plugins/linux_amd64")
+	configurationFilePath   = fmt.Sprintf("%s/%s", moduleDirectory, "main.tf")
+	terraformIgnoreFilePath = fmt.Sprintf("%s/%s", moduleDirectory, ".terraformignore")
+	interval                = 30 * time.Second
 )
 
 // UploadConfigurationFile uploads the main.tf to a configuration version
@@ -42,6 +46,38 @@ func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*
 	return configVersion, nil
 }
 
+// DownloadProviders download custom provider binaries.
+func (t *TerraformCloudClient) DownloadProviders(providers []*v1alpha1.Provider) error {
+	wg := sync.WaitGroup{}
+	wg.Add(len(providers))
+	errChan := make(chan error)
+	for _, elem := range providers {
+		os.MkdirAll(pluginDirectory, 0777)
+
+		client := &getter.Client{
+			Ctx:     context.TODO(),
+			Src:     elem.Source,
+			Dst:     pluginDirectory,
+			Mode:    getter.ClientModeAny,
+			Options: nil,
+		}
+		go func() {
+			defer wg.Done()
+			if err := client.Get(); err != nil {
+				log.Error(err, "Download Failed.")
+				errChan <- err
+			}
+		}()
+	}
+	wg.Wait()
+	select {
+	case err := <-errChan:
+		return err
+	default:
+		return nil
+	}
+}
+
 // CreateRun runs a new Terraform Cloud configuration
 func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terraform []byte) error {
 	configVersion, err := t.CreateConfigurationVersion(workspace.Status.WorkspaceID)
@@ -50,7 +86,17 @@ func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terrafor
 	}
 
 	os.Mkdir(moduleDirectory, 0777)
+
+	if err := t.DownloadProviders(workspace.Spec.AdditionalProviders); err != nil {
+		return err
+	}
+
 	if err := ioutil.WriteFile(configurationFilePath, terraform, 0777); err != nil {
+		return err
+	}
+
+	// By default plugins are ignored by the tfc slug.  We write an explicit .terraformignore to override this.
+	if err := ioutil.WriteFile(terraformIgnoreFilePath, []byte("!.terraform/plugins/linux_amd64/"), 0644); err != nil {
 		return err
 	}
 

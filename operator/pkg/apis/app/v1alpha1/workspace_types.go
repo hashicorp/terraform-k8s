@@ -53,6 +53,13 @@ type Variable struct {
 	EnvironmentVariable bool `json:"environmentVariable"`
 }
 
+type Provider struct {
+	// Name
+	Name string `json:"name"`
+	// Source Path of provider in go-getter syntax
+	Source string `json:"source"`
+}
+
 // WorkspaceSpec defines the desired state of Workspace
 // +k8s:openapi-gen=true
 type WorkspaceSpec struct {
@@ -70,6 +77,10 @@ type WorkspaceSpec struct {
 	// +listType=set
 	// +optional
 	Outputs []*OutputSpec `json:"outputs,omitempty"`
+	// AdditionalProviders
+	// +listType=set
+	// +optional
+	AdditionalProviders []*Provider `json:"additionalProviders,omitempty"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace
