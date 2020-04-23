@@ -23,6 +23,9 @@ func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspaceID string) (s
 }
 
 func convertValueToString(val cty.Value) string {
+	if val.IsNull() {
+		return ""
+	}
 	ty := val.Type()
 	switch {
 	case ty.IsPrimitiveType():
@@ -36,9 +39,10 @@ func convertValueToString(val cty.Value) string {
 				// and just allow it to be printed out directly
 				if err == nil && !ty.IsPrimitiveType() && strings.TrimSpace(val.AsString()) != "null" {
 					jv, err := ctyjson.Unmarshal(src, ty)
-					if err == nil {
-						return jv.AsString()
+					if err != nil {
+						return ""
 					}
+					return convertValueToString(jv)
 				}
 			}
 			return `"` + val.AsString() + `"`
@@ -55,7 +59,6 @@ func convertValueToString(val cty.Value) string {
 		}
 	case ty.IsListType() || ty.IsSetType() || ty.IsTupleType():
 		var b bytes.Buffer
-		b.WriteString("[")
 		i := 0
 		for it := val.ElementIterator(); it.Next(); {
 			_, value := it.Element()
@@ -65,26 +68,33 @@ func convertValueToString(val cty.Value) string {
 			}
 			i++
 		}
-		b.WriteString("]")
-		return b.String()
+		if b.Len() == 0 {
+			return ""
+		}
+		return "[" + b.String() + "]"
 	case ty.IsMapType():
 		var b bytes.Buffer
-		b.WriteString("{")
 
 		i := 0
 		for it := val.ElementIterator(); it.Next(); {
 			key, value := it.Element()
-			b.WriteString(convertValueToString(key))
+			k := convertValueToString(key)
+			v := convertValueToString(value)
+			if k == "" || v == "" {
+				continue
+			}
+			b.WriteString(k)
 			b.WriteString(":")
-			b.WriteString(convertValueToString(value))
+			b.WriteString(v)
 			if i < (val.LengthInt() - 1) {
 				b.WriteString(",")
 			}
 			i++
 		}
-
-		b.WriteString("}")
-		return b.String()
+		if b.Len() == 0 {
+			return ""
+		}
+		return "{" + b.String() + "}"
 	case ty.IsObjectType():
 		atys := ty.AttributeTypes()
 		attrNames := make([]string, 0, len(atys))
@@ -98,23 +108,28 @@ func convertValueToString(val cty.Value) string {
 		sort.Strings(attrNames)
 
 		var b bytes.Buffer
-		b.WriteString("{")
-
 		i := 0
 		for _, attr := range attrNames {
+			val := val.GetAttr(attr)
+			v := convertValueToString(val)
+			if v == "" {
+				continue
+			}
+
 			b.WriteString(`"`)
 			b.WriteString(attr)
 			b.WriteString(`"`)
 			b.WriteString(":")
-			val := val.GetAttr(attr)
-			b.WriteString(convertValueToString(val))
+			b.WriteString(v)
 			if i < (len(atys) - 1) {
 				b.WriteString(",")
 			}
 			i++
 		}
-		b.WriteString("}")
-		return b.String()
+		if b.Len() == 0 {
+			return ""
+		}
+		return "{" + b.String() + "}"
 	}
 	return ""
 }
@@ -140,7 +155,10 @@ func (t *TerraformCloudClient) GetOutputsFromState(stateDownloadURL string) ([]*
 			if err != nil {
 				return outputs, fmt.Errorf("output value could not be converted to string, Error, %v", err)
 			}
-			outputs = append(outputs, &v1alpha1.OutputStatus{Key: key, Value: convertValueToString(value.Value)})
+			statusValue := convertValueToString(value.Value)
+			if statusValue != "" {
+				outputs = append(outputs, &v1alpha1.OutputStatus{Key: key, Value: statusValue})
+			}
 		}
 	}
 	return outputs, nil

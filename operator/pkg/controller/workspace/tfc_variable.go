@@ -23,6 +23,13 @@ func setVariableType(isEnvironmentVariable bool) tfc.CategoryType {
 	return tfc.CategoryTerraform
 }
 
+func setHCL(isHCL bool) bool {
+	if isHCL {
+		return true
+	}
+	return false
+}
+
 // MapToTFCVariable changes the controller spec to a TFC Variable
 func MapToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
 	tfcVariables := []*tfc.Variable{}
@@ -32,6 +39,7 @@ func MapToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
 			Value:     strings.TrimSuffix(variable.Value, "\n"),
 			Sensitive: variable.Sensitive,
 			Category:  setVariableType(variable.EnvironmentVariable),
+			HCL:       setHCL(variable.HCL),
 		})
 	}
 	return tfcVariables
@@ -191,6 +199,7 @@ func (t *TerraformCloudClient) CreateTerraformVariable(workspace *tfc.Workspace,
 		Value:     &variable.Value,
 		Category:  &variable.Category,
 		Sensitive: &variable.Sensitive,
+		HCL:       &variable.HCL,
 		Workspace: workspace,
 	}
 	_, err := t.Client.Variables.Create(context.TODO(), options)
