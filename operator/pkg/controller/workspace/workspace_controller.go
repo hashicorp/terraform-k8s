@@ -225,7 +225,8 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
-	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables)
+
+	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables, instance.Status.LastAppliedVariableValues)
 	if err != nil {
 		r.reqLogger.Error(err, "Could not update variables")
 		return reconcile.Result{}, err
@@ -234,15 +235,11 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	if updatedTerraform || updatedVariables || instance.Status.RunID == "" {
 		r.reqLogger.Info("Starting run because template changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
 
-		if err := r.tfclient.UpdateSensitiveBeforeRun(workspace, specTFCVariables); err != nil {
-			r.reqLogger.Error(err, "Could not update Sensitive Varaibles before Run")
-			return reconcile.Result{}, err
-		}
-
 		if err := r.tfclient.CreateRun(instance, terraform); err != nil {
 			r.reqLogger.Error(err, "Could not run new Terraform configuration")
 			return reconcile.Result{}, err
 		}
+
 		err := r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
 			r.reqLogger.Error(err, "Failed to update run ID")

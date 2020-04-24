@@ -59,6 +59,7 @@ spec:
                     type: string
                 type: object
               type: array
+              x-kubernetes-list-type: set
             secretsMountPath:
               description: File path within operator pod to load workspace secrets
               type: string
@@ -67,6 +68,9 @@ spec:
               items:
                 description: Variable denotes an input to the module
                 properties:
+                  alwaysUpdate:
+                    description: Always update in TFC is true
+                    type: boolean
                   environmentVariable:
                     description: EnvironmentVariable denotes if this variable should
                       be created as environment variable
@@ -132,9 +136,13 @@ spec:
                               for env vars'
                             type: string
                           divisor:
+                            anyOf:
+                            - type: integer
+                            - type: string
                             description: Specifies the output format of the exposed
                               resources, defaults to "1"
-                            type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                           resource:
                             description: 'Required: resource to select'
                             type: string
@@ -166,6 +174,7 @@ spec:
                 - sensitive
                 type: object
               type: array
+              x-kubernetes-list-type: set
           required:
           - module
           - organization
@@ -174,6 +183,11 @@ spec:
         status:
           description: WorkspaceStatus defines the observed state of Workspace
           properties:
+            lastAppliedVariableValues:
+              additionalProperties:
+                type: string
+              description: Track Variable Value Changes
+              type: object
             outputs:
               description: Outputs from state file
               items:
@@ -187,6 +201,7 @@ spec:
                     type: string
                 type: object
               type: array
+              x-kubernetes-list-type: set
             runID:
               description: Run ID
               type: string
