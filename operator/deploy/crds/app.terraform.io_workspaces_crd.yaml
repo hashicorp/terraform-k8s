@@ -170,6 +170,8 @@ spec:
           - module
           - organization
           - secretsMountPath
+          type: object
+    optional:
           - sshKeyID
           type: object
         status:
