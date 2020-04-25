@@ -171,9 +171,6 @@ spec:
           - organization
           - secretsMountPath
           type: object
-    optional:
-          - sshKeyID
-          type: object
         status:
           description: WorkspaceStatus defines the observed state of Workspace
           properties:
