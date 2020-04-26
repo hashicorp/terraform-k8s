@@ -10,11 +10,31 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	BIT_HCL         = 1
+	BIT_SENSITIVE   = 2
+	BIT_ENVIRONMENT = 4
+)
+
 // Wrap tfe.Variable
 type Variable struct {
 	*tfc.Variable
 	hashed       string
 	AlwaysUpdate bool
+}
+
+func setVariableType(isEnvironmentVariable bool) tfc.CategoryType {
+	if isEnvironmentVariable {
+		return tfc.CategoryEnv
+	}
+	return tfc.CategoryTerraform
+}
+
+func setHCL(isHCL bool) bool {
+	if isHCL {
+		return true
+	}
+	return false
 }
 
 // MapToTFCVariable changes the controller spec to a wrapped TFC Variable
@@ -66,23 +86,45 @@ func (v *Variable) Hashed() string {
 }
 
 // Determine if the variable has changed from the LastAppliedVariableValues
-func (v *Variable) Changed(la v1alpha1.LastAppliedVariableValues) bool {
-	if _, ok := la[v.Key]; !ok {
+func (v *Variable) Changed(la *v1alpha1.LastApplied) bool {
+	// Doesn't exist
+	if _, ok := la.Values[v.Key]; !ok {
 		return true
 	}
 
-	if v.Sensitive {
-		return bcrypt.CompareHashAndPassword([]byte(la[v.Key]), []byte(v.Value)) != nil
+	// Attributes changed
+	if v.attributeConfig() != la.Attributes[v.Key] {
+		return true
 	}
-	return v.Value != la[v.Key]
+
+	// Value changed
+	if v.Sensitive {
+		return bcrypt.CompareHashAndPassword([]byte(la.Values[v.Key]), []byte(v.Value)) != nil
+	}
+	return v.Value != la.Values[v.Key]
 }
 
 // Update values in LastAppliedVariableValues
-func (v *Variable) SetStatus(la v1alpha1.LastAppliedVariableValues) bool {
+func (v *Variable) SetStatus(la *v1alpha1.LastApplied) bool {
 	if v.Sensitive {
-		la[v.Key] = v.Hashed()
+		la.Values[v.Key] = v.Hashed()
 	} else {
-		la[v.Key] = v.Value
+		la.Values[v.Key] = v.Value
 	}
+	la.Attributes[v.Key] = v.attributeConfig()
 	return true
+}
+
+func (v *Variable) attributeConfig() byte {
+	var config byte
+	if v.HCL {
+		config |= BIT_HCL
+	}
+	if v.Sensitive {
+		config |= BIT_SENSITIVE
+	}
+	if v.Category == tfc.CategoryEnv {
+		config |= BIT_ENVIRONMENT
+	}
+	return config
 }

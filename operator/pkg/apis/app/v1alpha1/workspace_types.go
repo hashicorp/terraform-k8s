@@ -40,6 +40,14 @@ type OutputStatus struct {
 // LastAppliedVariableValues stores the last applied value (or hash for sensitive) for each variable
 type LastAppliedVariableValues map[string]string
 
+// LastAppliedVariableAttributes tracks changes to HCL,Sensitive,EnvironmentVariable
+type LastAppliedVariableAttributes map[string]byte
+
+type LastApplied struct {
+	Values     LastAppliedVariableValues     `json:"values"`
+	Attributes LastAppliedVariableAttributes `json:"attributes"`
+}
+
 // Variable denotes an input to the module
 type Variable struct {
 	// Variable name
@@ -94,9 +102,9 @@ type WorkspaceStatus struct {
 	// +listType=set
 	// +optional
 	Outputs []*OutputStatus `json:"outputs,omitempty"`
-	// Track Variable Value Changes
+	// Track Last Applied Values and Attributes
 	// +optional
-	LastAppliedVariableValues LastAppliedVariableValues `json:"lastAppliedVariableValues"`
+	LastApplied *LastApplied `json:"lastApplied"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

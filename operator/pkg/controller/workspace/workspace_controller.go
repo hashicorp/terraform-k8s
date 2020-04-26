@@ -226,7 +226,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
 
-	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables, instance.Status.LastAppliedVariableValues)
+	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables, instance.Status.LastApplied)
 	if err != nil {
 		r.reqLogger.Error(err, "Could not update variables")
 		return reconcile.Result{}, err

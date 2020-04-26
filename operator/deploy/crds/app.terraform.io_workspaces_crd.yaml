@@ -183,10 +183,23 @@ spec:
         status:
           description: WorkspaceStatus defines the observed state of Workspace
           properties:
-            lastAppliedVariableValues:
-              additionalProperties:
-                type: string
-              description: Track Variable Value Changes
+            lastApplied:
+              description: Track Last Applied Values and Attributes
+              properties:
+                attributes:
+                  additionalProperties:
+                    type: integer
+                  description: LastAppliedVariableAttributes tracks changes to HCL,Sensitive,EnvironmentVariable
+                  type: object
+                values:
+                  additionalProperties:
+                    type: string
+                  description: LastAppliedVariableValues stores the last applied value
+                    (or hash for sensitive) for each variable
+                  type: object
+              required:
+              - attributes
+              - values
               type: object
             outputs:
               description: Outputs from state file

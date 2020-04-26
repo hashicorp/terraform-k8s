@@ -14,20 +14,6 @@ const (
 	PageSize = 500
 )
 
-func setVariableType(isEnvironmentVariable bool) tfc.CategoryType {
-	if isEnvironmentVariable {
-		return tfc.CategoryEnv
-	}
-	return tfc.CategoryTerraform
-}
-
-func setHCL(isHCL bool) bool {
-	if isHCL {
-		return true
-	}
-	return false
-}
-
 // CheckSecretsMountPath ensure the secrets mount path actually exists
 func (t *TerraformCloudClient) CheckSecretsMountPath() error {
 	if _, err := os.Stat(t.SecretsMountPath); os.IsNotExist(err) {
@@ -36,20 +22,21 @@ func (t *TerraformCloudClient) CheckSecretsMountPath() error {
 	return nil
 }
 
-func (t *TerraformCloudClient) deleteVariablesFromTFC(specTFCVariables map[string]*Variable, workspaceVariables map[string]*Variable, la v1alpha1.LastAppliedVariableValues) error {
+func (t *TerraformCloudClient) deleteVariablesFromTFC(specTFCVariables map[string]*Variable, workspaceVariables map[string]*Variable, la *v1alpha1.LastApplied) error {
 	for k, v := range workspaceVariables {
 		if _, ok := specTFCVariables[k]; !ok {
 			err := t.DeleteVariable(v)
 			if err != nil {
 				return err
 			}
-			delete(la, k)
+			delete(la.Values, k)
+			delete(la.Attributes, k)
 		}
 	}
 	return nil
 }
 
-func (t *TerraformCloudClient) updateVariablesOnTFC(workspace *tfc.Workspace, specTFCVariables map[string]*Variable, workspaceVariables map[string]*Variable, la v1alpha1.LastAppliedVariableValues) (bool, error) {
+func (t *TerraformCloudClient) updateVariablesOnTFC(workspace *tfc.Workspace, specTFCVariables map[string]*Variable, workspaceVariables map[string]*Variable, la *v1alpha1.LastApplied) (bool, error) {
 	updated := false
 	for k, v := range specTFCVariables {
 		err := v.CheckAndRetrieveIfSensitive(t)
@@ -58,7 +45,7 @@ func (t *TerraformCloudClient) updateVariablesOnTFC(workspace *tfc.Workspace, sp
 		}
 
 		// Create Variable
-		if _, ok := la[k]; !ok {
+		if _, ok := la.Values[k]; !ok {
 			err := t.CreateTerraformVariable(workspace, v)
 			if err != nil {
 				return false, err
@@ -91,7 +78,7 @@ func (t *TerraformCloudClient) updateVariablesOnTFC(workspace *tfc.Workspace, sp
 }
 
 // CheckVariables creates, updates, or deletes variables as needed
-func (t *TerraformCloudClient) CheckVariables(workspace string, specTFCVariables map[string]*Variable, la v1alpha1.LastAppliedVariableValues) (bool, error) {
+func (t *TerraformCloudClient) CheckVariables(workspace string, specTFCVariables map[string]*Variable, la *v1alpha1.LastApplied) (bool, error) {
 	tfcWorkspace, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil {
 		return false, err

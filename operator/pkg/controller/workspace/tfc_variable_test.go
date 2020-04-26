@@ -16,30 +16,38 @@ func TestUpdateVariablesLastApplied(t *testing.T) {
 	hashed, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
 	oldhashed, _ := bcrypt.GenerateFromPassword([]byte("oldhashed"), bcrypt.DefaultCost)
 	tests := map[string]struct {
-		lastApplied           [2]v1alpha1.LastAppliedVariableValues
+		lastApplied           [2]*v1alpha1.LastApplied
 		setWorkspaceVariables bool
 		updated               bool
 	}{
 		"Variable Creation": {
-			lastApplied: [2]v1alpha1.LastAppliedVariableValues{
-				{},
-				{},
+			lastApplied: [2]*v1alpha1.LastApplied{
+				{Values: map[string]string{}, Attributes: map[string]byte{"simple": 0}},
+				{Values: map[string]string{}, Attributes: map[string]byte{"sensitive": 2}},
 			},
 			setWorkspaceVariables: false,
 			updated:               true,
 		},
 		"Variable Unchanged": {
-			lastApplied: [2]v1alpha1.LastAppliedVariableValues{
-				{"simple": "simple"},
-				{"sensitive": string(hashed)},
+			lastApplied: [2]*v1alpha1.LastApplied{
+				{Values: map[string]string{"simple": "simple"}, Attributes: map[string]byte{"simple": 0}},
+				{Values: map[string]string{"sensitive": string(hashed)}, Attributes: map[string]byte{"sensitive": 2}},
 			},
 			setWorkspaceVariables: false,
 			updated:               false,
 		},
 		"Variable Changed": {
-			lastApplied: [2]v1alpha1.LastAppliedVariableValues{
-				{"simple": "oldsimple"},
-				{"sensitive": string(oldhashed)},
+			lastApplied: [2]*v1alpha1.LastApplied{
+				{Values: map[string]string{"simple": "oldsimple"}, Attributes: map[string]byte{"simple": 0}},
+				{Values: map[string]string{"sensitive": string(oldhashed)}, Attributes: map[string]byte{"sensitive": 2}},
+			},
+			setWorkspaceVariables: true,
+			updated:               true,
+		},
+		"Attribute Changed": {
+			lastApplied: [2]*v1alpha1.LastApplied{
+				{Values: map[string]string{"simple": "simple"}, Attributes: map[string]byte{"simple": 1}},
+				{Values: map[string]string{"sensitive": string(hashed)}, Attributes: map[string]byte{"sensitive": 3}},
 			},
 			setWorkspaceVariables: true,
 			updated:               true,
@@ -57,7 +65,7 @@ func TestUpdateVariablesLastApplied(t *testing.T) {
 		mock.AnythingOfType("*context.emptyCtx"),
 		mock.AnythingOfType("string"),
 		mock.AnythingOfType("tfe.VariableUpdateOptions"),
-	).Return(&tfc.Variable{}, nil).Twice()
+	).Return(&tfc.Variable{}, nil).Times(4)
 
 	tfcClient := &TerraformCloudClient{}
 	tfcClient.Client = &tfc.Client{Variables: mockVariablesClient}
@@ -72,6 +80,7 @@ func TestUpdateVariablesLastApplied(t *testing.T) {
 			if test.setWorkspaceVariables {
 				workspaceVariables[key] = &Variable{&tfc.Variable{Key: key, Sensitive: tt.sensitive, ID: key}, "", false}
 			}
+
 			lastApplied := tt.lastApplied
 			specVariables := make(map[string]*Variable)
 			specVariables[key] = newTestVariable(key, tt.value, tt.hashed, tt.sensitive, false, false, false)
@@ -98,33 +107,61 @@ func newTestVariable(key, value, hashed string, sensitive, environment, hcl, alw
 	}
 }
 
-func simpleTests(la [2]v1alpha1.LastAppliedVariableValues, hashed string) map[string]struct {
+func simpleTests(la [2]*v1alpha1.LastApplied, hashed string) map[string]struct {
 	value       string
 	hashed      string
 	sensitive   bool
-	expected    v1alpha1.LastAppliedVariableValues
-	lastApplied v1alpha1.LastAppliedVariableValues
+	hcl         bool
+	environment bool
+	expected    *v1alpha1.LastApplied
+	lastApplied *v1alpha1.LastApplied
 } {
 	return map[string]struct {
 		value       string
 		hashed      string
 		sensitive   bool
-		expected    v1alpha1.LastAppliedVariableValues
-		lastApplied v1alpha1.LastAppliedVariableValues
+		hcl         bool
+		environment bool
+		expected    *v1alpha1.LastApplied
+		lastApplied *v1alpha1.LastApplied
 	}{
 		"simple": {
 			value:       "simple",
 			hashed:      "",
 			sensitive:   false,
-			expected:    v1alpha1.LastAppliedVariableValues{"simple": "simple"},
+			hcl:         false,
+			environment: false,
+			expected:    &v1alpha1.LastApplied{Values: map[string]string{"simple": "simple"}, Attributes: map[string]byte{"simple": 0}},
 			lastApplied: la[0],
 		},
 		"sensitive": {
 			value:       "password",
 			hashed:      hashed,
 			sensitive:   true,
-			expected:    v1alpha1.LastAppliedVariableValues{"sensitive": hashed},
+			hcl:         false,
+			environment: false,
+			expected:    &v1alpha1.LastApplied{Values: map[string]string{"sensitive": hashed}, Attributes: map[string]byte{"sensitive": 2}},
 			lastApplied: la[1],
 		},
 	}
 }
+
+// func copyLastApplied(la *v1alpha1.LastApplied) *v1alpha1.LastApplied {
+// 	ret := &v1alpha1.LastApplied{
+// 		Values:     v1alpha1.LastAppliedVariableValues{},
+// 		Attributes: v1alpha1.LastAppliedVariableAttributes{},
+// 	}
+// 	for k, v := range la.Values {
+// 		ret.Values[k] = v
+// 	}
+// 	for k, v := range la.Attributes {
+// 		ret.Attributes[k] = v
+// 	}
+// 	return ret
+// }
+
+// const (
+// 	BIT_HCL         = 1
+// 	BIT_SENSITIVE   = 2
+// 	BIT_ENVIRONMENT = 4
+// )
