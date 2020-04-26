@@ -145,23 +145,3 @@ func simpleTests(la [2]*v1alpha1.LastApplied, hashed string) map[string]struct {
 		},
 	}
 }
-
-// func copyLastApplied(la *v1alpha1.LastApplied) *v1alpha1.LastApplied {
-// 	ret := &v1alpha1.LastApplied{
-// 		Values:     v1alpha1.LastAppliedVariableValues{},
-// 		Attributes: v1alpha1.LastAppliedVariableAttributes{},
-// 	}
-// 	for k, v := range la.Values {
-// 		ret.Values[k] = v
-// 	}
-// 	for k, v := range la.Attributes {
-// 		ret.Attributes[k] = v
-// 	}
-// 	return ret
-// }
-
-// const (
-// 	BIT_HCL         = 1
-// 	BIT_SENSITIVE   = 2
-// 	BIT_ENVIRONMENT = 4
-// )
