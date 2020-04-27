@@ -74,6 +74,9 @@ spec:
                     description: EnvironmentVariable denotes if this variable should
                       be created as environment variable
                     type: boolean
+                  hcl:
+                    description: String input should be an HCL-formatted variable
+                    type: boolean
                   key:
                     description: Variable name
                     type: string
