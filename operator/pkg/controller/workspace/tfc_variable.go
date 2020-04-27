@@ -23,6 +23,13 @@ func setVariableType(isEnvironmentVariable bool) tfc.CategoryType {
 	return tfc.CategoryTerraform
 }
 
+func setHCL(isHCL bool) bool {
+	if isHCL {
+		return true
+	}
+	return false
+}
+
 // MapToTFCVariable changes the controller spec to a TFC Variable
 func MapToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
 	tfcVariables := []*tfc.Variable{}
@@ -32,6 +39,7 @@ func MapToTFCVariable(specVariables []*v1alpha1.Variable) []*tfc.Variable {
 			Value:     strings.TrimSuffix(variable.Value, "\n"),
 			Sensitive: variable.Sensitive,
 			Category:  setVariableType(variable.EnvironmentVariable),
+			HCL:       setHCL(variable.HCL),
 		})
 	}
 	return tfcVariables
@@ -55,6 +63,30 @@ func (t *TerraformCloudClient) deleteVariablesFromTFC(specTFCVariables []*tfc.Va
 			}
 		}
 	}
+	return nil
+}
+
+func (t *TerraformCloudClient) UpdateSensitiveBeforeRun(workspace string, specTFCVariables []*tfc.Variable) error {
+	workspaceVariables, err := t.listVariables(workspace)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range specTFCVariables {
+		if !v.Sensitive {
+			continue
+		}
+		index := find(workspaceVariables, v.Key)
+		err := t.checkAndRetrieveIfSensitive(v)
+		if err != nil {
+			return err
+		}
+		err = t.UpdateTerraformVariable(workspaceVariables[index], v.Value)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -167,6 +199,7 @@ func (t *TerraformCloudClient) CreateTerraformVariable(workspace *tfc.Workspace,
 		Value:     &variable.Value,
 		Category:  &variable.Category,
 		Sensitive: &variable.Sensitive,
+		HCL:       &variable.HCL,
 		Workspace: workspace,
 	}
 	_, err := t.Client.Variables.Create(context.TODO(), options)
