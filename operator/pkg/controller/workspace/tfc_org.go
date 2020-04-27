@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	tfc "github.com/hashicorp/go-tfe"
+	appv1alpha1 "github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
 	"github.com/hashicorp/terraform/command/cliconfig"
 )
 
@@ -46,7 +47,7 @@ func (t *TerraformCloudClient) CheckOrganization() error {
 }
 
 // CheckWorkspace looks for a workspace
-func (t *TerraformCloudClient) CheckWorkspace(workspace string) (string, error) {
+func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1alpha1.Workspace) (string, error) {
 	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil && err == tfc.ErrResourceNotFound {
 		id, err := t.CreateWorkspace(workspace)
@@ -57,6 +58,13 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string) (string, error) 
 	} else if err != nil {
 		return "", err
 	}
+
+	if instance.Spec.SSHKeyID != "" {
+		t.AssignWorkspaceSSHKey(ws.ID, instance.Spec.SSHKeyID)
+	} else if ws.SSHKey != nil {
+		t.UnassignWorkspaceSSHKey(ws.ID)
+	}
+
 	return ws.ID, err
 }
 
@@ -70,6 +78,30 @@ func (t *TerraformCloudClient) CreateWorkspace(workspace string) (string, error)
 	if err != nil {
 		return "", err
 	}
+
+	return ws.ID, nil
+}
+
+// Assign SSHKey to Terraform Cloud Workspace
+func (t *TerraformCloudClient) AssignWorkspaceSSHKey(workspaceID string, SSHKeyID string) (string, error) {
+	sshOptions := tfc.WorkspaceAssignSSHKeyOptions{
+		SSHKeyID: &SSHKeyID,
+	}
+	ws, err := t.Client.Workspaces.AssignSSHKey(context.TODO(), workspaceID, sshOptions)
+	if err != nil {
+		return "", err
+	}
+
+	return ws.ID, nil
+}
+
+// Unassign SSHKey from Terraform Cloud Workspace
+func (t *TerraformCloudClient) UnassignWorkspaceSSHKey(workspaceID string) (string, error) {
+	ws, err := t.Client.Workspaces.UnassignSSHKey(context.TODO(), workspaceID)
+	if err != nil {
+		return "", err
+	}
+
 	return ws.ID, nil
 }
 

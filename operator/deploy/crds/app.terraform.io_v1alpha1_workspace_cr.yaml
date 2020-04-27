@@ -12,6 +12,7 @@ metadata:
 spec:
   organization: hashicorp-team-demo
   secretsMountPath: "/tmp/secrets"
+  #sshKeyID: "sshkey-12345"
   module:
     source: "joatmon08/hello/random"
     version: "4.0.0"
