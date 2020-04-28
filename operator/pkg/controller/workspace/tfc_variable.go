@@ -66,31 +66,7 @@ func (t *TerraformCloudClient) deleteVariablesFromTFC(specTFCVariables []*tfc.Va
 	return nil
 }
 
-func (t *TerraformCloudClient) UpdateSensitiveBeforeRun(workspace string, specTFCVariables []*tfc.Variable) error {
-	workspaceVariables, err := t.listVariables(workspace)
-	if err != nil {
-		return err
-	}
-
-	for _, v := range specTFCVariables {
-		if !v.Sensitive {
-			continue
-		}
-		index := find(workspaceVariables, v.Key)
-		err := t.checkAndRetrieveIfSensitive(v)
-		if err != nil {
-			return err
-		}
-		err = t.UpdateTerraformVariable(workspaceVariables[index], v.Value)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (t *TerraformCloudClient) updateVariablesOnTFC(workspace *tfc.Workspace, specTFCVariables []*tfc.Variable, workspaceVariables []*tfc.Variable) (bool, error) {
+func (t *TerraformCloudClient) createVariablesOnTFC(workspace *tfc.Workspace, specTFCVariables []*tfc.Variable, workspaceVariables []*tfc.Variable) (bool, error) {
 	updated := false
 	for _, v := range specTFCVariables {
 		index := find(workspaceVariables, v.Key)
@@ -102,18 +78,73 @@ func (t *TerraformCloudClient) updateVariablesOnTFC(workspace *tfc.Workspace, sp
 			updated = true
 			continue
 		}
-		if v.Value != workspaceVariables[index].Value {
-			t.checkAndRetrieveIfSensitive(v)
-			err := t.UpdateTerraformVariable(workspaceVariables[index], v.Value)
-			if err != nil {
-				return false, err
-			}
-			if !v.Sensitive {
-				updated = true
-			}
-		}
 	}
 	return updated, nil
+}
+
+func checkIfVariableChanged(specVariable *tfc.Variable, workspaceVariable *tfc.Variable) bool {
+	if specVariable.Value != workspaceVariable.Value {
+		return true
+	}
+	if specVariable.HCL != workspaceVariable.HCL {
+		return true
+	}
+	if !specVariable.Sensitive && workspaceVariable.Sensitive {
+		return true
+	}
+	return false
+}
+
+func getNonSensitiveVariablesToUpdate(specTFCVariables []*tfc.Variable, workspaceVariables []*tfc.Variable) []*tfc.Variable {
+	variablesToUpdate := []*tfc.Variable{}
+	for _, v := range specTFCVariables {
+		index := find(workspaceVariables, v.Key)
+		if index < 0 || workspaceVariables[index].Sensitive {
+			continue
+		}
+		if checkIfVariableChanged(v, workspaceVariables[index]) {
+			v.ID = workspaceVariables[index].ID
+			variablesToUpdate = append(variablesToUpdate, v)
+		}
+	}
+	return variablesToUpdate
+}
+
+func getSensitiveVariablesToUpdate(specTFCVariables []*tfc.Variable, workspaceVariables []*tfc.Variable, secretsMountPath string) ([]*tfc.Variable, error) {
+	variablesToUpdate := []*tfc.Variable{}
+	for _, v := range specTFCVariables {
+		index := find(workspaceVariables, v.Key)
+		if index < 0 {
+			continue
+		}
+		if workspaceVariables[index].Sensitive {
+			if err := checkAndRetrieveIfSensitive(v, secretsMountPath); err != nil {
+				return nil, err
+			}
+			v.ID = workspaceVariables[index].ID
+			v.Sensitive = true
+			variablesToUpdate = append(variablesToUpdate, v)
+		}
+	}
+	return variablesToUpdate, nil
+}
+
+func generateUpdateVariableList(specTFCVariables []*tfc.Variable, workspaceVariables []*tfc.Variable, secretsMountPath string) ([]*tfc.Variable, error) {
+	updateList := []*tfc.Variable{}
+
+	nonSensitiveVariablesToUpdate := getNonSensitiveVariablesToUpdate(specTFCVariables, workspaceVariables)
+	if len(nonSensitiveVariablesToUpdate) == 0 {
+		return updateList, nil
+	}
+
+	sensitiveVariablesToUpdate, err := getSensitiveVariablesToUpdate(specTFCVariables, workspaceVariables, secretsMountPath)
+	if err != nil {
+		return nonSensitiveVariablesToUpdate, err
+	}
+
+	updateList = append(nonSensitiveVariablesToUpdate, sensitiveVariablesToUpdate...)
+
+	return updateList, nil
 }
 
 // CheckVariables creates, updates, or deletes variables as needed
@@ -130,7 +161,21 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specTFCVariables
 		return false, err
 	}
 
-	return t.updateVariablesOnTFC(tfcWorkspace, specTFCVariables, workspaceVariables)
+	createdVariables, err := t.createVariablesOnTFC(tfcWorkspace, specTFCVariables, workspaceVariables)
+	if err != nil {
+		return false, err
+	}
+
+	variablesToUpdate, err := generateUpdateVariableList(specTFCVariables, workspaceVariables, t.SecretsMountPath)
+	if err != nil || len(variablesToUpdate) == 0 {
+		return false, err
+	}
+
+	if err = t.UpdateTerraformVariables(variablesToUpdate); err != nil {
+		return false, err
+	}
+
+	return createdVariables || len(variablesToUpdate) > 0, nil
 }
 
 func find(tfcVariables []*tfc.Variable, key string) int {
@@ -164,23 +209,29 @@ func (t *TerraformCloudClient) DeleteVariable(variable *tfc.Variable) error {
 	return nil
 }
 
-// UpdateTerraformVariable updates a variable
-func (t *TerraformCloudClient) UpdateTerraformVariable(variable *tfc.Variable, newValue string) error {
-	options := tfc.VariableUpdateOptions{
-		Key:       &variable.Key,
-		Value:     &newValue,
-		Sensitive: &variable.Sensitive,
+// UpdateTerraformVariables updates a list of variable
+func (t *TerraformCloudClient) UpdateTerraformVariables(variables []*tfc.Variable) error {
+	if len(variables) == 0 {
+		return nil
 	}
-	_, err := t.Client.Variables.Update(context.TODO(), variable.ID, options)
-	if err != nil {
-		return err
+	for _, v := range variables {
+		options := tfc.VariableUpdateOptions{
+			Key:       &v.Key,
+			Value:     &v.Value,
+			HCL:       &v.HCL,
+			Sensitive: &v.Sensitive,
+		}
+		_, err := t.Client.Variables.Update(context.TODO(), v.ID, options)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (t *TerraformCloudClient) checkAndRetrieveIfSensitive(variable *tfc.Variable) error {
+func checkAndRetrieveIfSensitive(variable *tfc.Variable, secretsMountPath string) error {
 	if variable.Sensitive {
-		filePath := fmt.Sprintf("%s/%s", t.SecretsMountPath, variable.Key)
+		filePath := fmt.Sprintf("%s/%s", secretsMountPath, variable.Key)
 		data, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			return fmt.Errorf("could not get secret, %s", err)
@@ -193,7 +244,7 @@ func (t *TerraformCloudClient) checkAndRetrieveIfSensitive(variable *tfc.Variabl
 
 // CreateTerraformVariable creates a Terraform variable based on key and value
 func (t *TerraformCloudClient) CreateTerraformVariable(workspace *tfc.Workspace, variable *tfc.Variable) error {
-	t.checkAndRetrieveIfSensitive(variable)
+	checkAndRetrieveIfSensitive(variable, t.SecretsMountPath)
 	options := tfc.VariableCreateOptions{
 		Key:       &variable.Key,
 		Value:     &variable.Value,
