@@ -62,6 +62,9 @@ spec:
             secretsMountPath:
               description: File path within operator pod to load workspace secrets
               type: string
+            sshKeyID:
+              description: SSH Key ID
+              type: string
             variables:
               description: Variables as inputs to module
               items:
