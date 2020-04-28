@@ -76,6 +76,9 @@ type WorkspaceSpec struct {
 	Variables []*Variable `json:"variables,omitempty"`
 	// File path within operator pod to load workspace secrets
 	SecretsMountPath string `json:"secretsMountPath"`
+	// SSH Key ID
+	// +optional
+	SSHKeyID string `json:"sshKeyID,omitempty"`
 	// Outputs denote outputs wanted
 	// +listType=set
 	// +optional

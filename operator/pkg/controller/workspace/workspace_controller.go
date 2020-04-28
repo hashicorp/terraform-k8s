@@ -120,7 +120,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	workspaceID, err := r.tfclient.CheckWorkspace(workspace)
+	workspaceID, err := r.tfclient.CheckWorkspace(workspace, instance)
 	if err != nil {
 		r.reqLogger.Error(err, "Could not update workspace")
 		return reconcile.Result{}, err
@@ -233,11 +233,6 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 
 	if updatedTerraform || updatedVariables || instance.Status.RunID == "" {
 		r.reqLogger.Info("Starting run because template changed", "Organization", organization, "Name", workspace, "Namespace", request.Namespace)
-
-		if err := r.tfclient.UpdateSensitiveBeforeRun(workspace, specTFCVariables); err != nil {
-			r.reqLogger.Error(err, "Could not update Sensitive Varaibles before Run")
-			return reconcile.Result{}, err
-		}
 
 		if err := r.tfclient.CreateRun(instance, terraform); err != nil {
 			r.reqLogger.Error(err, "Could not run new Terraform configuration")
