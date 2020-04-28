@@ -2,6 +2,7 @@
 
 * Add `sshKeyID` to CR spec, so users can reference modules in private git repos (#25)
 * Always update Sensitive variables when a Run is triggered and before the Run is executed (#22)
+* Fix: update variables when HCL flag changes (#33)
 
 ## 0.1.2 (April 16, 2020)
 
