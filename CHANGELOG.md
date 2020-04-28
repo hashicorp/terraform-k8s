@@ -1,4 +1,4 @@
-## Unreleased
+## 0.1.3 (April 28, 2020)
 
 * Add `sshKeyID` to CR spec, so users can reference modules in private git repos (#25)
 * Always update Sensitive variables when a Run is triggered and before the Run is executed (#22)
