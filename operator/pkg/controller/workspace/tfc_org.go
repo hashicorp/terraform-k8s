@@ -82,10 +82,30 @@ func (t *TerraformCloudClient) CreateWorkspace(workspace string) (string, error)
 	return ws.ID, nil
 }
 
-// Assign SSHKey to Terraform Cloud Workspace
+// GetSSHKeyByNameOrID Lookup provided Key ID by name or ID, return ID.
+func (t *TerraformCloudClient) GetSSHKeyByNameOrID(SSHKeyID string) (string, error) {
+	sshKeys, err := t.Client.SSHKeys.List(context.TODO(), t.Organization, tfc.SSHKeyListOptions{})
+	if err != nil {
+		return "", err
+	}
+	for _, elem := range sshKeys.Items {
+		if elem.ID == SSHKeyID || elem.Name == SSHKeyID {
+			return elem.ID, nil
+		}
+	}
+	log.Error(tfc.ErrResourceNotFound, "No SSHKey found for "+SSHKeyID)
+	return "", tfc.ErrResourceNotFound
+}
+
+// AssignWorkspaceSSHKey to Terraform Cloud Workspace
 func (t *TerraformCloudClient) AssignWorkspaceSSHKey(workspaceID string, SSHKeyID string) (string, error) {
+
+	sshKey, err := t.GetSSHKeyByNameOrID(SSHKeyID)
+	if err != nil {
+		return "", err
+	}
 	sshOptions := tfc.WorkspaceAssignSSHKeyOptions{
-		SSHKeyID: &SSHKeyID,
+		SSHKeyID: &sshKey,
 	}
 	ws, err := t.Client.Workspaces.AssignSSHKey(context.TODO(), workspaceID, sshOptions)
 	if err != nil {
@@ -95,7 +115,7 @@ func (t *TerraformCloudClient) AssignWorkspaceSSHKey(workspaceID string, SSHKeyI
 	return ws.ID, nil
 }
 
-// Unassign SSHKey from Terraform Cloud Workspace
+// UnassignWorkspaceSSHKey from Terraform Cloud Workspace
 func (t *TerraformCloudClient) UnassignWorkspaceSSHKey(workspaceID string) (string, error) {
 	ws, err := t.Client.Workspaces.UnassignSSHKey(context.TODO(), workspaceID)
 	if err != nil {
