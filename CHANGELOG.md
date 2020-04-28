@@ -1,3 +1,8 @@
+## Unreleased
+
+* Add `sshKeyID` to CR spec, so users can reference modules in private git repos (#25)
+* Always update Sensitive variables when a Run is triggered and before the Run is executed (#22)
+
 ## 0.1.2 (April 16, 2020)
 
 * Enable non-string Terraform variables by setting HCL type (#11)
