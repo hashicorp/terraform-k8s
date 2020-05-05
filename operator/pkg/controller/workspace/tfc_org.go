@@ -53,8 +53,9 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1a
 		id, err := t.CreateWorkspace(workspace)
 		if err != nil {
 			return "", err
+		} else {
+			ws = &tfc.Workspace{ID: id}
 		}
-		return id, nil
 	} else if err != nil {
 		return "", err
 	}
@@ -67,7 +68,6 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1a
 
 	return ws.ID, err
 }
-
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
 func (t *TerraformCloudClient) CreateWorkspace(workspace string) (string, error) {
 	options := tfc.WorkspaceCreateOptions{
