@@ -69,7 +69,7 @@ type WorkspaceSpec struct {
 	Variables []*Variable `json:"variables,omitempty"`
 	// File path within operator pod to load workspace secrets
 	SecretsMountPath string `json:"secretsMountPath"`
-	// SSH Key ID
+	// SSH Key ID. This key must already exist in the TF Cloud organization.  This can either be the user assigned name of the SSH Key, or the system assigned ID.
 	// +optional
 	SSHKeyID string `json:"sshKeyID,omitempty"`
 	// Outputs denote outputs wanted

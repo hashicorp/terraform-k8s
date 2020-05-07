@@ -63,7 +63,9 @@ spec:
               description: File path within operator pod to load workspace secrets
               type: string
             sshKeyID:
-              description: SSH Key ID
+              description: SSH Key ID. This key must already exist in the TF Cloud
+                organization.  This can either be the user assigned name of the SSH
+                Key, or the system assigned ID.
               type: string
             variables:
               description: Variables as inputs to module
