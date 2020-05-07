@@ -17,7 +17,7 @@ ENV NAME=$NAME
 ENV VERSION=$VERSION
 
 # This is the location of the releases.
-ENV HASHICORP_RELEASES=https://github.com/parkside-securities/$NAME/releases/download
+ENV HASHICORP_RELEASES=https://github.com/hashicorp/$NAME/releases/download
 
 # Create a non-root user to run the software.
 RUN addgroup ${NAME} && \
