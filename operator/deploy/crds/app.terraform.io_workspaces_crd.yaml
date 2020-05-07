@@ -64,7 +64,7 @@ spec:
               type: string
             sshKeyID:
               description: SSH Key ID. This key must already exist in the TF Cloud
-                orgaization.  This can either be the user assigned name of the SSH
+                organization.  This can either be the user assigned name of the SSH
                 Key, or the system assigned ID.
               type: string
             variables:
