@@ -37,6 +37,17 @@ type OutputStatus struct {
 	Value string `json:"value"`
 }
 
+// LastAppliedVariableValues stores the last applied value (or hash for sensitive) for each variable
+type LastAppliedVariableValues map[string]string
+
+// LastAppliedVariableAttributes tracks changes to HCL,Sensitive,EnvironmentVariable
+type LastAppliedVariableAttributes map[string]byte
+
+type LastApplied struct {
+	Values     LastAppliedVariableValues     `json:"values"`
+	Attributes LastAppliedVariableAttributes `json:"attributes"`
+}
+
 // Variable denotes an input to the module
 type Variable struct {
 	// Variable name
@@ -54,6 +65,9 @@ type Variable struct {
 	Sensitive bool `json:"sensitive"`
 	// EnvironmentVariable denotes if this variable should be created as environment variable
 	EnvironmentVariable bool `json:"environmentVariable"`
+	// Always update in TFC is true
+	// +optional
+	AlwaysUpdate bool `json:"alwaysUpdate"`
 }
 
 // WorkspaceSpec defines the desired state of Workspace
@@ -85,6 +99,9 @@ type WorkspaceStatus struct {
 	// Outputs from state file
 	// +optional
 	Outputs []*OutputStatus `json:"outputs,omitempty"`
+	// Track Last Applied Values and Attributes
+	// +optional
+	LastApplied *LastApplied `json:"lastApplied"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
