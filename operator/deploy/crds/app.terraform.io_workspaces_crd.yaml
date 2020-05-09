@@ -132,9 +132,13 @@ spec:
                               for env vars'
                             type: string
                           divisor:
+                            anyOf:
+                            - type: integer
+                            - type: string
                             description: Specifies the output format of the exposed
                               resources, defaults to "1"
-                            type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                           resource:
                             description: 'Required: resource to select'
                             type: string

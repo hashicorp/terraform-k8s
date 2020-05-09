@@ -64,13 +64,11 @@ type WorkspaceSpec struct {
 	// Module source and version to use
 	Module *Module `json:"module"`
 	// Variables as inputs to module
-	// +listType=set
 	// +optional
 	Variables []*Variable `json:"variables,omitempty"`
 	// File path within operator pod to load workspace secrets
 	SecretsMountPath string `json:"secretsMountPath"`
 	// Outputs denote outputs wanted
-	// +listType=set
 	// +optional
 	Outputs []*OutputSpec `json:"outputs,omitempty"`
 }
@@ -85,7 +83,6 @@ type WorkspaceStatus struct {
 	// Run ID
 	RunID string `json:"runID"`
 	// Outputs from state file
-	// +listType=set
 	// +optional
 	Outputs []*OutputStatus `json:"outputs,omitempty"`
 }
