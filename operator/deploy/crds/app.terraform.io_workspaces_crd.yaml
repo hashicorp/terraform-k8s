@@ -59,7 +59,6 @@ spec:
                     type: string
                 type: object
               type: array
-              x-kubernetes-list-type: set
             secretsMountPath:
               description: File path within operator pod to load workspace secrets
               type: string
@@ -174,7 +173,6 @@ spec:
                 - sensitive
                 type: object
               type: array
-              x-kubernetes-list-type: set
           required:
           - module
           - organization
@@ -214,7 +212,6 @@ spec:
                     type: string
                 type: object
               type: array
-              x-kubernetes-list-type: set
             runID:
               description: Run ID
               type: string
