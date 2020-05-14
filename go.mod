@@ -7,7 +7,6 @@ require (
 	github.com/go-openapi/spec v0.19.4
 	github.com/hashicorp/go-tfe v0.3.31
 	github.com/hashicorp/terraform v0.12.25
-	github.com/likexian/gokit v0.20.15
 	github.com/mitchellh/cli v1.1.0
 	github.com/operator-framework/operator-sdk v0.15.1
 	github.com/spf13/pflag v1.0.5
