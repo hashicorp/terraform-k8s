@@ -3,9 +3,11 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"os"
 
 	tfc "github.com/hashicorp/go-tfe"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/operator/pkg/apis/app/v1alpha1"
+	"github.com/hashicorp/terraform-k8s/operator/version"
 	"github.com/hashicorp/terraform/command/cliconfig"
 )
 
@@ -68,11 +70,20 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1a
 	return ws.ID, err
 }
 
+func getTerraformVersion() *string {
+	tfVersion := os.Getenv("TF_VERSION")
+	if tfVersion == "" {
+		return &version.TerraformVersion
+	}
+	return &tfVersion
+}
+
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
 func (t *TerraformCloudClient) CreateWorkspace(workspace string) (string, error) {
 	options := tfc.WorkspaceCreateOptions{
-		AutoApply: &AutoApply,
-		Name:      &workspace,
+		AutoApply:        &AutoApply,
+		Name:             &workspace,
+		TerraformVersion: getTerraformVersion(),
 	}
 	ws, err := t.Client.Workspaces.Create(context.TODO(), t.Organization, options)
 	if err != nil {

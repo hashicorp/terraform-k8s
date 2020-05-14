@@ -1,5 +1,9 @@
 package version
 
 var (
-	Version = "0.0.1"
+	// Version of operator
+	Version = "0.1.4-alpha"
+
+	// TerraformVersion for workspace default
+	TerraformVersion = "0.12.25"
 )
