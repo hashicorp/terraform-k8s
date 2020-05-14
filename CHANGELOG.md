@@ -1,3 +1,7 @@
+## Unreleased
+
+* Update to Terraform 0.12.25 and add TF_VERSION environment variable (#47)
+
 ## 0.1.3 (April 28, 2020)
 
 * Add `sshKeyID` to CR spec, so users can reference modules in private git repos (#25)
