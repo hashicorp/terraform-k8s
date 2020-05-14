@@ -6,11 +6,11 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/hashicorp/go-tfe v0.3.31
-	github.com/hashicorp/terraform v0.12.24
+	github.com/hashicorp/terraform v0.12.25
 	github.com/mitchellh/cli v1.1.0
 	github.com/operator-framework/operator-sdk v0.15.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	github.com/zclconf/go-cty v1.3.1
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
