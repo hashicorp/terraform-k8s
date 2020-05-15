@@ -39,13 +39,13 @@ func TestShouldCreateTerraformWithVariables(t *testing.T) {
 				Version: "0.3.2",
 			},
 			Variables: []*v1alpha1.Variable{
-				&v1alpha1.Variable{
+				{
 					Key:                 "some_var",
 					Value:               "here",
 					Sensitive:           false,
 					EnvironmentVariable: false,
 				},
-				&v1alpha1.Variable{
+				{
 					Key:                 "hello",
 					Value:               "world",
 					Sensitive:           false,
@@ -119,7 +119,7 @@ func TestShouldCreateTerraformWithNoEnvironmentVariables(t *testing.T) {
 				Version: "0.3.2",
 			},
 			Variables: []*v1alpha1.Variable{
-				&v1alpha1.Variable{
+				{
 					Key:                 "some_var",
 					Value:               "here",
 					Sensitive:           false,
@@ -166,11 +166,11 @@ func TestShouldCreateTerraformWithOutputs(t *testing.T) {
 				Version: "0.3.2",
 			},
 			Outputs: []*v1alpha1.OutputSpec{
-				&v1alpha1.OutputSpec{
+				{
 					Key:              "module_output",
 					ModuleOutputName: "my_output",
 				},
-				&v1alpha1.OutputSpec{
+				{
 					Key:              "ip",
 					ModuleOutputName: "ip_address",
 				},

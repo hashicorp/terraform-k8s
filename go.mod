@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
-	github.com/hashicorp/go-tfe v0.3.31
+	github.com/hashicorp/go-tfe v0.7.0
 	github.com/hashicorp/terraform v0.12.25
 	github.com/mitchellh/cli v1.1.0
 	github.com/operator-framework/operator-sdk v0.15.1
