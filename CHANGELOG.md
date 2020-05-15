@@ -1,3 +1,7 @@
+## Unreleased
+
+* Upgrade go-tfe to v0.7.0 and dependencies
+
 ## 0.1.4-alpha (May 14, 2020)
 
 * Allow user to specify SSH Key by name or ID (#41)

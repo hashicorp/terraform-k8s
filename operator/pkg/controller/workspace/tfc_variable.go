@@ -104,6 +104,7 @@ func getNonSensitiveVariablesToUpdate(specTFCVariables []*tfc.Variable, workspac
 		}
 		if checkIfVariableChanged(v, workspaceVariables[index]) {
 			v.ID = workspaceVariables[index].ID
+			v.Workspace = workspaceVariables[index].Workspace
 			variablesToUpdate = append(variablesToUpdate, v)
 		}
 	}
@@ -122,6 +123,7 @@ func getSensitiveVariablesToUpdate(specTFCVariables []*tfc.Variable, workspaceVa
 				return nil, err
 			}
 			v.ID = workspaceVariables[index].ID
+			v.Workspace = workspaceVariables[index].Workspace
 			v.Sensitive = true
 			variablesToUpdate = append(variablesToUpdate, v)
 		}
@@ -153,7 +155,7 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specTFCVariables
 	if err != nil {
 		return false, err
 	}
-	workspaceVariables, err := t.listVariables(workspace)
+	workspaceVariables, err := t.listVariables(tfcWorkspace.ID)
 	if err != nil {
 		return false, err
 	}
@@ -187,13 +189,11 @@ func find(tfcVariables []*tfc.Variable, key string) int {
 	return -1
 }
 
-func (t *TerraformCloudClient) listVariables(workspace string) ([]*tfc.Variable, error) {
+func (t *TerraformCloudClient) listVariables(workspaceID string) ([]*tfc.Variable, error) {
 	options := tfc.VariableListOptions{
-		ListOptions:  tfc.ListOptions{PageSize: PageSize},
-		Organization: &t.Organization,
-		Workspace:    &workspace,
+		ListOptions: tfc.ListOptions{PageSize: PageSize},
 	}
-	variables, err := t.Client.Variables.List(context.TODO(), options)
+	variables, err := t.Client.Variables.List(context.TODO(), workspaceID, options)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (t *TerraformCloudClient) listVariables(workspace string) ([]*tfc.Variable,
 
 // DeleteVariable removes the variable by ID from Terraform Cloud
 func (t *TerraformCloudClient) DeleteVariable(variable *tfc.Variable) error {
-	err := t.Client.Variables.Delete(context.TODO(), variable.ID)
+	err := t.Client.Variables.Delete(context.TODO(), variable.Workspace.ID, variable.ID)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (t *TerraformCloudClient) UpdateTerraformVariables(variables []*tfc.Variabl
 			HCL:       &v.HCL,
 			Sensitive: &v.Sensitive,
 		}
-		_, err := t.Client.Variables.Update(context.TODO(), v.ID, options)
+		_, err := t.Client.Variables.Update(context.TODO(), v.Workspace.ID, v.ID, options)
 		if err != nil {
 			return err
 		}
@@ -251,9 +251,8 @@ func (t *TerraformCloudClient) CreateTerraformVariable(workspace *tfc.Workspace,
 		Category:  &variable.Category,
 		Sensitive: &variable.Sensitive,
 		HCL:       &variable.HCL,
-		Workspace: workspace,
 	}
-	_, err := t.Client.Variables.Create(context.TODO(), options)
+	_, err := t.Client.Variables.Create(context.TODO(), workspace.ID, options)
 	if err != nil {
 		return err
 	}
