@@ -29,10 +29,16 @@ func createTerraformConfig(address string, tfConfig *cliconfig.Config) (*tfc.Con
 		address = tfc.DefaultAddress
 	}
 	u, err := url.Parse(address)
+    if u.Scheme == "" {
+    return nil, fmt.Errorf("Invalid Terraform Cloud or Enterprise URL. Please specify a scheme (http:// or https://)")
+    }
 	if err != nil {
 		return nil, fmt.Errorf("Not a valid Terraform Cloud or Enterprise URL, %v", err)
 	}
 	host := u.Host
+	if host == "" {
+		return nil, fmt.Errorf("Terraform Cloud or Enterprise URL hostname is ''. Invalid hostname")
+	}
 
 	if len(tfConfig.Credentials[host]) == 0 {
 		return nil, fmt.Errorf("Define token for %s", host)

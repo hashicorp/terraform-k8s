@@ -37,7 +37,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	err := tfclient.GetClient(os.Getenv("TF_URL"))
 	if err != nil {
 		log.Error(err, "could not create Terraform Cloud or Enterprise client")
-		panic(err)
+		os.Exit(1)
 	}
 	return &ReconcileWorkspace{
 		client:    mgr.GetClient(),
@@ -87,8 +87,6 @@ type ReconcileWorkspace struct {
 
 // Reconcile reads that state of the cluster for a Workspace object and makes changes based on the state read
 // and what is in the Workspace.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
@@ -114,13 +112,13 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 
 	if err := r.tfclient.CheckOrganization(); err != nil {
 		r.reqLogger.Error(err, "Could not find organization")
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, err
 	}
 
 	r.tfclient.SecretsMountPath = instance.Spec.SecretsMountPath
 	if err := r.tfclient.CheckSecretsMountPath(); err != nil {
 		r.reqLogger.Error(err, "Could not find secrets mount path")
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, err
 	}
 
 	workspaceID, err := r.tfclient.CheckWorkspace(workspace, instance)
