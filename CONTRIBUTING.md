@@ -40,6 +40,18 @@ Or to run a specific test in the suite:
 go test ./... -run SomeTestFunction_name
 ```
 
+Example of running specific acceptance tests against Terraform Cloud and Terraform Enterprise:
+```shell
+export TF_URL="https://my-tfe-hostname"
+export TF_ACC=1
+export TF_CLI_CONFIG_FILE=$HOME/.terraformrc
+export TF_ORG="my-tfe-org"
+go test -v ./... -run TestOrganizationTerraformEnterprise
+
+export TF_ORG="my-tfc-org"
+go test -v ./... -run TestOrganizationTerraformCloud
+```
+
 To create a docker image with your local changes:
 
 ```shell
