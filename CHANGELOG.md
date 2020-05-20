@@ -1,6 +1,8 @@
-## Unreleased
+## 0.1.5-alpha (May 20, 2020)
 
-* Upgrade go-tfe to v0.7.0 and dependencies
+* Upgrade go-tfe to v0.7.0 and dependencies 
+* Fix issue that prevents SSHKey from being set on new workspaces (#44)
+* Add Terraform Enterprise endpoint with `TF_URL` environment variable (#13)
 
 ## 0.1.4-alpha (May 14, 2020)
 

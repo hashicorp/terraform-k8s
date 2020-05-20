@@ -56,6 +56,7 @@ type OrganizationMembershipList struct {
 type OrganizationMembership struct {
 	ID     string                       `jsonapi:"primary,organization-memberships"`
 	Status OrganizationMembershipStatus `jsonapi:"attr,status"`
+	Email  string                       `jsonapi:"attr,email"`
 
 	// Relations
 	Organization *Organization `jsonapi:"relation,organization"`
