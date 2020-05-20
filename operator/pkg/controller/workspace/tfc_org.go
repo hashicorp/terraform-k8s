@@ -55,8 +55,9 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1a
 		id, err := t.CreateWorkspace(workspace)
 		if err != nil {
 			return "", err
+		} else {
+			ws = &tfc.Workspace{ID: id}
 		}
-		return id, nil
 	} else if err != nil {
 		return "", err
 	}
