@@ -32,7 +32,7 @@ const (
 	DefaultAddress = "https://app.terraform.io"
 	// DefaultBasePath on which the API is served.
 	DefaultBasePath = "/api/v2/"
-	// No-op API endpoint used to configure the rate limiter
+	// PingEndpoint is a no-op API endpoint used to configure the rate limiter
 	PingEndpoint = "ping"
 )
 
@@ -119,8 +119,10 @@ type Client struct {
 	PlanExports                PlanExports
 	Policies                   Policies
 	PolicyChecks               PolicyChecks
+	PolicySetParameters        PolicySetParameters
 	PolicySets                 PolicySets
 	Runs                       Runs
+	RunTriggers                RunTriggers
 	SSHKeys                    SSHKeys
 	StateVersions              StateVersions
 	Teams                      Teams
@@ -211,8 +213,10 @@ func NewClient(cfg *Config) (*Client, error) {
 	client.PlanExports = &planExports{client: client}
 	client.Policies = &policies{client: client}
 	client.PolicyChecks = &policyChecks{client: client}
+	client.PolicySetParameters = &policySetParameters{client: client}
 	client.PolicySets = &policySets{client: client}
 	client.Runs = &runs{client: client}
+	client.RunTriggers = &runTriggers{client: client}
 	client.SSHKeys = &sshKeys{client: client}
 	client.StateVersions = &stateVersions{client: client}
 	client.Teams = &teams{client: client}
