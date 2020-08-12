@@ -1,16 +1,16 @@
-# Terraform + Kubernetes (terraform-k8s)
+# Terraform Cloud Operator for Kubernetes (terraform-k8s)
 
 > This experimental repository contains software which is still being developed
 > and in the alpha testing stage. It is not ready for production use.
 
-The `terraform-k8s` binary includes first-class integrations between Terraform
+The `terraform-k8s` binary includes first-class integrations between Terraform Cloud/Enterprise
 and Kubernetes. Currently, this project only includes the Terraform Cloud
 Operator, which synchronizes a Kubernetes Workspace (Custom Resource) to a
 Terraform Cloud Workspace. You can read more about this project and its potential use cases on our [blog](https://www.hashicorp.com/blog/creating-workspaces-with-the-hashicorp-terraform-operator-for-kubernetes/).
 We are actively considering other possible use cases to add to this project outside of the operator, and welcome your feedback. 
 
 This project is versioned separately from Terraform. Supported Terraform
-versions must be above version 0.12. By versioning this project separately, we
+versions must be version 0.12 or above. By versioning this project separately, we
 can iterate on Kubernetes integrations more quickly and release new versions
 without forcing Terraform users to do a full Terraform upgrade.
 
