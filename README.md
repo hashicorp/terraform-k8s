@@ -4,19 +4,19 @@
 
 The Terraform Cloud Operator for Kubernetes provides first-class integration between [Kubernetes](https://kubernetes.io/) and [Terraform Cloud](https://www.hashicorp.com/products/terraform/editions/cloud/) by extending the Kubernetes control plane to enable lifecycle management of cloud and on-prem infrastructure through [Kubernetes manifests](https://kubernetes.io/docs/concepts/cluster-administration/manage-deployment/) by using kubectl, Terraform, Gitops tools, or any other tool that allows you to manage Kubernetes [custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/). 
 
-TFCOK provides a unified way to manage Kubernetes application and its infrastructure dependencies through a single Kubernetes [CustomResourceDefition](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) (CRD).  Pertinent information, such as endpoints and credentials, are returned to Kubernetes for the application to consume after the infrastructure dependencies are created.
+TFCOK provides a unified way to manage Kubernetes application and its infrastructure dependencies through a single Kubernetes [CustomResourceDefition](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) (CRD). After the infrastructure dependencies are created, pertinent information such as endpoints and credentials are returned from Terraform Cloud to Kubernetes.
 
 ## Use Case
   * **Manage the lifecycle of cloud and on-prem infrastructure through a single Kubernetes custom resource**  
     * Install TFCOK from the corresponding [Helm Chart](https://github.com/hashicorp/terraform-helm) to enable the management of infrastructure services from any Kubernetes cluster.
     * Provision and manage infrastructure from any provider, such as [AWS](https://registry.terraform.io/providers/hashicorp/aws/latest/docs), [Azure](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs), [GCP](https://registry.terraform.io/providers/hashicorp/google/latest/docs), and any of the hundreds of other [Terraform providers](https://registry.terraform.io/browse/providers), to use them with your existing application configurations, through Terraform Cloud or Terraform Enterprise.
-    * Deploy and Manage your Kubernetes and infrastructure resources in a single git repository, seperate git repositories, or directly from a [module](https://www.terraform.io/docs/modules/index.html) in the [Terraform Registry](https://registry.terraform.io/browse/modules), to match your existing operating model.
-    * Provide governance for you infrastructure resources using policy-as-code with [OPA Gatekeeper](https://github.com/open-policy-agent/gatekeeper) and [HashiCorp Sentinel](https://www.hashicorp.com/sentinel/).
+    * Deploy and Manage your Kubernetes and infrastructure resources in a single git repository, separate git repositories, or directly from a [module](https://www.terraform.io/docs/modules/index.html) in the [Terraform Registry](https://registry.terraform.io/browse/modules), to match your existing operating model.
+    * Provide governance for your infrastructure resources using policy-as-code with [OPA Gatekeeper](https://github.com/open-policy-agent/gatekeeper) and [HashiCorp Sentinel](https://www.hashicorp.com/sentinel/).
 
 
 You can read more about this project and its potential use cases on our [blog](https://www.hashicorp.com/blog/creating-workspaces-with-the-hashicorp-terraform-operator-for-kubernetes/).
 
-Terraform also enables you to create and publish [custom infrastructure providers](https://learn.hashicorp.com/collections/terraform/providers) through the Terraform SDK. Once you create a new Terraform provider, simply [publish it to the Terraform Registry](https://www.terraform.io/docs/registry/providers/publishing.html) and then you can consume it with TFCOK.
+Terraform also enables you to create and publish [custom infrastructure providers](https://learn.hashicorp.com/collections/terraform/providers) through the Terraform SDK. Once you create a new Terraform provider, [publish it to the Terraform Registry](https://www.terraform.io/docs/registry/providers/publishing.html) and then you can consume it with TFCOK.
 
 **Note:**
 This project is versioned separately from Terraform. Supported Terraform versions must be version 0.12 or above. By versioning this project separately, we can iterate on Kubernetes integrations more quickly and release new versions without forcing Terraform users to do a full Terraform upgrade.
