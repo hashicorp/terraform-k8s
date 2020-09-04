@@ -2,7 +2,7 @@
 
 > This repository contains experimental software which is still under development and in the alpha testing stage. It is not ready for production use.
 
-The Terraform Cloud Operator for Kubernetes provides first-class integration between [Kubernetes](https://kubernetes.io/) and [Terraform Cloud](https://www.hashicorp.com/products/terraform/editions/cloud/) by extending the Kubernetes control plane to enable lifecycle management of cloud and on-prem infrastructure through [Kubernetes manifests](https://kubernetes.io/docs/concepts/cluster-administration/manage-deployment/) by using kubectl, Terraform, Gitops tools, or any other tool that allows you to manage Kubernetes [custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/). 
+The Terraform Cloud Operator for Kubernetes provides first-class integration between [Kubernetes](https://kubernetes.io/) and [Terraform Cloud](https://www.hashicorp.com/products/terraform/editions/cloud/) by extending the Kubernetes control plane to enable lifecycle management of cloud and on-prem infrastructure through [Kubernetes manifests](https://kubernetes.io/docs/concepts/cluster-administration/manage-deployment/). Manifests can be deployed and managed using kubectl, [Terraform](https://registry.terraform.io/providers/hashicorp/kubernetes-alpha/latest), Gitops tools, or any other tool that allows you to manage Kubernetes [custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/). 
 
 TFCOK provides a unified way to manage a Kubernetes application and its infrastructure dependencies through a single Kubernetes [CustomResourceDefition](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) (CRD). After the infrastructure dependencies are created, pertinent information such as endpoints and credentials are returned from Terraform Cloud to Kubernetes.
 
@@ -516,5 +516,3 @@ spec:
 When deploying, ensure that the namespace is passed into the
 `--k8s-watch-namespace` option. Otherwise, the operator will attempt to access
 across all namespaces (cluster scope).
-
-
