@@ -18,8 +18,12 @@ You can read more about this project and its potential use cases on our [blog](h
 
 Terraform also enables you to create and publish [custom infrastructure providers](https://learn.hashicorp.com/collections/terraform/providers) through the [Terraform SDK](https://www.terraform.io/docs/extend/plugin-sdk.html). Once you create a new Terraform provider, [publish it to the Terraform Registry](https://www.terraform.io/docs/registry/providers/publishing.html) and then you can consume it with the operator.
 
+Join us in the [#terraform-providers channel on the Kubernetes Slack](https://kubernetes.slack.com/messages/CJY6ATQH4)  to discuss this, and other Terraform and Kubernetes projects ([Sign up here](http://slack.k8s.io/)). 
+
 **Note:**
 This project is versioned separately from Terraform. Supported Terraform versions must be version 0.12 or above. By versioning this project separately, we can iterate on Kubernetes integrations more quickly and release new versions without forcing Terraform users to do a full Terraform upgrade.
+
+We take Terraform's security and our users' trust very seriously. If you believe you have found a security issue in the Terraform Cloud Operator for Kubernetes, please responsibly disclose by contacting us at security@hashicorp.com.
 
 ## Installation and Configuration
 
