@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
@@ -12,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -24,6 +26,7 @@ import (
 var log = logf.Log.WithName(TerraformOperator)
 
 const workspaceFinalizer = "finalizer.workspace.app.terraform.io"
+const requeueInterval = time.Minute * 1
 
 // Add creates a new Workspace Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -44,6 +47,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		scheme:    mgr.GetScheme(),
 		tfclient:  tfclient,
 		reqLogger: log,
+		recorder:  mgr.GetEventRecorderFor("workspace"),
 	}
 }
 
@@ -83,6 +87,7 @@ type ReconcileWorkspace struct {
 	scheme    *runtime.Scheme
 	tfclient  *TerraformCloudClient
 	reqLogger logr.Logger
+	recorder  record.EventRecorder
 }
 
 // Reconcile reads that state of the cluster for a Workspace object and makes changes based on the state read
@@ -106,6 +111,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+
 	organization := instance.Spec.Organization
 	r.tfclient.Organization = organization
 	workspace := fmt.Sprintf("%s-%s", request.Namespace, request.Name)
@@ -121,11 +127,12 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	workspaceID, err := r.tfclient.CheckWorkspace(workspace, instance)
+	ws, err := r.tfclient.CheckWorkspace(workspace, instance)
 	if err != nil {
 		r.reqLogger.Error(err, "Could not update workspace")
 		return reconcile.Result{}, err
 	}
+	workspaceID := ws.ID
 
 	if instance.Status.WorkspaceID != workspaceID {
 		instance.Status.WorkspaceID = workspaceID
@@ -135,6 +142,16 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			return reconcile.Result{}, err
 		}
 		r.reqLogger.Info("Updated workspace ID", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID)
+	}
+
+	if instance.Status.RunID != "" && instance.Status.RunID != ws.CurrentRun.ID {
+		instance.Status.RunID = ws.CurrentRun.ID
+		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+			r.reqLogger.Error(err, "Failed to update workspace status")
+			return reconcile.Result{}, err
+		}
+		r.recorder.Event(instance, corev1.EventTypeNormal, "OutputsEvent", "Updated outputs after out of band run applied")
+		r.reqLogger.Info("Updated Run ID", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID, "RunID", instance.Status.RunID)
 	}
 
 	// Check if the Workspace instance is marked to be deleted, which is
@@ -207,16 +224,19 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	terraform, err := CreateTerraformTemplate(instance)
-	if err != nil {
-		r.reqLogger.Error(err, "Could not create Terraform configuration")
-		return reconcile.Result{}, err
-	}
-
-	updatedTerraform, err := r.UpsertTerraformConfig(instance, terraform)
-	if err != nil {
-		r.reqLogger.Error(err, "Error with creating ConfigMap for Terraform Configuration")
-		return reconcile.Result{}, err
+	var terraform []byte
+	updatedTerraform := false
+	if instance.Spec.VCS == nil {
+		terraform, err = CreateTerraformTemplate(instance)
+		if err != nil {
+			r.reqLogger.Error(err, "Could not create Terraform configuration")
+			return reconcile.Result{}, err
+		}
+		updatedTerraform, err = r.UpsertTerraformConfig(instance, terraform)
+		if err != nil {
+			r.reqLogger.Error(err, "Error with creating ConfigMap for Terraform Configuration")
+			return reconcile.Result{}, err
+		}
 	}
 
 	for _, variable := range instance.Spec.Variables {
@@ -247,7 +267,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{Requeue: true}, nil
 	}
 
-	return reconcile.Result{}, nil
+	return reconcile.Result{RequeueAfter: requeueInterval}, nil
 }
 
 func (r *ReconcileWorkspace) finalizeWorkspace(reqLogger logr.Logger, workspace *appv1alpha1.Workspace) error {

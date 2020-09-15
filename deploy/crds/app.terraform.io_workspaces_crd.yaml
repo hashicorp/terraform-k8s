@@ -176,8 +176,32 @@ spec:
                   - sensitive
                   type: object
                 type: array
+              vcs:
+                description: Details of the VCS repository we want to connect to the
+                  workspace
+                properties:
+                  branch:
+                    description: The repository branch to use
+                    type: string
+                  ingress_submodules:
+                    default: false
+                    description: Whether submodules should be fetched when cloning
+                      the VCS repository (Defaults to false)
+                    type: boolean
+                  repo_identifier:
+                    description: A reference to your VCS repository in the format
+                      org/repo
+                    type: string
+                  token_id:
+                    description: Token ID of the VCS Connection (OAuth Connection
+                      Token) to use
+                    type: string
+                required:
+                - ingress_submodules
+                - repo_identifier
+                - token_id
+                type: object
             required:
-            - module
             - organization
             - secretsMountPath
             type: object

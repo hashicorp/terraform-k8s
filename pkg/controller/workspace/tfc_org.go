@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/hashicorp/go-tfe"
 	tfc "github.com/hashicorp/go-tfe"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
 	"github.com/hashicorp/terraform-k8s/version"
@@ -29,9 +30,9 @@ func createTerraformConfig(address string, tfConfig *cliconfig.Config) (*tfc.Con
 		address = tfc.DefaultAddress
 	}
 	u, err := url.Parse(address)
-    if u.Scheme == "" {
-    return nil, fmt.Errorf("Invalid Terraform Cloud or Enterprise URL. Please specify a scheme (http:// or https://)")
-    }
+	if u.Scheme == "" {
+		return nil, fmt.Errorf("Invalid Terraform Cloud or Enterprise URL. Please specify a scheme (http:// or https://)")
+	}
 	if err != nil {
 		return nil, fmt.Errorf("Not a valid Terraform Cloud or Enterprise URL, %v", err)
 	}
@@ -43,7 +44,6 @@ func createTerraformConfig(address string, tfConfig *cliconfig.Config) (*tfc.Con
 	if len(tfConfig.Credentials[host]) == 0 {
 		return nil, fmt.Errorf("Define token for %s", host)
 	}
-
 	return &tfc.Config{
 		Address: address,
 		Token:   fmt.Sprintf("%v", tfConfig.Credentials[host]["token"]),
@@ -64,9 +64,8 @@ func (t *TerraformCloudClient) GetClient(tfEndpoint string) error {
 
 	client, err := tfc.NewClient(config)
 	if err != nil {
-		return diag.Err()
+		return err
 	}
-
 	t.Client = client
 	return nil
 }
@@ -78,26 +77,32 @@ func (t *TerraformCloudClient) CheckOrganization() error {
 }
 
 // CheckWorkspace looks for a workspace
-func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1alpha1.Workspace) (string, error) {
+func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1alpha1.Workspace) (*tfe.Workspace, error) {
 	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil && err == tfc.ErrResourceNotFound {
-		id, err := t.CreateWorkspace(workspace)
+		id, err := t.CreateWorkspace(workspace, instance)
 		if err != nil {
-			return "", err
+			return nil, err
 		} else {
 			ws = &tfc.Workspace{ID: id}
 		}
 	} else if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if instance.Spec.SSHKeyID != "" {
-		t.AssignWorkspaceSSHKey(ws.ID, instance.Spec.SSHKeyID)
+		_, err = t.AssignWorkspaceSSHKey(ws.ID, instance.Spec.SSHKeyID)
+		if err != nil {
+			return nil, fmt.Errorf("Error while assigning ssh key to workspace: %s", err)
+		}
 	} else if ws.SSHKey != nil {
-		t.UnassignWorkspaceSSHKey(ws.ID)
+		_, err = t.UnassignWorkspaceSSHKey(ws.ID)
+		if err != nil {
+			return nil, fmt.Errorf("Error while unassigning ssh key to workspace: %s", err)
+		}
 	}
 
-	return ws.ID, err
+	return ws, err
 }
 
 func getTerraformVersion() *string {
@@ -109,12 +114,22 @@ func getTerraformVersion() *string {
 }
 
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
-func (t *TerraformCloudClient) CreateWorkspace(workspace string) (string, error) {
+func (t *TerraformCloudClient) CreateWorkspace(workspace string, instance *appv1alpha1.Workspace) (string, error) {
 	options := tfc.WorkspaceCreateOptions{
 		AutoApply:        &AutoApply,
 		Name:             &workspace,
 		TerraformVersion: getTerraformVersion(),
 	}
+
+	if instance.Spec.VCS != nil {
+		options.VCSRepo = &tfc.VCSRepoOptions{
+			Branch:            &instance.Spec.VCS.Branch,
+			Identifier:        &instance.Spec.VCS.RepoIdentifier,
+			IngressSubmodules: &instance.Spec.VCS.IngressSubmodules,
+			OAuthTokenID:      &instance.Spec.VCS.TokenID,
+		}
+	}
+
 	ws, err := t.Client.Workspaces.Create(context.TODO(), t.Organization, options)
 	if err != nil {
 		return "", err

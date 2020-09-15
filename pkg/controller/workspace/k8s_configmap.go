@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func configMapForTerraform(name string, namespace string, template []byte) *corev1.ConfigMap {
+func configMapForTerraform(name string, namespace string, template []byte, runID string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -40,32 +40,33 @@ func configMapForOutputs(name string, namespace string, outputs []*v1alpha1.Outp
 
 // UpsertTerraformConfig creates a ConfigMap for the Terraform template if it doesn't exist already
 func (r *ReconcileWorkspace) UpsertTerraformConfig(w *v1alpha1.Workspace, template []byte) (bool, error) {
-	updated := false
 	found := &v1.ConfigMap{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: w.Name, Namespace: w.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
-		configMap := configMapForTerraform(w.Name, w.Namespace, template)
+		configMap := configMapForTerraform(w.Name, w.Namespace, template, w.Status.RunID)
 		controllerutil.SetControllerReference(w, configMap, r.scheme)
 		r.reqLogger.Info("Writing to new Terraform ConfigMap")
 		if err := r.client.Create(context.TODO(), configMap); err != nil {
 			r.reqLogger.Error(err, "Failed to create new Terraform ConfigMap")
-			return updated, err
+			return false, err
 		}
 		return true, nil
 	} else if err != nil {
 		r.reqLogger.Error(err, "Failed to get Terraform ConfigMap")
-		return updated, err
+		return false, err
 	}
 
-	if found.Data[TerraformConfigMap] != string(template) {
-		found.Data[TerraformConfigMap] = string(template)
-		if err := r.client.Update(context.TODO(), found); err != nil {
-			r.reqLogger.Error(err, "Failed to update Terraform ConfigMap", "Namespace", w.Namespace, "Name", w.Name)
-			return updated, err
-		}
-		return true, nil
+	if found.Data[TerraformConfigMap] == string(template) {
+		return false, nil
+
 	}
-	return updated, nil
+
+	found.Data[TerraformConfigMap] = string(template)
+	if err := r.client.Update(context.TODO(), found); err != nil {
+		r.reqLogger.Error(err, "Failed to update Terraform ConfigMap", "Namespace", w.Namespace, "Name", w.Name)
+		return false, err
+	}
+	return true, nil
 }
 
 // GetConfigMapForVariable retrieves the configmap value associated with the variable

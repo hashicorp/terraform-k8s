@@ -17,6 +17,20 @@ type Module struct {
 	Version string `json:"version"`
 }
 
+// VCS holds all the information needed to connect the workspace to a VCS repository
+type VCS struct {
+	// Token ID of the VCS Connection (OAuth Connection Token) to use
+	TokenID string `json:"token_id"`
+	// A reference to your VCS repository in the format org/repo
+	RepoIdentifier string `json:"repo_identifier"`
+	// The repository branch to use
+	// +optional
+	Branch string `json:"branch"`
+	// Whether submodules should be fetched when cloning the VCS repository (Defaults to false)
+	// +kubebuilder:default=false
+	IngressSubmodules bool `json:"ingress_submodules"`
+}
+
 // OutputSpec specifies which values need to be output
 type OutputSpec struct {
 	// Output name
@@ -62,7 +76,11 @@ type WorkspaceSpec struct {
 	// Terraform Cloud organization
 	Organization string `json:"organization"`
 	// Module source and version to use
+	// +optional
 	Module *Module `json:"module"`
+	// Details of the VCS repository we want to connect to the workspace
+	// +optional
+	VCS *VCS `json:"vcs"`
 	// Variables as inputs to module
 	// +optional
 	Variables []*Variable `json:"variables,omitempty"`
