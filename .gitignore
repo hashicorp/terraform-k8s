@@ -64,7 +64,6 @@ anaconda-mode/
 ### HashiCorp ###
 .DS_Store
 /bin
-/pkg
 
 ### Vim ###
 # swap

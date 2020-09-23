@@ -9,20 +9,20 @@ import (
 	flag "github.com/spf13/pflag"
 
 	tfc "github.com/hashicorp/go-tfe"
-	"github.com/hashicorp/terraform-k8s/operator/pkg/apis"
-	"github.com/hashicorp/terraform-k8s/operator/pkg/controller"
+	"github.com/hashicorp/terraform-k8s/pkg/apis"
+	"github.com/hashicorp/terraform-k8s/pkg/controller"
 	"github.com/mitchellh/cli"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	"github.com/operator-framework/operator-sdk/pkg/metrics"
-	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -93,7 +93,7 @@ func (c *Command) Run(args []string) int {
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:          namespace,
-		MapperProvider:     restmapper.NewDynamicRESTMapper,
+		MapperProvider:     apiutil.NewDiscoveryRESTMapper,
 		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
 	})
 	if err != nil {

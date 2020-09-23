@@ -114,8 +114,7 @@ go-build-image:
 
 clean:
 	@rm -rf \
-		$(CURDIR)/bin \
-		$(CURDIR)/pkg
+		$(CURDIR)/bin 
 
 
 .PHONY: all bin clean dev dist docker-images go-build-image test tools
