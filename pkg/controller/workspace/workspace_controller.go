@@ -112,6 +112,10 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
+	if instance.Spec.VCS == nil && instance.Spec.Module == nil {
+		msg := fmt.Sprintf("Either VCS or Module need to be specified in spec for workspace %s", instance.Name)
+		r.recorder.Event(instance, corev1.EventTypeWarning, "WorkspaceEvent", msg)
+	}
 	organization := instance.Spec.Organization
 	r.tfclient.Organization = organization
 	workspace := fmt.Sprintf("%s-%s", request.Namespace, request.Name)
@@ -150,7 +154,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			r.reqLogger.Error(err, "Failed to update workspace status")
 			return reconcile.Result{}, err
 		}
-		r.recorder.Event(instance, corev1.EventTypeNormal, "OutputsEvent", "Updated outputs after out of band run applied")
+		r.recorder.Event(instance, corev1.EventTypeNormal, "WorkspaceEvent", "Updated outputs after out of band run applied")
 		r.reqLogger.Info("Updated Run ID", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID, "RunID", instance.Status.RunID)
 	}
 
@@ -200,8 +204,8 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{Requeue: true}, nil
 	}
 
-	r.reqLogger.Info("Checking outputs", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID, "RunID", instance.Status.RunID)
 	if !isError(instance.Status.RunStatus) {
+		r.reqLogger.Info("Checking outputs", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID, "RunID", instance.Status.RunID)
 		outputs, err := r.tfclient.CheckOutputs(instance.Status.WorkspaceID, instance.Status.RunID)
 		if err != nil {
 			r.reqLogger.Error(err, "Could not get run ID")
@@ -216,8 +220,8 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 				return reconcile.Result{}, err
 			}
 			r.reqLogger.Info("Updated outputs", "Organization", organization, "WorkspaceID", instance.Status.WorkspaceID)
+			r.recorder.Event(instance, corev1.EventTypeNormal, "WorkspaceEvent", fmt.Sprintf("Updated outputs for run %s", instance.Status.RunID))
 		}
-
 		if err = r.UpsertOutputs(instance, instance.Status.Outputs); err != nil {
 			r.reqLogger.Error(err, "Error with creating ConfigMap for Terraform Outputs")
 			return reconcile.Result{}, err
@@ -264,9 +268,9 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 			r.reqLogger.Error(err, "Failed to update run ID")
 			return reconcile.Result{}, err
 		}
+		r.recorder.Event(instance, corev1.EventTypeNormal, "WorkspaceEvent", fmt.Sprintf("Started new Terraform job with id %s", instance.Status.RunID))
 		return reconcile.Result{Requeue: true}, nil
 	}
-
 	return reconcile.Result{RequeueAfter: requeueInterval}, nil
 }
 
