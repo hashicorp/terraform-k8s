@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/hashicorp/go-tfe"
 	tfc "github.com/hashicorp/go-tfe"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
 	"github.com/hashicorp/terraform-k8s/version"
