@@ -103,6 +103,28 @@ func (t *TerraformCloudClient) SetTerraformVersion(workspace, terraformVersion s
 	return nil
 }
 
+func (t *TerraformCloudClient) updateAgentPoolID(instance *appv1alpha1.Workspace, workspace *tfc.Workspace) error {
+	if instance.Spec.AgentPoolID == workspace.AgentPoolID {
+		return nil
+	}
+
+	updateOptions := tfc.WorkspaceUpdateOptions{
+		AgentPoolID: &instance.Spec.AgentPoolID,
+	}
+
+	if instance.Spec.AgentPoolID != "" {
+		updateOptions.ExecutionMode = tfc.String("agent")
+	} else {
+		updateOptions.ExecutionMode = tfc.String("")
+	}
+
+	_, err := t.Client.Workspaces.Update(context.Background(), t.Organization, workspace.Name, updateOptions)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // CheckWorkspace looks for a workspace
 func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1alpha1.Workspace) (*tfc.Workspace, error) {
 	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
@@ -135,6 +157,14 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1a
 			return nil, err
 		}
 	}
+
+	if instance.Spec.AgentPoolID != ws.AgentPoolID {
+		err := t.updateAgentPoolID(instance, ws)
+		if err != nil {
+			return nil, fmt.Errorf("error while updating Agent Pool ID settings for workspace %q: %s", ws.Name, err)
+		}
+	}
+
 	return ws, err
 }
 

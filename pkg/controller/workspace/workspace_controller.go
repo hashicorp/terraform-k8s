@@ -216,7 +216,10 @@ func (r *ReconcileWorkspace) condDeleteWorkspace(instance *appv1alpha1.Workspace
 	}
 
 	err := r.tfclient.CheckWorkspacebyID(instance.Status.WorkspaceID)
-	if err != nil && err != tfe.ErrResourceNotFound {
+	if err != nil {
+		if err == tfe.ErrResourceNotFound {
+			return true, nil
+		}
 		return false, err
 	}
 

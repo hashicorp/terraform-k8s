@@ -31,6 +31,9 @@ spec:
         spec:
           description: WorkspaceSpec defines the desired state of Workspace
           properties:
+            agentPoolID:
+              description: Specifies the agent pool ID we wish to use.
+              type: string
             module:
               description: Module source and version to use
               nullable: true
