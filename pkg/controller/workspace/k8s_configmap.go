@@ -58,7 +58,6 @@ func (r *ReconcileWorkspace) UpsertTerraformConfig(w *v1alpha1.Workspace, templa
 
 	if found.Data[TerraformConfigMap] == string(template) {
 		return false, nil
-
 	}
 
 	found.Data[TerraformConfigMap] = string(template)
