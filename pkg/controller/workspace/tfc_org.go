@@ -11,8 +11,8 @@ import (
 
 	tfc "github.com/hashicorp/go-tfe"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
-	"github.com/hashicorp/terraform-k8s/version"
 	"github.com/hashicorp/terraform/command/cliconfig"
+	"net/url"
 )
 
 var (
@@ -59,9 +59,9 @@ func createTerraformConfig(address string, tfConfig *cliconfig.Config) (*tfc.Con
 
 	ua := fmt.Sprintf("terraform-k8s/%s", version.Version)
 	return &tfc.Config{
-		Address: address,
-		Token:   fmt.Sprintf("%v", tfConfig.Credentials[host]["token"]),
-		Headers: http.Header{"User-Agent": []string{ua}},
+		Address:    address,
+		Token:      fmt.Sprintf("%v", tfConfig.Credentials[host]["token"]),
+		Headers:    http.Header{"User-Agent": []string{ua}},
 		HTTPClient: httpClient,
 	}, nil
 }
@@ -92,6 +92,17 @@ func (t *TerraformCloudClient) CheckOrganization() error {
 	return err
 }
 
+func (t *TerraformCloudClient) SetTerraformVersion(workspace, terraformVersion string) error {
+	wsUpdateOptions := tfc.WorkspaceUpdateOptions{
+		TerraformVersion: &terraformVersion,
+	}
+	_, err := t.Client.Workspaces.Update(context.Background(), t.Organization, workspace, wsUpdateOptions)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // CheckWorkspace looks for a workspace
 func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1alpha1.Workspace) (*tfc.Workspace, error) {
 	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
@@ -118,15 +129,13 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1a
 		}
 	}
 
-	return ws, err
-}
-
-func getTerraformVersion() *string {
-	tfVersion := os.Getenv("TF_VERSION")
-	if tfVersion == "" {
-		return &version.TerraformVersion
+	if instance.Spec.TerraformVersion != ws.TerraformVersion {
+		err = t.SetTerraformVersion(workspace, instance.Spec.TerraformVersion)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return &tfVersion
+	return ws, err
 }
 
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
@@ -134,7 +143,7 @@ func (t *TerraformCloudClient) CreateWorkspace(workspace string, instance *appv1
 	options := tfc.WorkspaceCreateOptions{
 		AutoApply:        &AutoApply,
 		Name:             &workspace,
-		TerraformVersion: getTerraformVersion(),
+		TerraformVersion: &instance.Spec.TerraformVersion,
 	}
 
 	if instance.Spec.VCS != nil {
@@ -210,4 +219,28 @@ func (t *TerraformCloudClient) DeleteWorkspace(workspaceID string) error {
 		return err
 	}
 	return nil
+}
+
+// CheckOutputs retrieves outputs for a run.
+func (t *TerraformCloudClient) CheckOutputs(workspaceID string, runID string) ([]*appv1alpha1.OutputStatus, error) {
+	outputs := []*appv1alpha1.OutputStatus{}
+	if runID == "" {
+		return outputs, nil
+	}
+
+	st, err := t.Client.StateVersions.CurrentWithOptions(context.TODO(), workspaceID,
+		&tfc.StateVersionCurrentOptions{Include: "outputs"})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, value := range st.Outputs {
+		if !value.Sensitive {
+			if value.Value != "" {
+				outputs = append(outputs, &appv1alpha1.OutputStatus{Key: value.Name, Value: value.Value})
+			}
+		}
+	}
+
+	return outputs, nil
 }

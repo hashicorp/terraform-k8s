@@ -68,6 +68,11 @@ spec:
                   organization.  This can either be the user assigned name of the
                   SSH Key, or the system assigned ID.
                 type: string
+              terraformVersion:
+                default: latest
+                description: Terraform version used for this workspace. The default
+                  is `latest`.
+                type: string
               variables:
                 description: Variables as inputs to module
                 items:
