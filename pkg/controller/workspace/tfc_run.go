@@ -57,7 +57,7 @@ func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terrafor
 		retryCnt := 0
 		foundCV := false
 		for retryCnt < 2 {
-			configVersions, err := t.Client.ConfigurationVersions.List(context.Background(), workspace.Status.WorkspaceID, tfc.ConfigurationVersionListOptions{})
+			configVersions, err := t.Client.ConfigurationVersions.List(context.TODO(), workspace.Status.WorkspaceID, tfc.ConfigurationVersionListOptions{})
 			if err != nil {
 				return err
 			}
@@ -77,7 +77,10 @@ func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terrafor
 			return err
 		}
 
-		os.Mkdir(moduleDirectory, 0777)
+		if err := os.Mkdir(moduleDirectory, 0777); err != nil {
+			return err
+		}
+
 		if err := ioutil.WriteFile(configurationFilePath, terraform, 0777); err != nil {
 			return err
 		}

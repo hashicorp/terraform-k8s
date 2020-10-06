@@ -27,8 +27,7 @@ type VCS struct {
 	// +optional
 	Branch string `json:"branch"`
 	// Whether submodules should be fetched when cloning the VCS repository (Defaults to false)
-	// +kubebuilder:default=false
-	IngressSubmodules bool `json:"ingress_submodules"`
+	IngressSubmodules bool `json:"ingress_submodules,omitempty"`
 }
 
 // OutputSpec specifies which values need to be output
@@ -77,9 +76,11 @@ type WorkspaceSpec struct {
 	Organization string `json:"organization"`
 	// Module source and version to use
 	// +optional
+	// +nullable
 	Module *Module `json:"module"`
 	// Details of the VCS repository we want to connect to the workspace
 	// +optional
+	// +nullable
 	VCS *VCS `json:"vcs"`
 	// Variables as inputs to module
 	// +optional

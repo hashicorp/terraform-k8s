@@ -29,11 +29,11 @@ func createTerraformConfig(address string, tfConfig *cliconfig.Config) (*tfc.Con
 		address = tfc.DefaultAddress
 	}
 	u, err := url.Parse(address)
-	if u.Scheme == "" {
-		return nil, fmt.Errorf("Invalid Terraform Cloud or Enterprise URL. Please specify a scheme (http:// or https://)")
-	}
 	if err != nil {
 		return nil, fmt.Errorf("Not a valid Terraform Cloud or Enterprise URL, %v", err)
+	}
+	if u.Scheme == "" {
+		return nil, fmt.Errorf("Invalid Terraform Cloud or Enterprise URL. Please specify a scheme (http:// or https://)")
 	}
 	host := u.Host
 	if host == "" {
@@ -76,7 +76,7 @@ func (t *TerraformCloudClient) CheckOrganization() error {
 }
 
 // CheckWorkspace looks for a workspace
-func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1alpha1.Workspace) (*tfe.Workspace, error) {
+func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1alpha1.Workspace) (*tfc.Workspace, error) {
 	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil && err == tfc.ErrResourceNotFound {
 		id, err := t.CreateWorkspace(workspace, instance)
