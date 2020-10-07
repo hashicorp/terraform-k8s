@@ -20,6 +20,7 @@ type Module struct {
 // VCS holds all the information needed to connect the workspace to a VCS repository
 type VCS struct {
 	// Token ID of the VCS Connection (OAuth Connection Token) to use
+	// https://www.terraform.io/docs/cloud/vcs
 	TokenID string `json:"token_id"`
 	// A reference to your VCS repository in the format org/repo
 	RepoIdentifier string `json:"repo_identifier"`
