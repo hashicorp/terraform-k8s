@@ -185,7 +185,7 @@ func (r *ReconcileWorkspace) reconcileWorkspace(instance *appv1alpha1.Workspace)
 			"WorkspaceID", instance.Status.WorkspaceID)
 	}
 
-	if instance.Status.RunID != "" && instance.Status.RunID != ws.CurrentRun.ID {
+	if instance.Status.RunID != "" && ws.CurrentRun != nil && instance.Status.RunID != ws.CurrentRun.ID {
 		instance.Status.RunID = ws.CurrentRun.ID
 		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
 			r.reqLogger.Error(err, "Failed to update workspace status")
