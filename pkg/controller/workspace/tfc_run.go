@@ -44,28 +44,53 @@ func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*
 
 // CreateRun runs a new Terraform Cloud configuration
 func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terraform []byte) error {
-	configVersion, err := t.CreateConfigurationVersion(workspace.Status.WorkspaceID)
-	if err != nil {
-		return err
-	}
-
-	os.Mkdir(moduleDirectory, 0777)
-	if err := ioutil.WriteFile(configurationFilePath, terraform, 0777); err != nil {
-		return err
-	}
-
-	if err := t.UploadConfigurationFile(configVersion.UploadURL); err != nil {
-		return err
-	}
 
 	message := fmt.Sprintf("%s, apply", TerraformOperator)
 	options := tfc.RunCreateOptions{
-		Message:              &message,
-		ConfigurationVersion: configVersion,
+		Message: &message,
 		Workspace: &tfc.Workspace{
 			ID: workspace.Status.WorkspaceID,
 		},
 	}
+
+	if workspace.Spec.VCS != nil {
+		retryCnt := 0
+		foundCV := false
+		for retryCnt < 2 {
+			configVersions, err := t.Client.ConfigurationVersions.List(context.TODO(), workspace.Status.WorkspaceID, tfc.ConfigurationVersionListOptions{})
+			if err != nil {
+				return err
+			}
+			if len(configVersions.Items) > 0 {
+				foundCV = true
+				break
+			}
+			retryCnt++
+			time.Sleep(100 * time.Millisecond)
+		}
+		if !foundCV {
+			return fmt.Errorf("No config version found")
+		}
+	} else {
+		configVersion, err := t.CreateConfigurationVersion(workspace.Status.WorkspaceID)
+		if err != nil {
+			return err
+		}
+
+		if err := os.Mkdir(moduleDirectory, 0777); err != nil {
+			return err
+		}
+
+		if err := ioutil.WriteFile(configurationFilePath, terraform, 0777); err != nil {
+			return err
+		}
+
+		if err := t.UploadConfigurationFile(configVersion.UploadURL); err != nil {
+			return err
+		}
+		options.ConfigurationVersion = configVersion
+	}
+
 	run, err := t.Client.Runs.Create(context.TODO(), options)
 	if err != nil {
 		return err

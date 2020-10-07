@@ -33,6 +33,7 @@ spec:
             properties:
               module:
                 description: Module source and version to use
+                nullable: true
                 properties:
                   source:
                     description: Any remote module source (version control, registry)
@@ -176,8 +177,31 @@ spec:
                   - sensitive
                   type: object
                 type: array
+              vcs:
+                description: Details of the VCS repository we want to connect to the
+                  workspace
+                nullable: true
+                properties:
+                  branch:
+                    description: The repository branch to use
+                    type: string
+                  ingress_submodules:
+                    description: Whether submodules should be fetched when cloning
+                      the VCS repository (Defaults to false)
+                    type: boolean
+                  repo_identifier:
+                    description: A reference to your VCS repository in the format
+                      org/repo
+                    type: string
+                  token_id:
+                    description: Token ID of the VCS Connection (OAuth Connection
+                      Token) to use
+                    type: string
+                required:
+                - repo_identifier
+                - token_id
+                type: object
             required:
-            - module
             - organization
             - secretsMountPath
             type: object
