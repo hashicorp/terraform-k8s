@@ -35,17 +35,14 @@ type DelayingInterface interface {
 
 // NewDelayingQueue constructs a new workqueue with delayed queuing ability
 func NewDelayingQueue() DelayingInterface {
-	return NewDelayingQueueWithCustomClock(clock.RealClock{}, "")
+	return newDelayingQueue(clock.RealClock{}, "")
 }
 
-// NewNamedDelayingQueue constructs a new named workqueue with delayed queuing ability
 func NewNamedDelayingQueue(name string) DelayingInterface {
-	return NewDelayingQueueWithCustomClock(clock.RealClock{}, name)
+	return newDelayingQueue(clock.RealClock{}, name)
 }
 
-// NewDelayingQueueWithCustomClock constructs a new named workqueue
-// with ability to inject real or fake clock for testing purposes
-func NewDelayingQueueWithCustomClock(clock clock.Clock, name string) DelayingInterface {
+func newDelayingQueue(clock clock.Clock, name string) DelayingInterface {
 	ret := &delayingType{
 		Interface:       NewNamed(name),
 		clock:           clock,
@@ -181,9 +178,6 @@ func (q *delayingType) waitingLoop() {
 	// Make a placeholder channel to use when there are no items in our list
 	never := make(<-chan time.Time)
 
-	// Make a timer that expires when the item at the head of the waiting queue is ready
-	var nextReadyAtTimer clock.Timer
-
 	waitingForQueue := &waitForPriorityQueue{}
 	heap.Init(waitingForQueue)
 
@@ -211,12 +205,8 @@ func (q *delayingType) waitingLoop() {
 		// Set up a wait for the first item's readyAt (if one exists)
 		nextReadyAt := never
 		if waitingForQueue.Len() > 0 {
-			if nextReadyAtTimer != nil {
-				nextReadyAtTimer.Stop()
-			}
 			entry := waitingForQueue.Peek().(*waitFor)
-			nextReadyAtTimer = q.clock.NewTimer(entry.readyAt.Sub(now))
-			nextReadyAt = nextReadyAtTimer.C()
+			nextReadyAt = q.clock.After(entry.readyAt.Sub(now))
 		}
 
 		select {

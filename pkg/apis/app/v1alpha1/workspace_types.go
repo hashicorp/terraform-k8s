@@ -90,6 +90,7 @@ type WorkspaceStatus struct {
 	Outputs []*OutputStatus `json:"outputs,omitempty"`
 }
 
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Workspace is the Schema for the workspaces API
