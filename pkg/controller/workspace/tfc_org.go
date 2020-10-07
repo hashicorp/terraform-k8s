@@ -2,9 +2,12 @@ package workspace
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	tfc "github.com/hashicorp/go-tfe"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
@@ -43,9 +46,23 @@ func createTerraformConfig(address string, tfConfig *cliconfig.Config) (*tfc.Con
 	if len(tfConfig.Credentials[host]) == 0 {
 		return nil, fmt.Errorf("Define token for %s", host)
 	}
+
+	httpClient := tfc.DefaultConfig().HTTPClient
+	transport := httpClient.Transport.(*http.Transport)
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{}
+	}
+	skipTLS := os.Getenv("TF_INSECURE")
+	if skipTLS != "" && strings.ToLower(skipTLS) != "false" {
+		transport.TLSClientConfig.InsecureSkipVerify = true
+	}
+
+	ua := fmt.Sprintf("terraform-k8s/%s", version.Version)
 	return &tfc.Config{
 		Address: address,
 		Token:   fmt.Sprintf("%v", tfConfig.Credentials[host]["token"]),
+		Headers: http.Header{"User-Agent": []string{ua}},
+		HTTPClient: httpClient,
 	}, nil
 }
 
