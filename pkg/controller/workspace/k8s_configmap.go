@@ -76,6 +76,12 @@ func (r *ReconcileWorkspace) GetConfigMapForVariable(namespace string, variable 
 		return nil
 	}
 
+	if variable.ValueFrom == nil {
+		err := errors.New("non-sensitive variables require a value")
+		r.reqLogger.Error(err, "No value specified", "Namespace", namespace, "Variable", variable.Key)
+		return err
+	}
+
 	if variable.ValueFrom.ConfigMapKeyRef == nil {
 		err := errors.New("Include ConfigMap in ValueFrom")
 		r.reqLogger.Error(err, "No ConfigMap specified", "Namespace", namespace, "Variable", variable.Key)
