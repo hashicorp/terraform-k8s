@@ -21,6 +21,23 @@ var (
 	interval              = 30 * time.Second
 )
 
+func (t *TerraformCloudClient) WaitForConfigurationUploaded(id string) error {
+	retryCount := 2
+	retrySleep := time.Duration(100)
+	return retry(retryCount, retrySleep, func() error {
+		configVersion, err := t.Client.ConfigurationVersions.Read(context.TODO(), id)
+		if err != nil {
+			return stopRetry{err}
+		}
+
+		if configVersion.Status != tfc.ConfigurationUploaded {
+			return fmt.Errorf("Configuration Not Ready")
+		}
+
+		return nil
+	})
+}
+
 // UploadConfigurationFile uploads the main.tf to a configuration version
 func (t *TerraformCloudClient) UploadConfigurationFile(uploadURL string) error {
 	if err := t.Client.ConfigurationVersions.Upload(context.TODO(), uploadURL, moduleDirectory); err != nil {
@@ -54,21 +71,18 @@ func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terrafor
 	}
 
 	if workspace.Spec.VCS != nil {
-		retryCnt := 0
-		foundCV := false
-		for retryCnt < 2 {
+		err := retry(2, 100, func() error {
 			configVersions, err := t.Client.ConfigurationVersions.List(context.TODO(), workspace.Status.WorkspaceID, tfc.ConfigurationVersionListOptions{})
 			if err != nil {
 				return err
 			}
-			if len(configVersions.Items) > 0 {
-				foundCV = true
-				break
+			if len(configVersions.Items) == 0 {
+				return fmt.Errorf("No config version found")
 			}
-			retryCnt++
-			time.Sleep(100 * time.Millisecond)
-		}
-		if !foundCV {
+
+			return nil
+		})
+		if err != nil {
 			return fmt.Errorf("No config version found")
 		}
 	} else {
@@ -77,8 +91,10 @@ func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terrafor
 			return err
 		}
 
-		if err := os.Mkdir(moduleDirectory, 0777); err != nil {
-			return err
+		if _, err := os.Stat(moduleDirectory); os.IsNotExist(err) {
+			if err = os.Mkdir(moduleDirectory, 0777); err != nil {
+				return err
+			}
 		}
 
 		if err := ioutil.WriteFile(configurationFilePath, terraform, 0777); err != nil {
@@ -88,6 +104,11 @@ func (t *TerraformCloudClient) CreateRun(workspace *v1alpha1.Workspace, terrafor
 		if err := t.UploadConfigurationFile(configVersion.UploadURL); err != nil {
 			return err
 		}
+
+		if err := t.WaitForConfigurationUploaded(configVersion.ID); err != nil {
+			return err
+		}
+
 		options.ConfigurationVersion = configVersion
 	}
 

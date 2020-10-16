@@ -354,9 +354,10 @@ func (r *ReconcileWorkspace) prepareModuleRun(instance *appv1alpha1.Workspace, o
 		return err
 	}
 
-	err = os.Mkdir(moduleDirectory, 0777)
-	if err != nil {
-		return err
+	if _, err := os.Stat(moduleDirectory); os.IsNotExist(err) {
+		if err = os.Mkdir(moduleDirectory, 0777); err != nil {
+			return err
+		}
 	}
 
 	if err := ioutil.WriteFile(configurationFilePath, tf, 0777); err != nil {
@@ -364,6 +365,10 @@ func (r *ReconcileWorkspace) prepareModuleRun(instance *appv1alpha1.Workspace, o
 	}
 
 	if err := r.tfclient.UploadConfigurationFile(configVersion.UploadURL); err != nil {
+		return err
+	}
+
+	if err := r.tfclient.WaitForConfigurationUploaded(configVersion.ID); err != nil {
 		return err
 	}
 

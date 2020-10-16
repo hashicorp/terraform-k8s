@@ -3,14 +3,17 @@ module github.com/hashicorp/terraform-k8s
 go 1.15
 
 require (
+	github.com/Unknwon/com v0.0.0-20151008135407-28b053d5a292 // indirect
 	github.com/go-logr/logr v0.1.0
-	github.com/hashicorp/go-tfe v0.7.0
-	github.com/hashicorp/terraform v0.12.25
+	github.com/hashicorp/go-tfe v0.8.1
+	github.com/hashicorp/terraform v0.13.4
 	github.com/mitchellh/cli v1.1.1
+	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/operator-framework/operator-sdk v0.18.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.5.1
-	github.com/zclconf/go-cty v1.4.0
+	github.com/terraform-providers/terraform-provider-openstack v1.15.0 // indirect
+	github.com/zclconf/go-cty v1.5.1
 	k8s.io/api v0.18.2
 	k8s.io/apimachinery v0.18.2
 	k8s.io/client-go v12.0.0+incompatible
