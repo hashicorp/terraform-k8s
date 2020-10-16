@@ -65,7 +65,7 @@ func TestShouldGetTerraformVersionFromEnvVariable(t *testing.T) {
 }
 
 func TestShouldGetTerraformVersionFromOperator(t *testing.T) {
-	expected := "0.12.25"
+	expected := "0.13.4"
 	actual := getTerraformVersion()
 	assert.Equal(t, expected, *actual)
 }
