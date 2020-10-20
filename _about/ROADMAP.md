@@ -21,7 +21,7 @@ In the GA release we'll focus on these areas:
  - [Support for the latest version of Terraform](https://github.com/hashicorp/terraform-k8s/issues/64)
  - [Terraform Cloud Agents](https://github.com/hashicorp/terraform-k8s/issues/66)
  - [Sensitive Outputs as Secrets](https://github.com/hashicorp/terraform-k8s/issues/39)
- - [Upgrade to Operator SDK v1]()
+ - [Upgrade to Operator SDK v1](https://github.com/hashicorp/terraform-k8s/issues/76)
 
 #### Stretch Goals
 
