@@ -11,8 +11,8 @@ import (
 
 	tfc "github.com/hashicorp/go-tfe"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
+	"github.com/hashicorp/terraform-k8s/version"
 	"github.com/hashicorp/terraform/command/cliconfig"
-	"net/url"
 )
 
 var (
