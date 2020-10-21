@@ -29,6 +29,17 @@ func (t *TerraformCloudClient) UploadConfigurationFile(uploadURL string) error {
 	return nil
 }
 
+// Check if the Configuration Version is "uploaded"
+func (t *TerraformCloudClient) CheckConfigurationUploaded(id string) (bool, error) {
+	configVersion, err := t.Client.ConfigurationVersions.Read(context.TODO(), id)
+	if err != nil {
+		return false, err
+	}
+
+	uploaded := configVersion.Status == tfc.ConfigurationUploaded
+	return uploaded, nil
+}
+
 // CreateConfigurationVersion creates a configuration version for a workspace
 func (t *TerraformCloudClient) CreateConfigurationVersion(workspaceID string) (*tfc.ConfigurationVersion, error) {
 	options := tfc.ConfigurationVersionCreateOptions{

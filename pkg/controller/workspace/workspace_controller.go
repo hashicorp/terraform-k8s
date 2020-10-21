@@ -3,12 +3,13 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/go-tfe"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/types"
 	"os"
 	"reflect"
 	"time"
+
+	"github.com/hashicorp/go-tfe"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
@@ -337,38 +338,69 @@ func (r *ReconcileWorkspace) updateVariables(instance *appv1alpha1.Workspace) (b
 	return updatedVariables, nil
 }
 
-func (r *ReconcileWorkspace) prepareModuleRun(instance *appv1alpha1.Workspace, options tfe.RunCreateOptions) error {
+func (r *ReconcileWorkspace) prepareModuleRun(instance *appv1alpha1.Workspace, options tfe.RunCreateOptions) (bool, error) {
 	r.reqLogger.Info("Starting module backed run", "Organization",
 		instance.Spec.Organization, "Name", instance.Name, "Namespace", instance.Namespace)
 
-	cfgMap := &corev1.ConfigMap{}
-	err := r.client.Get(context.TODO(),
-		types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, cfgMap)
-	if err != nil {
-		return err
+	var (
+		configVersion *tfe.ConfigurationVersion
+		err           error
+	)
+	if instance.Status.ConfigVersionID == "" {
+		cfgMap := &corev1.ConfigMap{}
+		err = r.client.Get(context.TODO(),
+			types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, cfgMap)
+		if err != nil {
+			return true, err
+		}
+
+		tf := []byte(cfgMap.Data[TerraformConfigMap])
+		configVersion, err = r.tfclient.CreateConfigurationVersion(instance.Status.WorkspaceID)
+		if err != nil {
+			return true, err
+		}
+
+		if _, err := os.Stat(moduleDirectory); os.IsNotExist(err) {
+			if err = os.Mkdir(moduleDirectory, 0777); err != nil {
+				return true, err
+			}
+		}
+
+		if err = ioutil.WriteFile(configurationFilePath, tf, 0777); err != nil {
+			return true, err
+		}
+
+		if err = r.tfclient.UploadConfigurationFile(configVersion.UploadURL); err != nil {
+			return true, err
+		}
+
+		instance.Status.ConfigVersionID = configVersion.ID
+		if err = r.client.Status().Update(context.TODO(), instance); err != nil {
+			r.reqLogger.Error(err, "Failed to update Workspace status")
+			return true, err
+		}
+	} else {
+		configVersion, err = r.tfclient.Client.ConfigurationVersions.Read(context.TODO(), instance.Status.ConfigVersionID)
+		if err != nil {
+			return false, err
+		}
 	}
 
-	tf := []byte(cfgMap.Data[TerraformConfigMap])
-	configVersion, err := r.tfclient.CreateConfigurationVersion(instance.Status.WorkspaceID)
-	if err != nil {
-		return err
+	uploaded, err := r.tfclient.CheckConfigurationUploaded(instance.Status.ConfigVersionID)
+	if !uploaded || err != nil {
+		return true, err
 	}
 
-	err = os.Mkdir(moduleDirectory, 0777)
-	if err != nil {
-		return err
-	}
-
-	if err := ioutil.WriteFile(configurationFilePath, tf, 0777); err != nil {
-		return err
-	}
-
-	if err := r.tfclient.UploadConfigurationFile(configVersion.UploadURL); err != nil {
-		return err
+	// Reset Configuration Version ID on the Workspace Status since we are done with this one
+	instance.Status.ConfigVersionID = ""
+	if err = r.client.Status().Update(context.TODO(), instance); err != nil {
+		r.reqLogger.Error(err, "Failed to update Workspace status")
+		return true, err
 	}
 
 	options.ConfigurationVersion = configVersion
-	return nil
+
+	return false, nil
 }
 
 func (r *ReconcileWorkspace) prepareVCSRun(instance *appv1alpha1.Workspace) (bool, error) {
@@ -403,14 +435,12 @@ func (r *ReconcileWorkspace) startRun(instance *appv1alpha1.Workspace) error {
 	if instance.Spec.VCS != nil {
 		requeue, err = r.prepareVCSRun(instance)
 	} else if instance.Spec.Module != nil {
-		err = r.prepareModuleRun(instance, options)
+		requeue, err = r.prepareModuleRun(instance, options)
 	}
 
-	if err != nil {
-		return err
-	} else if requeue {
+	if err != nil || requeue {
 		// When requeue is true it means that the workspace is not ready yet.
-		return nil
+		return err
 	}
 
 	runResult, err := r.tfclient.Client.Runs.Create(context.TODO(), options)
@@ -486,7 +516,7 @@ func (r *ReconcileWorkspace) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	if updatedTerraform || updatedVariables || instance.Status.RunID == "" {
+	if updatedTerraform || updatedVariables || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
 		err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err
