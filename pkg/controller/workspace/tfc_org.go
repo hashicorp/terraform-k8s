@@ -96,7 +96,7 @@ func (t *TerraformCloudClient) SetTerraformVersion(workspace, terraformVersion s
 	wsUpdateOptions := tfc.WorkspaceUpdateOptions{
 		TerraformVersion: &terraformVersion,
 	}
-	_, err := t.Client.Workspaces.Update(context.Background(), t.Organization, workspace, wsUpdateOptions)
+	_, err := t.Client.Workspaces.Update(context.TODO(), t.Organization, workspace, wsUpdateOptions)
 	if err != nil {
 		return err
 	}
