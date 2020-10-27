@@ -4,13 +4,12 @@ go 1.15
 
 require (
 	github.com/go-logr/logr v0.1.0
-	github.com/hashicorp/go-tfe v0.7.0
-	github.com/hashicorp/terraform v0.12.25
+	github.com/hashicorp/go-tfe v0.10.3-0.20201021065942-225578ab1ee7 //pin to commit until new version is out
+	github.com/hashicorp/terraform v0.13.4
 	github.com/mitchellh/cli v1.1.1
 	github.com/operator-framework/operator-sdk v0.18.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.5.1
-	github.com/zclconf/go-cty v1.4.0
 	k8s.io/api v0.18.2
 	k8s.io/apimachinery v0.18.2
 	k8s.io/client-go v12.0.0+incompatible

@@ -72,6 +72,8 @@ type TeamPermissions struct {
 // TeamListOptions represents the options for listing teams.
 type TeamListOptions struct {
 	ListOptions
+
+	Include string `url:"include"`
 }
 
 // List all the teams of the given organization.

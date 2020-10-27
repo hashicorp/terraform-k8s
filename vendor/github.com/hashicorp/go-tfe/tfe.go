@@ -24,9 +24,10 @@ import (
 )
 
 const (
-	userAgent       = "go-tfe"
-	headerRateLimit = "X-RateLimit-Limit"
-	headerRateReset = "X-RateLimit-Reset"
+	userAgent        = "go-tfe"
+	headerRateLimit  = "X-RateLimit-Limit"
+	headerRateReset  = "X-RateLimit-Reset"
+	headerAPIVersion = "TFP-API-Version"
 
 	// DefaultAddress of Terraform Enterprise.
 	DefaultAddress = "https://app.terraform.io"
@@ -105,6 +106,7 @@ type Client struct {
 	limiter           *rate.Limiter
 	retryLogHook      RetryLogHook
 	retryServerErrors bool
+	remoteAPIVersion  string
 
 	Applies                    Applies
 	ConfigurationVersions      ConfigurationVersions
@@ -121,9 +123,11 @@ type Client struct {
 	PolicyChecks               PolicyChecks
 	PolicySetParameters        PolicySetParameters
 	PolicySets                 PolicySets
+	RegistryModules            RegistryModules
 	Runs                       Runs
 	RunTriggers                RunTriggers
 	SSHKeys                    SSHKeys
+	StateVersionOutputs        StateVersionOutputs
 	StateVersions              StateVersions
 	Teams                      Teams
 	TeamAccess                 TeamAccesses
@@ -194,10 +198,17 @@ func NewClient(cfg *Config) (*Client, error) {
 		RetryMax:     30,
 	}
 
-	// Configure the rate limiter.
-	if err := client.configureLimiter(); err != nil {
+	meta, err := client.getRawAPIMetadata()
+	if err != nil {
 		return nil, err
 	}
+
+	// Configure the rate limiter.
+	client.configureLimiter(meta.RateLimit)
+
+	// Save the API version so we can return it from the RemoteAPIVersion
+	// method later.
+	client.remoteAPIVersion = meta.APIVersion
 
 	// Create the services.
 	client.Applies = &applies{client: client}
@@ -215,9 +226,11 @@ func NewClient(cfg *Config) (*Client, error) {
 	client.PolicyChecks = &policyChecks{client: client}
 	client.PolicySetParameters = &policySetParameters{client: client}
 	client.PolicySets = &policySets{client: client}
+	client.RegistryModules = &registryModules{client: client}
 	client.Runs = &runs{client: client}
 	client.RunTriggers = &runTriggers{client: client}
 	client.SSHKeys = &sshKeys{client: client}
+	client.StateVersionOutputs = &stateVersionOutputs{client: client}
 	client.StateVersions = &stateVersions{client: client}
 	client.Teams = &teams{client: client}
 	client.TeamAccess = &teamAccesses{client: client}
@@ -228,6 +241,35 @@ func NewClient(cfg *Config) (*Client, error) {
 	client.Workspaces = &workspaces{client: client}
 
 	return client, nil
+}
+
+// RemoteAPIVersion returns the server's declared API version string.
+//
+// A Terraform Cloud or Enterprise API server returns its API version in an
+// HTTP header field in all responses. The NewClient function saves the
+// version number returned in its initial setup request and RemoteAPIVersion
+// returns that cached value.
+//
+// The API protocol calls for this string to be a dotted-decimal version number
+// like 2.3.0, where the first number indicates the API major version while the
+// second indicates a minor version which may have introduced some
+// backward-compatible additional features compared to its predecessor.
+//
+// Explicit API versioning was added to the Terraform Cloud and Enterprise
+// APIs as a later addition, so older servers will not return version
+// information. In that case, this function returns an empty string as the
+// version.
+func (c *Client) RemoteAPIVersion() string {
+	return c.remoteAPIVersion
+}
+
+// SetFakeRemoteAPIVersion allows setting a given string as the client's remoteAPIVersion,
+// overriding the value pulled from the API header during client initialization.
+//
+// This is intended for use in tests, when you may want to configure your TFE client to
+// return something different than the actual API version in order to test error handling.
+func (c *Client) SetFakeRemoteAPIVersion(fakeAPIVersion string) {
+	c.remoteAPIVersion = fakeAPIVersion
 }
 
 // RetryServerErrors configures the retry HTTP check to also retry
@@ -298,16 +340,29 @@ func rateLimitBackoff(min, max time.Duration, attemptNum int, resp *http.Respons
 	return min + jitter
 }
 
-// configureLimiter configures the rate limiter.
-func (c *Client) configureLimiter() error {
+type rawAPIMetadata struct {
+	// APIVersion is the raw API version string reported by the server in the
+	// TFP-API-Version response header, or an empty string if that header
+	// field was not included in the response.
+	APIVersion string
+
+	// RateLimit is the raw API version string reported by the server in the
+	// X-RateLimit-Limit response header, or an empty string if that header
+	// field was not included in the response.
+	RateLimit string
+}
+
+func (c *Client) getRawAPIMetadata() (rawAPIMetadata, error) {
+	var meta rawAPIMetadata
+
 	// Create a new request.
 	u, err := c.baseURL.Parse(PingEndpoint)
 	if err != nil {
-		return err
+		return meta, err
 	}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return err
+		return meta, err
 	}
 
 	// Attach the default headers.
@@ -320,15 +375,24 @@ func (c *Client) configureLimiter() error {
 	// Make a single request to retrieve the rate limit headers.
 	resp, err := c.http.HTTPClient.Do(req)
 	if err != nil {
-		return err
+		return meta, err
 	}
 	resp.Body.Close()
+
+	meta.APIVersion = resp.Header.Get(headerAPIVersion)
+	meta.RateLimit = resp.Header.Get(headerRateLimit)
+
+	return meta, nil
+}
+
+// configureLimiter configures the rate limiter.
+func (c *Client) configureLimiter(rawLimit string) {
 
 	// Set default values for when rate limiting is disabled.
 	limit := rate.Inf
 	burst := 0
 
-	if v := resp.Header.Get(headerRateLimit); v != "" {
+	if v := rawLimit; v != "" {
 		if rateLimit, _ := strconv.ParseFloat(v, 64); rateLimit > 0 {
 			// Configure the limit and burst using a split of 2/3 for the limit and
 			// 1/3 for the burst. This enables clients to burst 1/3 of the allowed
@@ -342,8 +406,6 @@ func (c *Client) configureLimiter() error {
 
 	// Create a new limiter using the calculated values.
 	c.limiter = rate.NewLimiter(limit, burst)
-
-	return nil
 }
 
 // newRequest creates an API request. A relative URL path can be provided in
@@ -380,11 +442,9 @@ func (c *Client) newRequest(method, path string, v interface{}) (*retryablehttp.
 		reqHeaders.Set("Content-Type", "application/vnd.api+json")
 
 		if v != nil {
-			buf := bytes.NewBuffer(nil)
-			if err := jsonapi.MarshalPayloadWithoutIncluded(buf, v); err != nil {
+			if body, err = serializeRequestBody(v); err != nil {
 				return nil, err
 			}
-			body = buf
 		}
 	case "PUT":
 		reqHeaders.Set("Accept", "application/json")
@@ -408,6 +468,65 @@ func (c *Client) newRequest(method, path string, v interface{}) (*retryablehttp.
 	}
 
 	return req, nil
+}
+
+// Helper method that serializes the given ptr or ptr slice into a JSON
+// request. It automatically uses jsonapi or json serialization, depending
+// on the body type's tags.
+func serializeRequestBody(v interface{}) (interface{}, error) {
+	// The body can be a slice of pointers or a pointer. In either
+	// case we want to choose the serialization type based on the
+	// individual record type. To determine that type, we need
+	// to either follow the pointer or examine the slice element type.
+	// There are other theoretical possiblities (e. g. maps,
+	// non-pointers) but they wouldn't work anyway because the
+	// json-api library doesn't support serializing other things.
+	var modelType reflect.Type
+	bodyType := reflect.TypeOf(v)
+	invalidBodyError := errors.New("go-tfe bug: DELETE/PATCH/POST body must be nil, ptr, or ptr slice")
+	switch bodyType.Kind() {
+	case reflect.Slice:
+		sliceElem := bodyType.Elem()
+		if sliceElem.Kind() != reflect.Ptr {
+			return nil, invalidBodyError
+		}
+		modelType = sliceElem.Elem()
+	case reflect.Ptr:
+		modelType = reflect.ValueOf(v).Elem().Type()
+	default:
+		return nil, invalidBodyError
+	}
+
+	// Infer whether the request uses jsonapi or regular json
+	// serialization based on how the fields are tagged.
+	jsonApiFields := 0
+	jsonFields := 0
+	for i := 0; i < modelType.NumField(); i++ {
+		structField := modelType.Field(i)
+		if structField.Tag.Get("jsonapi") != "" {
+			jsonApiFields++
+		}
+		if structField.Tag.Get("json") != "" {
+			jsonFields++
+		}
+	}
+	if jsonApiFields > 0 && jsonFields > 0 {
+		// Defining a struct with both json and jsonapi tags doesn't
+		// make sense, because a struct can only be serialized
+		// as one or another. If this does happen, it's a bug
+		// in the library that should be fixed at development time
+		return nil, errors.New("go-tfe bug: struct can't use both json and jsonapi attributes")
+	}
+
+	if jsonFields > 0 {
+		return json.Marshal(v)
+	} else {
+		buf := bytes.NewBuffer(nil)
+		if err := jsonapi.MarshalPayloadWithoutIncluded(buf, v); err != nil {
+			return nil, err
+		}
+		return buf, nil
+	}
 }
 
 // do sends an API request and returns the API response. The API response

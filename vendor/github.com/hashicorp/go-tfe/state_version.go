@@ -27,8 +27,14 @@ type StateVersions interface {
 	// Read a state version by its ID.
 	Read(ctx context.Context, svID string) (*StateVersion, error)
 
+	// ReadWithOptions reads a state version by its ID using the options supplied
+	ReadWithOptions(ctx context.Context, svID string, options *StateVersionReadOptions) (*StateVersion, error)
+
 	// Current reads the latest available state from the given workspace.
 	Current(ctx context.Context, workspaceID string) (*StateVersion, error)
+
+	// CurrentWithOptions reads the latest available state from the given workspace using the options supplied
+	CurrentWithOptions(ctx context.Context, workspaceID string, options *StateVersionCurrentOptions) (*StateVersion, error)
 
 	// Download retrieves the actual stored state of a state version
 	Download(ctx context.Context, url string) ([]byte, error)
@@ -55,7 +61,8 @@ type StateVersion struct {
 	VCSCommitURL string    `jsonapi:"attr,vcs-commit-url"`
 
 	// Relations
-	Run *Run `jsonapi:"relation,run"`
+	Run     *Run                  `jsonapi:"relation,run"`
+	Outputs []*StateVersionOutput `jsonapi:"relation,outputs"`
 }
 
 // StateVersionListOptions represents the options for listing state versions.
@@ -160,14 +167,50 @@ func (s *stateVersions) Create(ctx context.Context, workspaceID string, options 
 	return sv, nil
 }
 
+// StateVersionReadOptions represents the options for reading state version.
+type StateVersionReadOptions struct {
+	Include string `url:"include"`
+}
+
 // Read a state version by its ID.
-func (s *stateVersions) Read(ctx context.Context, svID string) (*StateVersion, error) {
+func (s *stateVersions) ReadWithOptions(ctx context.Context, svID string, options *StateVersionReadOptions) (*StateVersion, error) {
 	if !validStringID(&svID) {
 		return nil, errors.New("invalid value for state version ID")
 	}
 
 	u := fmt.Sprintf("state-versions/%s", url.QueryEscape(svID))
-	req, err := s.client.newRequest("GET", u, nil)
+	req, err := s.client.newRequest("GET", u, options)
+	if err != nil {
+		return nil, err
+	}
+
+	sv := &StateVersion{}
+	err = s.client.do(ctx, req, sv)
+	if err != nil {
+		return nil, err
+	}
+
+	return sv, nil
+}
+
+// Read a state version by its ID.
+func (s *stateVersions) Read(ctx context.Context, svID string) (*StateVersion, error) {
+	return s.ReadWithOptions(ctx, svID, nil)
+}
+
+// StateVersionCurrentOptions represents the options for reading the current state version.
+type StateVersionCurrentOptions struct {
+	Include string `url:"include"`
+}
+
+// CurrentWithOptions reads the latest available state from the given workspace using the options supplied.
+func (s *stateVersions) CurrentWithOptions(ctx context.Context, workspaceID string, options *StateVersionCurrentOptions) (*StateVersion, error) {
+	if !validStringID(&workspaceID) {
+		return nil, errors.New("invalid value for workspace ID")
+	}
+
+	u := fmt.Sprintf("workspaces/%s/current-state-version", url.QueryEscape(workspaceID))
+	req, err := s.client.newRequest("GET", u, options)
 	if err != nil {
 		return nil, err
 	}
@@ -183,23 +226,7 @@ func (s *stateVersions) Read(ctx context.Context, svID string) (*StateVersion, e
 
 // Current reads the latest available state from the given workspace.
 func (s *stateVersions) Current(ctx context.Context, workspaceID string) (*StateVersion, error) {
-	if !validStringID(&workspaceID) {
-		return nil, errors.New("invalid value for workspace ID")
-	}
-
-	u := fmt.Sprintf("workspaces/%s/current-state-version", url.QueryEscape(workspaceID))
-	req, err := s.client.newRequest("GET", u, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	sv := &StateVersion{}
-	err = s.client.do(ctx, req, sv)
-	if err != nil {
-		return nil, err
-	}
-
-	return sv, nil
+	return s.CurrentWithOptions(ctx, workspaceID, nil)
 }
 
 // Download retrieves the actual stored state of a state version

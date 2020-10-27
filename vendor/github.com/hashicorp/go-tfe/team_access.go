@@ -25,6 +25,9 @@ type TeamAccesses interface {
 	// Read a team access by its ID.
 	Read(ctx context.Context, teamAccessID string) (*TeamAccess, error)
 
+	// Update a team access by its ID.
+	Update(ctx context.Context, teamAccessID string, options TeamAccessUpdateOptions) (*TeamAccess, error)
+
 	// Remove team access from a workspace.
 	Remove(ctx context.Context, teamAccessID string) error
 }
@@ -37,12 +40,44 @@ type teamAccesses struct {
 // AccessType represents a team access type.
 type AccessType string
 
-// List all available team access types.
+// RunsPermissionType represents the permissiontype to a workspace's runs.
+type RunsPermissionType string
+
+// VariablesPermissionType represents the permissiontype to a workspace's variables.
+type VariablesPermissionType string
+
+// StateVersionsPermissionType represents the permissiontype to a workspace's state versions.
+type StateVersionsPermissionType string
+
+// SentinelMocksPermissionType represents the permissiontype to a workspace's Sentinel mocks.
+type SentinelMocksPermissionType string
+
+// WorkspaceLockingPermissionType represents the permissiontype to lock or unlock a workspace.
+type WorkspaceLockingPermissionType bool
+
+// List all available team access types and permissions.
 const (
-	AccessAdmin AccessType = "admin"
-	AccessPlan  AccessType = "plan"
-	AccessRead  AccessType = "read"
-	AccessWrite AccessType = "write"
+	AccessAdmin  AccessType = "admin"
+	AccessPlan   AccessType = "plan"
+	AccessRead   AccessType = "read"
+	AccessWrite  AccessType = "write"
+	AccessCustom AccessType = "custom"
+
+	RunsPermissionRead  RunsPermissionType = "read"
+	RunsPermissionPlan  RunsPermissionType = "plan"
+	RunsPermissionApply RunsPermissionType = "apply"
+
+	VariablesPermissionNone  VariablesPermissionType = "none"
+	VariablesPermissionRead  VariablesPermissionType = "read"
+	VariablesPermissionWrite VariablesPermissionType = "write"
+
+	StateVersionsPermissionNone        StateVersionsPermissionType = "none"
+	StateVersionsPermissionReadOutputs StateVersionsPermissionType = "read-outputs"
+	StateVersionsPermissionRead        StateVersionsPermissionType = "read"
+	StateVersionsPermissionWrite       StateVersionsPermissionType = "write"
+
+	SentinelMocksPermissionNone SentinelMocksPermissionType = "none"
+	SentinelMocksPermissionRead SentinelMocksPermissionType = "read"
 )
 
 // TeamAccessList represents a list of team accesses.
@@ -53,8 +88,13 @@ type TeamAccessList struct {
 
 // TeamAccess represents the workspace access for a team.
 type TeamAccess struct {
-	ID     string     `jsonapi:"primary,team-workspaces"`
-	Access AccessType `jsonapi:"attr,access"`
+	ID               string                      `jsonapi:"primary,team-workspaces"`
+	Access           AccessType                  `jsonapi:"attr,access"`
+	Runs             RunsPermissionType          `jsonapi:"attr,runs"`
+	Variables        VariablesPermissionType     `jsonapi:"attr,variables"`
+	StateVersions    StateVersionsPermissionType `jsonapi:"attr,state-versions"`
+	SentinelMocks    SentinelMocksPermissionType `jsonapi:"attr,sentinel-mocks"`
+	WorkspaceLocking bool                        `jsonapi:"attr,workspace-locking"`
 
 	// Relations
 	Team      *Team      `jsonapi:"relation,team"`
@@ -104,6 +144,14 @@ type TeamAccessAddOptions struct {
 
 	// The type of access to grant.
 	Access *AccessType `jsonapi:"attr,access"`
+
+	// Custom workspace access permissions. These can only be edited when Access is 'custom'; otherwise, they are
+	// read-only and reflect the Access level's implicit permissions.
+	Runs             *RunsPermissionType          `jsonapi:"attr,runs,omitempty"`
+	Variables        *VariablesPermissionType     `jsonapi:"attr,variables,omitempty"`
+	StateVersions    *StateVersionsPermissionType `jsonapi:"attr,state-versions,omitempty"`
+	SentinelMocks    *SentinelMocksPermissionType `jsonapi:"attr,sentinel-mocks,omitempty"`
+	WorkspaceLocking *bool                        `jsonapi:"attr,workspace-locking,omitempty"`
 
 	// The team to add to the workspace
 	Team *Team `jsonapi:"relation,team"`
@@ -167,6 +215,47 @@ func (s *teamAccesses) Read(ctx context.Context, teamAccessID string) (*TeamAcce
 	}
 
 	return ta, nil
+}
+
+// TeamAccessUpdateOptions represents the options for updating team access.
+type TeamAccessUpdateOptions struct {
+	// For internal use only!
+	ID string `jsonapi:"primary,team-workspaces"`
+
+	// The type of access to grant.
+	Access *AccessType `jsonapi:"attr,access,omitempty"`
+
+	// Custom workspace access permissions. These can only be edited when Access is 'custom'; otherwise, they are
+	// read-only and reflect the Access level's implicit permissions.
+	Runs             *RunsPermissionType          `jsonapi:"attr,runs,omitempty"`
+	Variables        *VariablesPermissionType     `jsonapi:"attr,variables,omitempty"`
+	StateVersions    *StateVersionsPermissionType `jsonapi:"attr,state-versions,omitempty"`
+	SentinelMocks    *SentinelMocksPermissionType `jsonapi:"attr,sentinel-mocks,omitempty"`
+	WorkspaceLocking *bool                        `jsonapi:"attr,workspace-locking,omitempty"`
+}
+
+// Update team access for a workspace
+func (s *teamAccesses) Update(ctx context.Context, teamAccessID string, options TeamAccessUpdateOptions) (*TeamAccess, error) {
+	if !validStringID(&teamAccessID) {
+		return nil, errors.New("invalid value for team access ID")
+	}
+
+	// Make sure we don't send a user provided ID.
+	options.ID = ""
+
+	u := fmt.Sprintf("team-workspaces/%s", url.QueryEscape(teamAccessID))
+	req, err := s.client.newRequest("PATCH", u, &options)
+	if err != nil {
+		return nil, err
+	}
+
+	ta := &TeamAccess{}
+	err = s.client.do(ctx, req, ta)
+	if err != nil {
+		return nil, err
+	}
+
+	return ta, err
 }
 
 // Remove team access from a workspace.

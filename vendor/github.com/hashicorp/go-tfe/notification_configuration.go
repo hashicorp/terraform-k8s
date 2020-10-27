@@ -58,8 +58,9 @@ type NotificationDestinationType string
 
 // List of available notification destination types.
 const (
-	NotificationDestinationTypeSlack   NotificationDestinationType = "slack"
+	NotificationDestinationTypeEmail   NotificationDestinationType = "email"
 	NotificationDestinationTypeGeneric NotificationDestinationType = "generic"
+	NotificationDestinationTypeSlack   NotificationDestinationType = "slack"
 )
 
 // NotificationConfigurationList represents a list of Notification
@@ -81,6 +82,13 @@ type NotificationConfiguration struct {
 	Triggers          []string                    `jsonapi:"attr,triggers"`
 	UpdatedAt         time.Time                   `jsonapi:"attr,updated-at,iso8601"`
 	URL               string                      `jsonapi:"attr,url"`
+
+	// EmailAddresses is only available for TFE users. It is not available in TFC.
+	EmailAddresses []string `jsonapi:"attr,email-addresses"`
+
+	// Relations
+	Subscribable *Workspace `jsonapi:"relation,subscribable"`
+	EmailUsers   []*User    `jsonapi:"relation,users"`
 }
 
 // DeliveryResponse represents a notification configuration delivery response.
@@ -138,11 +146,18 @@ type NotificationConfigurationCreateOptions struct {
 	// The token of the notification configuration
 	Token *string `jsonapi:"attr,token,omitempty"`
 
-	// The destination type of the notification configuration
+	// The list of run events that will trigger notifications.
 	Triggers []string `jsonapi:"attr,triggers,omitempty"`
 
 	// The url of the notification configuration
-	URL *string `jsonapi:"attr,url"`
+	URL *string `jsonapi:"attr,url,omitempty"`
+
+	// The list of email addresses that will receive notification emails.
+	// EmailAddresses is only available for TFE users. It is not available in TFC.
+	EmailAddresses []string `jsonapi:"attr,email-addresses,omitempty"`
+
+	// The list of users belonging to the organization that will receive notification emails.
+	EmailUsers []*User `jsonapi:"relation,users,omitempty"`
 }
 
 func (o NotificationConfigurationCreateOptions) valid() error {
@@ -155,8 +170,11 @@ func (o NotificationConfigurationCreateOptions) valid() error {
 	if !validString(o.Name) {
 		return errors.New("name is required")
 	}
-	if !validString(o.URL) {
-		return errors.New("url is required")
+
+	if *o.DestinationType == NotificationDestinationTypeGeneric || *o.DestinationType == NotificationDestinationTypeSlack {
+		if o.URL == nil {
+			return errors.New("url is required")
+		}
 	}
 	return nil
 }
@@ -188,7 +206,7 @@ func (s *notificationConfigurations) Create(ctx context.Context, workspaceID str
 	return nc, nil
 }
 
-// Read a notitification configuration by its ID.
+// Read a notification configuration by its ID.
 func (s *notificationConfigurations) Read(ctx context.Context, notificationConfigurationID string) (*NotificationConfiguration, error) {
 	if !validStringID(&notificationConfigurationID) {
 		return nil, errors.New("invalid value for notification configuration ID")
@@ -224,11 +242,18 @@ type NotificationConfigurationUpdateOptions struct {
 	// The token of the notification configuration
 	Token *string `jsonapi:"attr,token,omitempty"`
 
-	// The destination type of the notification configuration
+	// The list of run events that will trigger notifications.
 	Triggers []string `jsonapi:"attr,triggers,omitempty"`
 
 	// The url of the notification configuration
 	URL *string `jsonapi:"attr,url,omitempty"`
+
+	// The list of email addresses that will receive notification emails.
+	// EmailAddresses is only available for TFE users. It is not available in TFC.
+	EmailAddresses []string `jsonapi:"attr,email-addresses,omitempty"`
+
+	// The list of users belonging to the organization that will receive notification emails.
+	EmailUsers []*User `jsonapi:"relation,users,omitempty"`
 }
 
 // Updates a notification configuration with the given options.

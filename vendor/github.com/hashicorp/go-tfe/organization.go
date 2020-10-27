@@ -81,6 +81,7 @@ type Organization struct {
 	CreatedAt              time.Time                `jsonapi:"attr,created-at,iso8601"`
 	Email                  string                   `jsonapi:"attr,email"`
 	EnterprisePlan         EnterprisePlanType       `jsonapi:"attr,enterprise-plan"`
+	ExternalID             string                   `jsonapi:"attr,external-id"`
 	OwnersTeamSAMLRoleID   string                   `jsonapi:"attr,owners-team-saml-role-id"`
 	Permissions            *OrganizationPermissions `jsonapi:"attr,permissions"`
 	SAMLEnabled            bool                     `jsonapi:"attr,saml-enabled"`

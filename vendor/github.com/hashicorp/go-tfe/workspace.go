@@ -88,6 +88,7 @@ type Workspace struct {
 	Operations           bool                  `jsonapi:"attr,operations"`
 	Permissions          *WorkspacePermissions `jsonapi:"attr,permissions"`
 	QueueAllRuns         bool                  `jsonapi:"attr,queue-all-runs"`
+	SpeculativeEnabled   bool                  `jsonapi:"attr,speculative-enabled"`
 	TerraformVersion     string                `jsonapi:"attr,terraform-version"`
 	TriggerPrefixes      []string              `jsonapi:"attr,trigger-prefixes"`
 	VCSRepo              *VCSRepo              `jsonapi:"attr,vcs-repo"`
@@ -102,6 +103,7 @@ type Workspace struct {
 // VCSRepo contains the configuration of a VCS integration.
 type VCSRepo struct {
 	Branch            string `json:"branch"`
+	DisplayIdentifier string `json:"display-identifier"`
 	Identifier        string `json:"identifier"`
 	IngressSubmodules bool   `json:"ingress-submodules"`
 	OAuthTokenID      string `json:"oauth-token-id"`
@@ -132,6 +134,9 @@ type WorkspaceListOptions struct {
 
 	// A search string (partial workspace name) used to filter the results.
 	Search *string `url:"search[name],omitempty"`
+
+	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
+	Include *string `url:"include"`
 }
 
 // List all the workspaces within an organization.
@@ -186,6 +191,12 @@ type WorkspaceCreateOptions struct {
 	// a webhook will not be queued until at least one run is manually queued.
 	QueueAllRuns *bool `jsonapi:"attr,queue-all-runs,omitempty"`
 
+	// Whether this workspace allows speculative plans. Setting this to false
+	// prevents Terraform Cloud or the Terraform Enterprise instance from
+	// running plans on pull requests, which can improve security if the VCS
+	// repository is public or includes untrusted contributors.
+	SpeculativeEnabled *bool `jsonapi:"attr,speculative-enabled,omitempty"`
+
 	// The version of Terraform to use for this workspace. Upon creating a
 	// workspace, the latest version is selected unless otherwise specified.
 	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
@@ -205,6 +216,7 @@ type WorkspaceCreateOptions struct {
 	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
 }
 
+// TODO: move this struct out. VCSRepoOptions is used by workspaces, policy sets, and registry modules
 // VCSRepoOptions represents the configuration options of a VCS integration.
 type VCSRepoOptions struct {
 	Branch            *string `json:"branch,omitempty"`
@@ -325,6 +337,12 @@ type WorkspaceUpdateOptions struct {
 	// Whether to queue all runs. Unless this is set to true, runs triggered by
 	// a webhook will not be queued until at least one run is manually queued.
 	QueueAllRuns *bool `jsonapi:"attr,queue-all-runs,omitempty"`
+
+	// Whether this workspace allows speculative plans. Setting this to false
+	// prevents Terraform Cloud or the Terraform Enterprise instance from
+	// running plans on pull requests, which can improve security if the VCS
+	// repository is public or includes untrusted contributors.
+	SpeculativeEnabled *bool `jsonapi:"attr,speculative-enabled,omitempty"`
 
 	// The version of Terraform to use for this workspace.
 	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
