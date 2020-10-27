@@ -1,6 +1,6 @@
 # Terraform Cloud Operator for Kubernetes
 
-> This repository contains experimental software which is still under development and in the alpha testing stage. It is not ready for production use.
+> This repository contains experimental software which is still under development and in the alpha testing stage. It is not ready for production use. You can read our roadmap to General Availability [here](_about/ROADMAP.md).
 
 The Terraform Cloud Operator for Kubernetes provides first-class integration between [Kubernetes](https://kubernetes.io/) and [Terraform Cloud](https://www.hashicorp.com/products/terraform/editions/cloud/) by extending the Kubernetes control plane to enable lifecycle management of cloud and on-prem infrastructure through [Kubernetes manifests](https://kubernetes.io/docs/concepts/cluster-administration/manage-deployment/). Manifests can be deployed and managed using kubectl, [Terraform](https://registry.terraform.io/providers/hashicorp/kubernetes-alpha/latest), Gitops tools, or any other tool that allows you to manage Kubernetes [custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/). 
 
