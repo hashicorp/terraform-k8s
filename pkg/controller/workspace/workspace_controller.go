@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	tfc "github.com/hashicorp/go-tfe"
 )
 
 var log = logf.Log.WithName(TerraformOperator)
@@ -379,15 +380,13 @@ func (r *ReconcileWorkspace) prepareModuleRun(instance *appv1alpha1.Workspace, o
 			r.reqLogger.Error(err, "Failed to update Workspace status")
 			return true, err
 		}
-	} else {
-		configVersion, err = r.tfclient.Client.ConfigurationVersions.Read(context.TODO(), instance.Status.ConfigVersionID)
-		if err != nil {
-			return false, err
-		}
 	}
 
-	uploaded, err := r.tfclient.CheckConfigurationUploaded(instance.Status.ConfigVersionID)
-	if !uploaded || err != nil {
+	configVersion, err = r.tfclient.Client.ConfigurationVersions.Read(context.TODO(), instance.Status.ConfigVersionID)
+	if err != nil {
+		return true, err
+	}
+	if !(configVersion.Status == tfc.ConfigurationUploaded) {
 		return true, err
 	}
 
