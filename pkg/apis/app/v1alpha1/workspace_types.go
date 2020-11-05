@@ -109,6 +109,8 @@ type WorkspaceStatus struct {
 	WorkspaceID string `json:"workspaceID"`
 	// Run ID
 	RunID string `json:"runID"`
+	// Configuration Version ID
+	ConfigVersionID string `json:"configVersionID"`
 	// Outputs from state file
 	// +optional
 	Outputs []*OutputStatus `json:"outputs,omitempty"`

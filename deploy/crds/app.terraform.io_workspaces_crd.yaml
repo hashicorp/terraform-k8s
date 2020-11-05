@@ -1,4 +1,4 @@
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: workspaces.app.terraform.io
@@ -200,7 +200,7 @@ spec:
                     type: string
                   token_id:
                     description: Token ID of the VCS Connection (OAuth Connection
-                      Token) to use
+                      Token) to use https://www.terraform.io/docs/cloud/vcs
                     type: string
                 required:
                 - repo_identifier
@@ -213,6 +213,9 @@ spec:
           status:
             description: WorkspaceStatus defines the observed state of Workspace
             properties:
+              configVersionID:
+                description: Configuration Version ID
+                type: string
               outputs:
                 description: Outputs from state file
                 items:
@@ -236,6 +239,7 @@ spec:
                 description: Workspace ID
                 type: string
             required:
+            - configVersionID
             - runID
             - runStatus
             - workspaceID
