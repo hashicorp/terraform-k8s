@@ -26,14 +26,14 @@ func configMapForTerraform(name string, namespace string, template []byte) *core
 	}
 }
 
-func configMapForOutputs(name string, namespace string, outputs []*v1alpha1.OutputStatus) *corev1.ConfigMap {
+func secretForOutputs(name string, namespace string, outputs []*v1alpha1.OutputStatus) *corev1.Secret {
 	data := outputsToMap(outputs)
-	return &corev1.ConfigMap{
+	return &corev1.Secret {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Data: *data,
+		Data: data,
 	}
 }
 
@@ -102,41 +102,42 @@ func (r *ReconcileWorkspace) GetConfigMapForVariable(namespace string, variable 
 	return nil
 }
 
-func outputsToMap(outputs []*v1alpha1.OutputStatus) *map[string]string {
-	data := map[string]string{}
+func outputsToMap(outputs []*v1alpha1.OutputStatus) map[string][]byte {
+	data := map[string][]byte{}
 	for _, output := range outputs {
-		data[output.Key] = output.Value
+		data[output.Key] = []byte(output.Value)
 	}
-	return &data
+	return data
 }
 
-// UpsertOutputs creates a ConfigMap for the outputs
-func (r *ReconcileWorkspace) UpsertOutputs(w *v1alpha1.Workspace, outputs []*v1alpha1.OutputStatus) error {
-	found := &corev1.ConfigMap{}
+// UpsertSecretOutputs creates a ConfigMap for the outputs
+func (r *ReconcileWorkspace) UpsertSecretOutputs(w *v1alpha1.Workspace, outputs []*v1alpha1.OutputStatus) error {
+	found := &corev1.Secret{}
 	outputName := fmt.Sprintf("%s-outputs", w.Name)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: outputName, Namespace: w.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
-		configMap := configMapForOutputs(outputName, w.Namespace, outputs)
-		err = controllerutil.SetControllerReference(w, configMap, r.scheme)
+		secret := secretForOutputs(outputName, w.Namespace, outputs)
+		err = controllerutil.SetControllerReference(w, secret, r.scheme)
 		if err != nil {
 			return err
 		}
-		r.reqLogger.Info("Writing outputs to new ConfigMap")
-		if err := r.client.Create(context.TODO(), configMap); err != nil {
-			r.reqLogger.Error(err, "Failed to create new output ConfigMap")
+		r.reqLogger.Info("Writing outputs to new Secret")
+		if err := r.client.Create(context.TODO(), secret); err != nil {
+			r.reqLogger.Error(err, "Failed to create new output secrets")
 			return err
 		}
 		return nil
 	} else if err != nil {
-		r.reqLogger.Error(err, "Failed to get output ConfigMap")
+		r.reqLogger.Error(err, "Failed to get output secrets")
 		return err
 	}
 
 	currentOutputs := outputsToMap(outputs)
 	if !reflect.DeepEqual(found.Data, currentOutputs) {
-		found.Data = *currentOutputs
+		r.reqLogger.Info("Updating secrets", "name", outputName)
+		found.Data = currentOutputs
 		if err := r.client.Update(context.TODO(), found); err != nil {
-			r.reqLogger.Error(err, "Failed to update output ConfigMap", "Namespace", w.Namespace, "Name", outputName)
+			r.reqLogger.Error(err, "Failed to update output secrets", "Namespace", w.Namespace, "Name", outputName)
 			return err
 		}
 		return nil

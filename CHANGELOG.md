@@ -1,3 +1,17 @@
+## 0.1.6-alpha (November 09, 2020)
+
+Upgrade notes:
+    This version moves storage of outputs from ConfigMaps to Secrets.
+    The first time the operator runs it will create new Secrets containing
+    the workspace's outputs, and it will keep updating only those for
+    subsequent runs. Old ConfigMaps will be left for the users to delete
+    when they are ready.
+
+* Support for VCS backed workspaces. ([#70](https://github.com/hashicorp/terraform-k8s/pull/70))
+* Decouple the operator from the Terraform version used in a workspace ([77](https://github.com/hashicorp/terraform-k8s/pull/77))
+* Fix bug with timing of configuration version status ([78](https://github.com/hashicorp/terraform-k8s/pull/78))
+* Store outputs in k8s Secret objects instead of ConfigMap objects ([80](https://github.com/hashicorp/terraform-k8s/pull/80))
+
 ## 0.1.5-alpha (May 20, 2020)
 
 * Upgrade go-tfe to v0.7.0 and dependencies 
