@@ -14,8 +14,14 @@ jobs:
     - uses: actions/checkout@v2
     - uses: actions/setup-go@v1
       with:
-        go-version: 1.13.8
+        go-version: 1.15.5
+    - name: Install kubebuilder
+      run: |
+        curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.1/kubebuilder_2.3.1_linux_amd64.tar.gz -o /tmp/kb.tgz
+        tar zxf /tmp/kb.tgz -C /tmp/
     - name: Run GoReleaser
+      env:
+        KUBEBUILDER_ASSETS: /tmp/kubebuilder_2.3.1_linux_amd64/bin/
       uses: goreleaser/goreleaser-action@v1.3.1
       with:
         args: release --snapshot --skip-publish --rm-dist --skip-sign
