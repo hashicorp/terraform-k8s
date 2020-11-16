@@ -110,7 +110,7 @@ func outputsToMap(outputs []*v1alpha1.OutputStatus) map[string][]byte {
 	return data
 }
 
-// UpsertSecretOutputs creates a ConfigMap for the outputs
+// UpsertSecretOutputs creates a Secret for the outputs
 func (r *ReconcileWorkspace) UpsertSecretOutputs(w *v1alpha1.Workspace, outputs []*v1alpha1.OutputStatus) error {
 	found := &corev1.Secret{}
 	outputName := fmt.Sprintf("%s-outputs", w.Name)
