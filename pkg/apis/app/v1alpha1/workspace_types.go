@@ -96,7 +96,6 @@ type WorkspaceSpec struct {
 	Outputs []*OutputSpec `json:"outputs,omitempty"`
 	// Terraform version used for this workspace. The default is `latest`.
 	// +optional
-	// +kubebuilder:default=latest
 	TerraformVersion string `json:"terraformVersion"`
 }
 

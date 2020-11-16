@@ -140,10 +140,17 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1a
 
 // CreateWorkspace creates a Terraform Cloud Workspace that auto-applies
 func (t *TerraformCloudClient) CreateWorkspace(workspace string, instance *appv1alpha1.Workspace) (string, error) {
+	var tfVersion string
+	if instance.Spec.TerraformVersion == "" {
+		tfVersion = "latest"
+	} else {
+		tfVersion = instance.Spec.TerraformVersion
+	}
+
 	options := tfc.WorkspaceCreateOptions{
 		AutoApply:        &AutoApply,
 		Name:             &workspace,
-		TerraformVersion: &instance.Spec.TerraformVersion,
+		TerraformVersion: &tfVersion,
 	}
 
 	if instance.Spec.VCS != nil {
