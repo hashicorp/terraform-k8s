@@ -293,8 +293,8 @@ func (r *ReconcileWorkspace) processFinishedRun(instance *appv1alpha1.Workspace)
 		r.recorder.Event(instance, corev1.EventTypeNormal, "WorkspaceEvent",
 			fmt.Sprintf("Updated outputs for run %s", instance.Status.RunID))
 	}
-	if err = r.UpsertOutputs(instance, instance.Status.Outputs); err != nil {
-		r.reqLogger.Error(err, "Error with creating ConfigMap for Terraform Outputs")
+	if err = r.UpsertSecretOutputs(instance, instance.Status.Outputs); err != nil {
+		r.reqLogger.Error(err, "Error with creating Secret for Terraform Outputs")
 		return err
 	}
 	return nil
