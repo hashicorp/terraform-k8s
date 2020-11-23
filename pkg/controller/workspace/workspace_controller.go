@@ -390,10 +390,6 @@ func (r *ReconcileWorkspace) prepareModuleRun(instance *appv1alpha1.Workspace, o
 		return true, err
 	}
 
-	err = os.Mkdir(moduleDirectory, 0777)
-	if err != nil && !os.IsExist(err) {
-		return true, err
-	}
 	if !(configVersion.Status == tfc.ConfigurationUploaded) {
 		return true, err
 	}
