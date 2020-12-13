@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/go-logr/logr"
+	tfc "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/pkg/apis/app/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -25,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	tfc "github.com/hashicorp/go-tfe"
 )
 
 var log = logf.Log.WithName(TerraformOperator)
@@ -216,7 +216,10 @@ func (r *ReconcileWorkspace) condDeleteWorkspace(instance *appv1alpha1.Workspace
 	}
 
 	err := r.tfclient.CheckWorkspacebyID(instance.Status.WorkspaceID)
-	if err != nil && err != tfe.ErrResourceNotFound {
+	if err != nil {
+		if err == tfe.ErrResourceNotFound {
+			return true, nil
+		}
 		return false, err
 	}
 
@@ -386,6 +389,7 @@ func (r *ReconcileWorkspace) prepareModuleRun(instance *appv1alpha1.Workspace, o
 	if err != nil {
 		return true, err
 	}
+
 	if !(configVersion.Status == tfc.ConfigurationUploaded) {
 		return true, err
 	}

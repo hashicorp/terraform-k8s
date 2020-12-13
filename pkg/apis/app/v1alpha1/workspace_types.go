@@ -97,6 +97,9 @@ type WorkspaceSpec struct {
 	// Terraform version used for this workspace. The default is `latest`.
 	// +optional
 	TerraformVersion string `json:"terraformVersion"`
+	// Specifies the agent pool ID we wish to use.
+	// +optional
+	AgentPoolID string `json:"agentPoolID,omitempty"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace
