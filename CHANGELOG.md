@@ -1,4 +1,4 @@
-## 0.1.6-alpha (November 09, 2020)
+## 0.1.6-beta (December 14, 2020)
 
 Upgrade notes:
     This version moves storage of outputs from ConfigMaps to Secrets.
@@ -7,10 +7,15 @@ Upgrade notes:
     subsequent runs. Old ConfigMaps will be left for the users to delete
     when they are ready.
 
+* Upgrade to operator-sdk v0.18 ([#69](https://github.com/hashicorp/terraform-k8s/pull/69))
 * Support for VCS backed workspaces. ([#70](https://github.com/hashicorp/terraform-k8s/pull/70))
-* Decouple the operator from the Terraform version used in a workspace ([77](https://github.com/hashicorp/terraform-k8s/pull/77))
-* Fix bug with timing of configuration version status ([78](https://github.com/hashicorp/terraform-k8s/pull/78))
-* Store outputs in k8s Secret objects instead of ConfigMap objects ([80](https://github.com/hashicorp/terraform-k8s/pull/80))
+* Support for insecure HTTPS connections. ([#72](https://github.com/hashicorp/terraform-k8s/pull/72))
+* Decouple the operator from the Terraform version used in a workspace ([#77](https://github.com/hashicorp/terraform-k8s/pull/77))
+* Fix bug with timing of configuration version status ([#78](https://github.com/hashicorp/terraform-k8s/pull/78))
+* Store outputs in k8s Secret objects instead of ConfigMap objects ([#80](https://github.com/hashicorp/terraform-k8s/pull/80))
+* Remove vendor dir ([81](https://github.com/hashicorp/terraform-k8s/pull/81))
+* Add support for TFC Remote agents and upgrade go-tfe to 0.11.1 ([#82](https://github.com/hashicorp/terraform-k8s/pull/82))
+
 
 ## 0.1.5-alpha (May 20, 2020)
 
