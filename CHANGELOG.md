@@ -1,4 +1,4 @@
-## 0.1.6-beta (December 14, 2020)
+## 0.2.0-beta (December 14, 2020)
 
 Upgrade notes:
     This version moves storage of outputs from ConfigMaps to Secrets.
