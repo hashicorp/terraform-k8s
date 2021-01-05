@@ -257,27 +257,3 @@ func (t *TerraformCloudClient) DeleteWorkspace(workspaceID string) error {
 	}
 	return nil
 }
-
-// CheckOutputs retrieves outputs for a run.
-func (t *TerraformCloudClient) CheckOutputs(workspaceID string, runID string) ([]*appv1alpha1.OutputStatus, error) {
-	outputs := []*appv1alpha1.OutputStatus{}
-	if runID == "" {
-		return outputs, nil
-	}
-
-	st, err := t.Client.StateVersions.CurrentWithOptions(context.TODO(), workspaceID,
-		&tfc.StateVersionCurrentOptions{Include: "outputs"})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, value := range st.Outputs {
-		if !value.Sensitive {
-			if value.Value != "" {
-				outputs = append(outputs, &appv1alpha1.OutputStatus{Key: value.Name, Value: value.Value})
-			}
-		}
-	}
-
-	return outputs, nil
-}
