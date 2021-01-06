@@ -5,11 +5,12 @@ go 1.15
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/hashicorp/go-tfe v0.11.1
-	github.com/hashicorp/terraform v0.13.4
+	github.com/hashicorp/terraform v0.14.3
 	github.com/mitchellh/cli v1.1.1
 	github.com/operator-framework/operator-sdk v0.18.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
+	github.com/zclconf/go-cty v1.7.1
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	k8s.io/api v0.18.2
 	k8s.io/apimachinery v0.18.2
