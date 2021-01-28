@@ -1,0 +1,11 @@
+resources:
+- manager.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+- name: controller
+  newName: terraform-k8s
+  newTag: latest
+- name: terraform-k8s
+  newName: terraform-k8s
+  newTag: latest

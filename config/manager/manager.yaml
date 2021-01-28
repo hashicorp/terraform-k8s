@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: terraform-k8s
+  name: system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: operator
+  namespace: system
+  labels:
+    control-plane: terraform-k8s
+spec:
+  selector:
+    matchLabels:
+      control-plane: terraform-k8s
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: terraform-k8s
+    spec:
+      containers:
+      - command:
+        - /bin/terraform-k8s
+        args:
+        - --enable-leader-election
+        image: terraform-k8s:latest
+        imagePullPolicy: IfNotPresent
+        name: terraform-k8s
+        env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPERATOR_NAME
+              value: "terraform-k8s"
+            - name: TF_CLI_CONFIG_FILE
+              value: "/etc/terraform/.terraformrc"
+        volumeMounts:
+          - name: terraformrc
+            mountPath: "/etc/terraform"
+            readOnly: true
+          - name: workspacesecrets
+            mountPath: "/tmp/secrets"
+            readOnly: true
+      volumes:
+        - name: terraformrc
+          secret:
+            secretName: terraformrc
+            items:
+              - key: credentials
+                path: ".terraformrc"
+        - name: workspacesecrets
+          secret:
+            secretName: workspacesecrets
+      terminationGracePeriodSeconds: 10

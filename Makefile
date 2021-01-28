@@ -1,120 +1,79 @@
-SHELL = bash
 
-GOOS?=$(shell go env GOOS)
-GOARCH?=$(shell go env GOARCH)
-GOPATH=$(shell go env GOPATH)
-GOTAGS ?=
-GOTOOLS = \
-	github.com/magiconair/vendorfmt/cmd/vendorfmt \
-	github.com/mitchellh/gox \
-	golang.org/x/tools/cmd/cover \
-	golang.org/x/tools/cmd/stringer
+# Image URL to use all building/pushing image targets
+IMG ?= terraform-k8s:latest
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= "crd:trivialVersions=true"
 
-DEV_IMAGE?=terraform-k8s-dev
-RELEASE_IMAGE?=hashicorp/terraform-k8s
-GO_BUILD_TAG?=terraform-k8s-build-go
-GIT_COMMIT?=$(shell git rev-parse --short HEAD)
-GIT_DIRTY?=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
-GIT_DESCRIBE?=$(shell git describe --tags --always)
-GIT_IMPORT=github.com/hashicorp/terraform-k8s/version
-GOLDFLAGS=-X $(GIT_IMPORT).GitCommit=$(GIT_COMMIT)$(GIT_DIRTY) -X $(GIT_IMPORT).GitDescribe=$(GIT_DESCRIBE)
+KUSTOMIZE=$(shell which kustomize)
+ifeq ($(.SHELLSTATUS),1)
+	$(error "kustomize not found. Please follow the instructions here to install it: https://kubectl.docs.kubernetes.io/installation/kustomize/")
+endif
+CONTROLLER_GEN=$(shell which controller-gen)
+ifeq ($(.SHELLSTATUS),1)
+	$(error "controller-gen not found. Please install by running: go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0")
+endif
+KUBEBUILDER=$(shell which kubebuilder)
+ifeq ($(.SHELLSTATUS),1)
+	$(error "Kubebuilder and related assets such as the etcd binary could not be found in PATH. Please install kubebuilder as explained here: https://book.kubebuilder.io/quick-start.html#installation")
+endif
+export KUBEBUILDER_ASSETS ?= $(dir $(KUBEBUILDER))
 
-export GIT_COMMIT
-export GIT_DIRTY
-export GIT_DESCRIBE
-export GOLDFLAGS
-export GOTAGS
-
-DIST_TAG?=1
-DIST_BUILD?=1
-DIST_SIGN?=1
-
-ifdef DIST_VERSION
-DIST_VERSION_ARG=-v "$(DIST_VERSION)"
+GOOS=$(shell go env GOOS)
+GOARCH=$(shell go env GOARCH)
+# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
+ifeq (,$(shell go env GOBIN))
+GOBIN=$(shell go env GOPATH)/bin
 else
-DIST_VERSION_ARG=
+GOBIN=$(shell go env GOBIN)
 endif
 
-ifdef DIST_RELEASE_DATE
-DIST_DATE_ARG=-d "$(DIST_RELEASE_DATE)"
-else
-DIST_DATE_ARG=
-endif
+all: test deploy
 
-ifdef DIST_PRERELEASE
-DIST_REL_ARG=-r "$(DIST_PRERELEASE)"
-else
-DIST_REL_ARG=
-endif
+# Run tests
+test: generate fmt vet manifests
+	go test ./... -coverprofile cover.out
 
-PUB_GIT?=1
-PUB_WEBSITE?=1
+# Build manager binary
+manager: generate fmt vet
+	go build -o bin/terraform-k8s main.go
 
-ifeq ($(PUB_GIT),1)
-PUB_GIT_ARG=-g
-else
-PUB_GIT_ARG=
-endif
+# Run against the configured Kubernetes cluster in ~/.kube/config
+run: generate fmt vet manifests
+	go run ./main.go
 
-ifeq ($(PUB_WEBSITE),1)
-PUB_WEBSITE_ARG=-w
-else
-PUB_WEBSITE_ARG=
-endif
+# Install CRDs into a cluster
+install: manifests
+	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
-DEV_PUSH?=0
-ifeq ($(DEV_PUSH),1)
-DEV_PUSH_ARG=
-else
-DEV_PUSH_ARG=--no-push
-endif
+# Uninstall CRDs from a cluster
+uninstall: manifests
+	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
-all: bin
+# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
+deploy: manifests
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
-bin:
-	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh
+# Generate manifests e.g. CRD, RBAC etc.
+manifests:
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=terraform-k8s webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-dev:
-	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh -o $(GOOS) -a $(GOARCH)
+# Run go fmt against code
+fmt:
+	go fmt ./...
 
-dev-docker:
-	@$(SHELL) $(CURDIR)/build-support/scripts/build-local.sh -o linux -a amd64
-	@docker build -t '$(DEV_IMAGE)' --build-arg 'GIT_COMMIT=$(GIT_COMMIT)' --build-arg 'GIT_DIRTY=$(GIT_DIRTY)' --build-arg 'GIT_DESCRIBE=$(GIT_DESCRIBE)' -f $(CURDIR)/build-support/docker/Dev.dockerfile $(CURDIR)
+# Run go vet against code
+vet:
+	go vet ./...
 
-release:
-	docker build -t '$(RELEASE_IMAGE):$(GIT_DESCRIBE:v%=%)' --build-arg 'NAME=terraform-k8s' --build-arg 'VERSION=$(GIT_DESCRIBE)' -f $(CURDIR)/build-support/docker/Release.dockerfile $(CURDIR)
+# Generate code
+generate:
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-dev-tree:
-	@$(SHELL) $(CURDIR)/build-support/scripts/dev.sh $(DEV_PUSH_ARG)
+# Build the docker image
+docker-build: test
+	docker build . -t ${IMG}
 
-test:
-	go test ./... -v
-
-cov:
-	go test ./... -coverprofile=coverage.out
-	go tool cover -html=coverage.out
-
-tools:
-	go get -u -v $(GOTOOLS)
-
-# dist builds binaries for all platforms and packages them for distribution
-# make dist DIST_VERSION=<Desired Version> DIST_RELEASE_DATE=<release date>
-# date is in "month day, year" format.
-dist:
-	@$(SHELL) $(CURDIR)/build-support/scripts/release.sh -t '$(DIST_TAG)' -b '$(DIST_BUILD)' -S '$(DIST_SIGN)' $(DIST_VERSION_ARG) $(DIST_DATE_ARG) $(DIST_REL_ARG)
-
-publish:
-	@$(SHELL) $(CURDIR)/build-support/scripts/publish.sh $(PUB_GIT_ARG) $(PUB_WEBSITE_ARG)
-
-docker-images: go-build-image
-
-go-build-image:
-	@echo "Building Golang build container"
-	@docker build $(NOCACHE) $(QUIET) --build-arg 'GOTOOLS=$(GOTOOLS)' -t $(GO_BUILD_TAG) - < build-support/docker/Build-Go.dockerfile
-
-clean:
-	@rm -rf \
-		$(CURDIR)/bin 
-
-
-.PHONY: all bin clean dev dist docker-images go-build-image test tools
+# Push the docker image
+docker-push:
+	docker push ${IMG}
