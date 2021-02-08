@@ -1,3 +1,9 @@
+## 1.0 (Unreleased)
+
+## 0.2.1-beta (January 6, 2021)
+
+* Revert to parsing outputs via the statefile (#86)
+
 ## 0.2.0-beta (December 14, 2020)
 
 Upgrade notes:
