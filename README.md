@@ -1,7 +1,5 @@
 # Terraform Cloud Operator for Kubernetes
 
-> This repository contains experimental software which is still under development and in the alpha testing stage. It is not ready for production use. You can read our roadmap to General Availability [here](_about/ROADMAP.md).
-
 The Terraform Cloud Operator for Kubernetes provides first-class integration between [Kubernetes](https://kubernetes.io/) and [Terraform Cloud](https://www.hashicorp.com/products/terraform/editions/cloud/) by extending the Kubernetes control plane to enable lifecycle management of cloud and on-prem infrastructure through [Kubernetes manifests](https://kubernetes.io/docs/concepts/cluster-administration/manage-deployment/). Manifests can be deployed and managed using kubectl, [Terraform](https://registry.terraform.io/providers/hashicorp/kubernetes-alpha/latest), Gitops tools, or any other tool that allows you to manage Kubernetes [custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/). 
 
 This operator provides a unified way to manage a Kubernetes application and its infrastructure dependencies through a single Kubernetes [CustomResourceDefinition](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) (CRD). After the infrastructure dependencies are created, pertinent information such as endpoints and credentials are returned from Terraform Cloud to Kubernetes.
@@ -91,7 +89,7 @@ Use the [Helm chart](https://github.com/hashicorp/terraform-helm) repository to 
 
 ```shell
 $ helm repo add hashicorp https://helm.releases.hashicorp.com
-$ helm search repo hashicorp/terraform --devel
+$ helm search repo hashicorp/terraform
 $ helm install --devel --namespace ${NAMESPACE} hashicorp/terraform --generate-name
 ```
 
@@ -436,8 +434,7 @@ spec:
       containers:
         - name: terraform-k8s
           command:
-          - terraform-k8s
-          - sync-workspace
+          - /bin/terraform-k8s
           - "--k8s-watch-namespace=$(POD_NAMESPACE)"
           env:
             - name: POD_NAMESPACE
