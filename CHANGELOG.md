@@ -1,4 +1,4 @@
-## 1.0.0 (February, 19, 2021)
+## 1.0.0 (February 19, 2021)
 
 * Upgrade to operator SDK version 1.2.0 ([#83](https://github.com/hashicorp/terraform-k8s/pull/83))
 
