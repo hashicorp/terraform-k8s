@@ -90,7 +90,7 @@ Use the [Helm chart](https://github.com/hashicorp/terraform-helm) repository to 
 ```shell
 $ helm repo add hashicorp https://helm.releases.hashicorp.com
 $ helm search repo hashicorp/terraform
-$ helm install --devel --namespace ${NAMESPACE} hashicorp/terraform --generate-name
+$ helm install --namespace ${NAMESPACE} hashicorp/terraform --generate-name
 ```
 
 ## Create a Workspace
