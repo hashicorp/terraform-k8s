@@ -1,3 +1,11 @@
+## 1.0.0 (February 19, 2021)
+
+* Upgrade to operator SDK version 1.2.0 ([#83](https://github.com/hashicorp/terraform-k8s/pull/83))
+
+## 0.2.1-beta (January 6, 2021)
+
+* Revert state output parsing logic ([#86](https://github.com/hashicorp/terraform-k8s/pull/86))
+
 ## 0.2.0-beta (December 14, 2020)
 
 Upgrade notes:
