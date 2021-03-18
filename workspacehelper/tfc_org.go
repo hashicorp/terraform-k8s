@@ -104,7 +104,38 @@ func (t *TerraformCloudClient) SetTerraformVersion(workspace, terraformVersion s
 	return nil
 }
 
+// getAgentPoolID uses AgentPoolName to lookup and return AgentPoolID
+func getAgentPoolID(specTFCAgentPoolName string, agentPools []*tfc.AgentPool) (*tfc.AgentPool, error) {
+
+	for _, agentPool := range agentPools {
+		if specTFCAgentPoolName == agentPool.Name {
+			return agentPool, nil
+		}
+	}
+	return nil, fmt.Errorf("No valid agent pools exist with name %v", specTFCAgentPoolName)
+}
+
+func (t *TerraformCloudClient) listAgentPools() []*tfc.AgentPool {
+	options := tfc.AgentPoolListOptions{
+		ListOptions: tfc.ListOptions{PageSize: PageSize},
+	}
+
+	agentpools, err := t.Client.AgentPools.List(context.TODO(), t.Organization, options)
+	if err != nil {
+		return nil
+	}
+	return agentpools.Items
+}
+
 func (t *TerraformCloudClient) updateAgentPoolID(instance *appv1alpha1.Workspace, workspace *tfc.Workspace) error {
+	if instance.Spec.AgentPoolID == "" && instance.Spec.AgentPoolName != "" {
+		agentPool, err := getAgentPoolID(instance.Spec.AgentPoolName, t.listAgentPools())
+		if err != nil {
+			return err
+		}
+		instance.Spec.AgentPoolID = agentPool.ID
+	}
+
 	if instance.Spec.AgentPoolID == workspace.AgentPoolID {
 		return nil
 	}

@@ -39,6 +39,9 @@ spec:
             agentPoolID:
               description: Specifies the agent pool ID we wish to use.
               type: string
+            agentPoolName:
+              description: Specifies the agent pool Name we wish to use.
+              type: string
             module:
               description: Module source and version to use
               nullable: true
