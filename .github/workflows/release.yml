@@ -41,7 +41,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.CR_PAT }}
         KUBEBUILDER_ASSETS: /tmp/kubebuilder_2.3.1_linux_amd64/bin/
-     - name: Clear
+    - name: Clear
       if: always()
       run: rm -f ${HOME}/.docker/config.json
 
