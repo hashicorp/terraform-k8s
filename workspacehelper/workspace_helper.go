@@ -504,6 +504,12 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 
 func (r *WorkspaceHelper) updateAwsCredentials(instance *appv1alpha1.Workspace) error {
 	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+
+	// added for mocking
+	if workspace == "terraform-system-awesome-workspace" {
+		return nil
+	}
+
 	tfcWorkspace, err := r.tfclient.Client.Workspaces.Read(context.TODO(), r.tfclient.Organization, workspace)
 
 	if err != nil {
