@@ -75,6 +75,27 @@ func (t *TerraformCloudClient) createVariablesOnTFC(workspace *tfc.Workspace, sp
 	return updated, nil
 }
 
+func (t *TerraformCloudClient) upsertAwsVariablesOnTFC(workspace *tfc.Workspace, specTFCVariables []*tfc.Variable) (bool, error) {
+	updated := false
+	workspaceVariables, err := t.listVariables(workspace.ID)
+	if err != nil {
+		return false, err
+	}
+	for _, v := range specTFCVariables {
+		index := find(workspaceVariables, v.Key)
+		if index >= 0 {
+			_ = t.DeleteVariable(workspaceVariables[index])
+		}
+		err := t.CreateTerraformVariableUnsecure(workspace, v)
+		if err != nil {
+			return false, err
+		}
+		updated = true
+		continue
+	}
+	return updated, nil
+}
+
 func checkIfVariableChanged(specVariable *tfc.Variable, workspaceVariable *tfc.Variable) bool {
 	if specVariable.Value != workspaceVariable.Value {
 		return true
@@ -152,6 +173,7 @@ func (t *TerraformCloudClient) CheckVariables(workspace string, specTFCVariables
 	if err != nil {
 		return false, err
 	}
+	workspaceVariables = filterAwsCredentials(workspaceVariables)
 	if err := t.deleteVariablesFromTFC(specTFCVariables, workspaceVariables); err != nil {
 		return false, err
 	}
@@ -240,6 +262,10 @@ func (t *TerraformCloudClient) CreateTerraformVariable(workspace *tfc.Workspace,
 	if err := checkAndRetrieveIfSensitive(variable, t.SecretsMountPath); err != nil {
 		return err
 	}
+	return t.CreateTerraformVariableUnsecure(workspace, variable)
+}
+
+func (t *TerraformCloudClient) CreateTerraformVariableUnsecure(workspace *tfc.Workspace, variable *tfc.Variable) error {
 	options := tfc.VariableCreateOptions{
 		Key:       &variable.Key,
 		Value:     &variable.Value,

@@ -289,8 +289,6 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 	}
 
 	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
-	r.reqLogger.Info("Enriching with IRSA creds")
-	specTFCVariables = append(specTFCVariables, getToken()...)
 	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables)
 	if err != nil {
 		r.reqLogger.Error(err, "Could not update variables")
@@ -477,6 +475,11 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	if updatedTerraform || updatedVariables || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
+		err = r.updateAwsCredentials(instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
 		err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err
@@ -497,4 +500,20 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 	//
 	// It is important to note that if any event takes place between requeues will not be blocked.
 	return reconcile.Result{RequeueAfter: requeueInterval}, nil
+}
+
+func (r *WorkspaceHelper) updateAwsCredentials(instance *appv1alpha1.Workspace) error {
+	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+	tfcWorkspace, err := r.tfclient.Client.Workspaces.Read(context.TODO(), r.tfclient.Organization, workspace)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.tfclient.upsertAwsVariablesOnTFC(tfcWorkspace, getCredentials())
+
+	if err != nil {
+		return err
+	}
+	return nil
 }

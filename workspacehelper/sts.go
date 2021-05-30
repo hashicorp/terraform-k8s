@@ -6,7 +6,13 @@ import (
 	tfc "github.com/hashicorp/go-tfe"
 )
 
-func getToken() []*tfc.Variable {
+const (
+	AccessKeyID     = "AWS_ACCESS_KEY_ID"
+	SecretAccessKey = "AWS_SECRET_ACCESS_KEY"
+	SessionToken    = "AWS_SESSION_TOKEN"
+)
+
+func getCredentials() []*tfc.Variable {
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -18,21 +24,21 @@ func getToken() []*tfc.Variable {
 	}
 	tfcVariables := []*tfc.Variable{}
 	tfcVariables = append(tfcVariables, &tfc.Variable{
-		Key:       "AWS_ACCESS_KEY_ID",
+		Key:       AccessKeyID,
 		Value:     retrieve.AccessKeyID,
 		Sensitive: true,
 		Category:  setVariableType(true),
 		HCL:       false,
 	})
 	tfcVariables = append(tfcVariables, &tfc.Variable{
-		Key:       "AWS_SECRET_ACCESS_KEY",
+		Key:       SecretAccessKey,
 		Value:     retrieve.SecretAccessKey,
 		Sensitive: true,
 		Category:  setVariableType(true),
 		HCL:       false,
 	})
 	tfcVariables = append(tfcVariables, &tfc.Variable{
-		Key:       "AWS_SESSION_TOKEN",
+		Key:       SessionToken,
 		Value:     retrieve.SessionToken,
 		Sensitive: true,
 		Category:  setVariableType(true),
@@ -40,4 +46,15 @@ func getToken() []*tfc.Variable {
 	})
 	return tfcVariables
 
+}
+
+func filterAwsCredentials(vars []*tfc.Variable) []*tfc.Variable {
+	result := []*tfc.Variable{}
+	for _, v := range vars {
+		if v.Key == AccessKeyID || v.Key == SecretAccessKey || v.Key == SessionToken {
+			continue
+		}
+		result = append(result, v)
+	}
+	return result
 }
