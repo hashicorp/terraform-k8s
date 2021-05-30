@@ -3,6 +3,8 @@ module github.com/hashicorp/terraform-k8s
 go 1.15
 
 require (
+	github.com/aws/aws-sdk-go-v2/config v1.3.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.4.1
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/hashicorp/go-tfe v0.11.1
