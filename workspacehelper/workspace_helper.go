@@ -289,6 +289,7 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 	}
 
 	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
+	r.reqLogger.Info("Enriching with IRSA creds")
 	specTFCVariables = append(specTFCVariables, getToken()...)
 	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables)
 	if err != nil {

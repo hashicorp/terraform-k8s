@@ -7,6 +7,7 @@ import (
 )
 
 func getToken() []*tfc.Variable {
+
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		panic("configuration error, " + err.Error())
