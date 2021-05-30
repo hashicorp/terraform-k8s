@@ -12,12 +12,24 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_CLI_EXPERIMENTAL: "enabled"
     steps:
     - uses: actions/checkout@v2
     - name: Set up Go
       uses: actions/setup-go@v1
       with:
         go-version: 1.15.5
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Login to GitHub Packages Docker Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.CR_PAT }}
     - name: Install kubebuilder
       run: |
         curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.1/kubebuilder_2.3.1_linux_amd64.tar.gz -o /tmp/kb.tgz
@@ -25,8 +37,11 @@ jobs:
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v1.3.1
       with:
-        args: release --skip-sign
+        args: release --skip-sign --rm-dist
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.CR_PAT }}
         KUBEBUILDER_ASSETS: /tmp/kubebuilder_2.3.1_linux_amd64/bin/
+     - name: Clear
+      if: always()
+      run: rm -f ${HOME}/.docker/config.json
 
