@@ -1,5 +1,5 @@
 # Build the terraform-k8s binary
-FROM golang:1.15-alpine as builder
+FROM golang:1.15 as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -13,7 +13,7 @@ RUN go mod download
 COPY . .
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o terraform-k8s main.go
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o terraform-k8s main.go
 
 FROM alpine:3.12.1
 WORKDIR /
