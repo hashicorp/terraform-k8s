@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/go-logr/logr v0.1.0
-	github.com/hashicorp/go-tfe v0.11.1
+	github.com/hashicorp/go-tfe v0.15.0
 	github.com/hashicorp/terraform v0.14.3
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
