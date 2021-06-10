@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	tfc "github.com/hashicorp/go-tfe"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -70,6 +71,31 @@ type Variable struct {
 	EnvironmentVariable bool `json:"environmentVariable"`
 }
 
+// Notification notification holds all the necessary information required to configure any workspace notification
+type Notification struct {
+	// Notification type. Can be one of email, generic, or slack
+	Type tfc.NotificationDestinationType `json:"type"`
+	// Control if the notification is enabled or not
+	Enabled bool `json:"enabled"`
+	// Name of the hook
+	Name string `json:"name"`
+	// URL of the hook
+	// +optional
+	URL string `json:"url"`
+	// Token used to generate an HMAC on the verificatio0n request
+	// +optional
+	Token string `json:"token"`
+	// When the web hook gets triggered. Acceptable values are run:created, run:planning, run:needs_attention, run:applying, run:completed, run:errored.
+	// +optional
+	Triggers []string `json:"triggers,omitempty"`
+	// List of recipients' email addresses. Only applicable for TFE endpoints.
+	// +optional
+	Recipients []string `json:"recipients,omitempty"`
+	// List of users to receive the notificaiton email.
+	// +optional
+	Users []string `json:"users,omitempty"`
+}
+
 // WorkspaceSpec defines the desired state of Workspace
 // +k8s:openapi-gen=true
 type WorkspaceSpec struct {
@@ -100,6 +126,9 @@ type WorkspaceSpec struct {
 	// Specifies the agent pool ID we wish to use.
 	// +optional
 	AgentPoolID string `json:"agentPoolID,omitempty"`
+	// Notification configuration
+	// +optional
+	Notifications []*Notification `json:"notifications,omitempty"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace
