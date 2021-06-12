@@ -31,8 +31,9 @@ changelog:
   
   
 dockers:
-  - image_templates: ["ghcr.io/nslhb/terraform-k8s:{{ .Version }}-amd64"]
-    binaries: [example]
+  - image_templates: ["ghcr.io/nslhb/terraform-k8s:{{ .Version }}-{{ .Arch }}"]
+    ids: [example]
+    goarch: "{{ .Arch }}"
     dockerfile: Dockerfile
     use_buildx: true
     build_flag_templates:
@@ -45,23 +46,8 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
-  - image_templates: ["ghcr.io/nslhb/terraform-k8s:{{ .Version }}-arm64v8"]
-    binaries: [example]
-    goarch: arm64
-    dockerfile: Dockerfile
-    use_buildx: true
-    build_flag_templates:
-      - --platform=linux/arm64/v8
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://github.com/nslhb/terraform-k8s
-      - --label=org.opencontainers.image.source=https://github.com/nslhb/terraform-k8s
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-      - --label=org.opencontainers.image.licenses=MIT
 docker_manifests:
   - name_template: ghcr.io/nslhb/terraform-k8s:{{ .Version }}
     image_templates:
-      - ghcr.io/nslhb/terraform-k8s:{{ .Version }}-amd64
-      - ghcr.io/nslhb/terraform-k8s:{{ .Version }}-arm64v8
+      - ghcr.io/nslhb/terraform-k8s:{{ .Version }}-{{ .Arch }}
+      - ghcr.io/nslhb/terraform-k8s:{{ .Version }}-{{ .Arch }}
