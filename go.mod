@@ -4,19 +4,17 @@ go 1.15
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.3.0
-	github.com/aws/aws-sdk-go-v2/service/sts v1.4.1
-	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v0.3.0
 	github.com/hashicorp/go-tfe v0.15.0
 	github.com/hashicorp/terraform v0.14.3
-	github.com/onsi/ginkgo v1.12.1
-	github.com/onsi/gomega v1.10.1
+	github.com/onsi/ginkgo v1.14.1
+	github.com/onsi/gomega v1.10.2
 	github.com/stretchr/testify v1.6.1
-	github.com/zclconf/go-cty v1.7.1
-	k8s.io/api v0.18.6
-	k8s.io/apimachinery v0.18.6
+	github.com/zclconf/go-cty v1.8.3
+	k8s.io/api v0.19.2
+	k8s.io/apimachinery v0.19.2
 	k8s.io/client-go v10.0.0+incompatible
-	sigs.k8s.io/controller-runtime v0.6.3
+	sigs.k8s.io/controller-runtime v0.7.2
 )
 
 // Pinned to kubernetes-1.16.2
@@ -40,4 +38,4 @@ require (
 //	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20191016112829-06bb3c9d77c9
 //)
 
-replace k8s.io/client-go => k8s.io/client-go v0.18.6
+replace k8s.io/client-go => k8s.io/client-go v0.19.2

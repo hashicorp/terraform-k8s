@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/client-go/util/retry"
 	"os"
 	"reflect"
 	"time"
@@ -138,7 +139,7 @@ func (r *WorkspaceHelper) reconcileWorkspace(instance *appv1alpha1.Workspace) er
 	if instance.Status.WorkspaceID != workspaceID {
 		instance.Status.WorkspaceID = workspaceID
 		instance.Status.Outputs = []*appv1alpha1.OutputStatus{}
-		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+		if err := retryableUpdateStatus(r.client, instance); err != nil {
 			r.reqLogger.Error(err, "Failed to update output status")
 			return err
 		}
@@ -242,7 +243,7 @@ func (r *WorkspaceHelper) processFinishedRun(instance *appv1alpha1.Workspace) er
 
 	if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
 		instance.Status.Outputs = outputs
-		err := r.client.Status().Update(context.TODO(), instance)
+		err := retryableUpdateStatus(r.client, instance)
 		if err != nil {
 			r.reqLogger.Error(err, "Failed to update output status")
 			return err
@@ -420,7 +421,7 @@ func (r *WorkspaceHelper) startRun(instance *appv1alpha1.Workspace) error {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *WorkspaceHelper) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	// Get instance, check if org and secrets exist or not
 	instance, err := r.initializeReconciliation(request)
 	if err != nil {
@@ -522,4 +523,18 @@ func (r *WorkspaceHelper) updateAwsCredentials(instance *appv1alpha1.Workspace) 
 		return err
 	}
 	return nil
+}
+
+func retryableUpdateStatus(client client.Client, w *appv1alpha1.Workspace) error {
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		temp := &appv1alpha1.Workspace{}
+		err := client.Get(context.TODO(), types.NamespacedName{Name: w.Name, Namespace: w.Namespace}, temp)
+		if err != nil {
+			panic(fmt.Errorf("failed to get latest version of workspace: %v", err))
+		}
+		temp.Status = w.Status
+		updateErr := client.Update(context.TODO(), temp)
+		return updateErr
+	})
+	return retryErr
 }

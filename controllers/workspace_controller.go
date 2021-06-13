@@ -58,9 +58,9 @@ type WorkspaceReconciler struct {
 
 // +kubebuilder:rbac:groups=app.terraform.io,resources=workspaces,verbs=get;list;watch;create;update;patch;delete,namespace=terraform-k8s
 // +kubebuilder:rbac:groups=app.terraform.io,resources=workspaces/status,verbs=get;update;patch,namespace=terraform-k8s
-func (r *WorkspaceReconciler) Reconcile(req reconcile.Request) (reconcile.Result, error) {
+func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 	_ = context.Background()
-	return r.helper.Reconcile(req)
+	return r.helper.Reconcile(ctx, req)
 }
 
 func (r *WorkspaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
