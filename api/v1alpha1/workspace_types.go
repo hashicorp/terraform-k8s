@@ -32,6 +32,11 @@ type VCS struct {
 	IngressSubmodules bool `json:"ingress_submodules,omitempty"`
 }
 
+type RunTrigger struct {
+	WorkspaceID string `json:"workspaceID"`
+	Inbound bool `json:"inbound"`
+}
+
 // OutputSpec specifies which values need to be output
 type OutputSpec struct {
 	// Output name
