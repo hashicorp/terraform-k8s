@@ -299,7 +299,7 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 }
 
 func (r* WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool,error) {
-	r.reqLogger.Info("Updated run triggers")
+	r.reqLogger.Info("RUN TRIGGERS")
 	return true, nil
 }
 
