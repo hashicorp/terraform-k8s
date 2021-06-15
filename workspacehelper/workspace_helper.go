@@ -298,6 +298,11 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 	return updatedVariables, nil
 }
 
+func (r* WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool,error) {
+	r.reLogger.Info("Updated run triggers")
+	return true, nil
+}
+
 func (r *WorkspaceHelper) prepareModuleRun(instance *appv1alpha1.Workspace, options tfe.RunCreateOptions) (bool, error) {
 	r.reqLogger.Info("Starting module backed run", "Organization",
 		instance.Spec.Organization, "Name", instance.Name, "Namespace", instance.Namespace)
@@ -474,7 +479,12 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	if updatedTerraform || updatedVariables || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
+	updatedRunTriggers, err := r.updateRunTriggers(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if updatedTerraform || updatedVariables || updatedRunTriggers || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
 		err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err
