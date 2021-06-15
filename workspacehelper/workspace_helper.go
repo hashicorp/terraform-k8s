@@ -299,7 +299,7 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 }
 
 func (r* WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool,error) {
-	r.reLogger.Info("Updated run triggers")
+	r.reqLogger.Info("Updated run triggers")
 	return true, nil
 }
 
@@ -483,8 +483,9 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+	_ = updatedRunTriggers
 
-	if updatedTerraform || updatedVariables || updatedRunTriggers || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
+	if updatedTerraform || updatedVariables || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
 		err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err
