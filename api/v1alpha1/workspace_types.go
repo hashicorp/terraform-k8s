@@ -31,10 +31,6 @@ type VCS struct {
 	IngressSubmodules bool `json:"ingress_submodules,omitempty"`
 }
 
-type RunTrigger struct {
-	WorkspaceID string `json:"workspaceID"`
-	Inbound bool `json:"inbound"`
-}
 
 // OutputSpec specifies which values need to be output
 type OutputSpec struct {
@@ -75,6 +71,14 @@ type Variable struct {
 	EnvironmentVariable bool `json:"environmentVariable"`
 }
 
+// Run Trigger
+type RunTrigger struct {
+	// Workspace that is connected to this workspace via run trigger
+	WorkspaceID string `json:"workspaceID"`
+	// Determines if this workspace triggers or is triggered by other workspace
+	Inbound bool `json:"inbound"`
+}
+
 // WorkspaceSpec defines the desired state of Workspace
 // +k8s:openapi-gen=true
 type WorkspaceSpec struct {
@@ -91,6 +95,9 @@ type WorkspaceSpec struct {
 	// Variables as inputs to module
 	// +optional
 	Variables []*Variable `json:"variables,omitempty"`
+	// Run Triggers
+	// +optional
+	RunTriggers []*RunTrigger `json:"runTriggers,omitempty"`
 	// File path within operator pod to load workspace secrets
 	SecretsMountPath string `json:"secretsMountPath"`
 	// SSH Key ID. This key must already exist in the TF Cloud organization.  This can either be the user assigned name of the SSH Key, or the system assigned ID.

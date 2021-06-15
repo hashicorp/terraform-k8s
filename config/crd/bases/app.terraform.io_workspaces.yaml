@@ -68,6 +68,24 @@ spec:
                     type: string
                 type: object
               type: array
+            runTriggers:
+              description: Run Triggers
+              items:
+                description: Run Trigger
+                properties:
+                  inbound:
+                    description: Determines if this workspace triggers or is triggered
+                      by other workspace
+                    type: boolean
+                  workspaceID:
+                    description: Workspace that is connected to this workspace via
+                      run trigger
+                    type: string
+                required:
+                - inbound
+                - workspaceID
+                type: object
+              type: array
             secretsMountPath:
               description: File path within operator pod to load workspace secrets
               type: string
