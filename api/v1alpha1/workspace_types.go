@@ -99,7 +99,7 @@ type Notification struct {
 
 // Run Trigger from a source workspace
 type RunTrigger struct {
-	// Source workspace that triggers the current workspace
+	// Name of source workspace that triggers the current workspace
 	SourceableName string `json:"sourceableName"`
 }
 
