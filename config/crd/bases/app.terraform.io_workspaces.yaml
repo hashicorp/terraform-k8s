@@ -120,17 +120,11 @@ spec:
               items:
                 description: Run Trigger
                 properties:
-                  inbound:
-                    description: Determines if this workspace triggers or is triggered
-                      by other workspace
-                    type: boolean
-                  workspaceID:
-                    description: Workspace that is connected to this workspace via
-                      run trigger
+                  sourceableName:
+                    description: Source workspace that triggers the current workspace
                     type: string
                 required:
-                - inbound
-                - workspaceID
+                - sourceableName
                 type: object
               type: array
             secretsMountPath:

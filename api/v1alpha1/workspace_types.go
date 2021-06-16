@@ -99,10 +99,8 @@ type Notification struct {
 
 // Run Trigger
 type RunTrigger struct {
-	// Workspace that is connected to this workspace via run trigger
-	WorkspaceID string `json:"workspaceID"`
-	// Determines if this workspace triggers or is triggered by other workspace
-	Inbound bool `json:"inbound"`
+	// Source workspace that triggers the current workspace
+	SourceableName string `json:"sourceableName"`
 }
 
 // WorkspaceSpec defines the desired state of Workspace

@@ -299,13 +299,16 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 }
 
 func (r* WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool,error) {
-	//tfcRunTriggers := []*tfc.RunTrigger{}
-	//specTFCRunTriggers := MapToTFCRunTrigger(instance.Spec.RunTriggers)
-	//for _, runTrigger := range specTFCRunTriggers {
-	//	r.reqLogger.Info(runTrigger.SourceableName)
-	//}
-	r.reqLogger.Info("RUN TRIGGERS")
-	return false, nil
+	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+
+	specTFCRunTriggers := MapToTFCRunTrigger(workspace, instance.Spec.RunTriggers)
+	updatedRunTriggers, err := r.tfclient.CheckRunTriggers(workspace, specTFCRunTriggers)
+	if err != nil {
+		r.reqLogger.Error(err, "Could not update run triggers")
+		return false, err
+	}
+
+	return updatedRunTriggers, nil
 }
 
 func (r *WorkspaceHelper) prepareModuleRun(instance *appv1alpha1.Workspace, options tfe.RunCreateOptions) (bool, error) {
@@ -499,6 +502,7 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
+	// check that correct run triggers are configured to trigger the workspace
 	updatedRunTriggers, err := r.updateRunTriggers(instance)
 	if err != nil {
 		return reconcile.Result{}, err
