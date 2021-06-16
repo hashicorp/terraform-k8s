@@ -97,7 +97,7 @@ type Notification struct {
 	Users []string `json:"users,omitempty"`
 }
 
-// Run Trigger
+// Run Trigger from a source workspace
 type RunTrigger struct {
 	// Source workspace that triggers the current workspace
 	SourceableName string `json:"sourceableName"`
@@ -119,7 +119,7 @@ type WorkspaceSpec struct {
 	// Variables as inputs to module
 	// +optional
 	Variables []*Variable `json:"variables,omitempty"`
-	// Run Triggers
+	// Run Triggers from source workspaces to trigger this workspace
 	// +optional
 	RunTriggers []*RunTrigger `json:"runTriggers,omitempty"`
 	// File path within operator pod to load workspace secrets
