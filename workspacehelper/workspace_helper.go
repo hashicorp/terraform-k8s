@@ -299,8 +299,13 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 }
 
 func (r* WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool,error) {
+	//tfcRunTriggers := []*tfc.RunTrigger{}
+	//specTFCRunTriggers := MapToTFCRunTrigger(instance.Spec.RunTriggers)
+	//for _, runTrigger := range specTFCRunTriggers {
+	//	r.reqLogger.Info(runTrigger.SourceableName)
+	//}
 	r.reqLogger.Info("RUN TRIGGERS")
-	return true, nil
+	return false, nil
 }
 
 func (r *WorkspaceHelper) prepareModuleRun(instance *appv1alpha1.Workspace, options tfe.RunCreateOptions) (bool, error) {
@@ -498,9 +503,8 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	_ = updatedRunTriggers
 
-	if updatedTerraform || updatedVariables || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
+	if  updatedTerraform || updatedVariables || updatedRunTriggers || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
 		err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err
