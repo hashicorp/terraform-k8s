@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 
 	tfc "github.com/hashicorp/go-tfe"
@@ -255,5 +256,116 @@ func (t *TerraformCloudClient) DeleteWorkspace(workspaceID string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func compareNotifications(wsNotification *tfc.NotificationConfiguration, specNotification *appv1alpha1.Notification) bool {
+	if wsNotification.Name != specNotification.Name {
+		return false
+	}
+	log.Info(fmt.Sprintf("%#v vs %#v", wsNotification, specNotification))
+
+	if wsNotification.Token != specNotification.Token ||
+		wsNotification.URL != specNotification.URL ||
+		wsNotification.DestinationType != specNotification.Type ||
+		wsNotification.Enabled != specNotification.Enabled {
+		return false
+	}
+	if !reflect.DeepEqual(wsNotification.EmailAddresses, specNotification.Recipients) {
+		return false
+	}
+
+	var wsUserIDs []string
+	for _, user := range wsNotification.EmailUsers {
+		wsUserIDs = append(wsUserIDs, user.ID)
+	}
+
+	if !reflect.DeepEqual(wsNotification.Triggers, specNotification.Triggers) {
+		return false
+	}
+
+	return reflect.DeepEqual(wsUserIDs, specNotification.Users)
+}
+
+// Check Notification checks, and if necessary creates, the workspace's notifications
+func (t *TerraformCloudClient) CheckNotifications(instance *appv1alpha1.Workspace) error {
+	workspaceID := instance.Status.WorkspaceID
+
+	notifications, err := t.Client.NotificationConfigurations.List(context.TODO(), workspaceID,
+		tfc.NotificationConfigurationListOptions{})
+	if err != nil {
+		return err
+	}
+
+	if len(notifications.Items) == 0 && len(instance.Spec.Notifications) == 0 {
+		return nil
+	}
+
+	var toRemove []*tfc.NotificationConfiguration
+
+	// Find notifications not defined in spec
+	for _, wsNotification := range notifications.Items {
+		found := false
+		for _, specNotification := range instance.Spec.Notifications {
+			if compareNotifications(wsNotification, specNotification) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			toRemove = append(toRemove, wsNotification)
+		}
+	}
+
+	// Remove extra notifications
+	for _, notification := range toRemove {
+		err := t.Client.NotificationConfigurations.Delete(context.TODO(), notification.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// refresh notifications list
+	notifications, err = t.Client.NotificationConfigurations.List(context.TODO(), workspaceID,
+		tfc.NotificationConfigurationListOptions{})
+	if err != nil {
+		return err
+	}
+	var toAdd []*appv1alpha1.Notification
+	// Find notifications missing from workspace
+	for _, specNotification := range instance.Spec.Notifications {
+		found := false
+		for _, wsNotification := range notifications.Items {
+			if wsNotification.Name == specNotification.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			toAdd = append(toAdd, specNotification)
+		}
+	}
+
+	// Add missing notifications
+	for _, notification := range toAdd {
+		createOpts := tfc.NotificationConfigurationCreateOptions{
+			Name:            &notification.Name,
+			DestinationType: &notification.Type,
+			Enabled:         &notification.Enabled,
+			Token:           &notification.Token,
+			URL:             &notification.URL,
+			EmailAddresses:  notification.Recipients,
+			Triggers:        notification.Triggers,
+		}
+		for _, user := range notification.Users {
+			createOpts.EmailUsers = append(createOpts.EmailUsers, &tfc.User{ID: user})
+		}
+
+		_, err := t.Client.NotificationConfigurations.Create(context.TODO(), workspaceID, createOpts)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
