@@ -51,11 +51,13 @@ func (t *TerraformCloudClient) createRunTriggersOnTFC(workspace *tfc.Workspace, 
 }
 
 // CheckRunTriggers deletes and update TFC run triggers as needed
-func (t *TerraformCloudClient) CheckRunTriggers(workspace string, specTFCRunTriggers []*tfc.RunTrigger) (bool, error) {
+func (t *TerraformCloudClient) CheckRunTriggers(workspace string, specRunTriggers []*v1alpha1.RunTrigger) (bool, error) {
 	tfcWorkspace, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil {
 		return false, err
 	}
+
+	specTFCRunTriggers := MapToTFCRunTrigger(workspace, specRunTriggers)
 	workspaceRunTriggers, err := t.listRunTriggers(tfcWorkspace.ID)
 	if err != nil {
 		return false, err
@@ -63,7 +65,6 @@ func (t *TerraformCloudClient) CheckRunTriggers(workspace string, specTFCRunTrig
 	if err := t.deleteRunTriggersFromTFC(specTFCRunTriggers, workspaceRunTriggers); err != nil {
 		return false, err
 	}
-
 	createdRunTriggers, err := t.createRunTriggersOnTFC(tfcWorkspace, specTFCRunTriggers, workspaceRunTriggers)
 	if err != nil {
 		return false, err

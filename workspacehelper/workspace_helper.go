@@ -301,8 +301,7 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 func (r *WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool, error) {
 	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
 
-	specTFCRunTriggers := MapToTFCRunTrigger(workspace, instance.Spec.RunTriggers)
-	updatedRunTriggers, err := r.tfclient.CheckRunTriggers(workspace, specTFCRunTriggers)
+	updatedRunTriggers, err := r.tfclient.CheckRunTriggers(workspace, instance.Spec.RunTriggers)
 	if err != nil {
 		r.reqLogger.Error(err, "Could not update run triggers")
 		return false, err
