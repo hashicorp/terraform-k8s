@@ -7,17 +7,19 @@ import (
 	"github.com/hashicorp/terraform-k8s/api/v1alpha1"
 )
 
+// MapToTFCRunTrigger changes controller spec to a TFC RunTrigger
 func MapToTFCRunTrigger(workspace string, specRunTriggers []*v1alpha1.RunTrigger) []*tfc.RunTrigger {
 	tfcRunTriggers := []*tfc.RunTrigger{}
 	for _, runTrigger := range specRunTriggers {
-		tfcRunTriggers = append(tfcRunTriggers, &tfc.RunTrigger {
+		tfcRunTriggers = append(tfcRunTriggers, &tfc.RunTrigger{
 			SourceableName: runTrigger.SourceableName,
-			WorkspaceName: workspace,
+			WorkspaceName:  workspace,
 		})
 	}
 	return tfcRunTriggers
 }
 
+// Deletes run triggers in TFC that were not defined in controller spec
 func (t *TerraformCloudClient) deleteRunTriggersFromTFC(specTFCRunTriggers []*tfc.RunTrigger, workspaceRunTriggers []*tfc.RunTrigger) error {
 	for _, rt := range workspaceRunTriggers {
 		index := findRT(specTFCRunTriggers, rt.SourceableName)
@@ -31,6 +33,7 @@ func (t *TerraformCloudClient) deleteRunTriggersFromTFC(specTFCRunTriggers []*tf
 	return nil
 }
 
+// Creates run triggers in TFC that were defined in controller spec but not created
 func (t *TerraformCloudClient) createRunTriggersOnTFC(workspace *tfc.Workspace, specTFCRunTriggers []*tfc.RunTrigger, workspaceRunTriggers []*tfc.RunTrigger) (bool, error) {
 	updated := false
 	for _, rt := range specTFCRunTriggers {
@@ -47,6 +50,7 @@ func (t *TerraformCloudClient) createRunTriggersOnTFC(workspace *tfc.Workspace, 
 	return updated, nil
 }
 
+// CheckRunTriggers deletes and update TFC run triggers as needed
 func (t *TerraformCloudClient) CheckRunTriggers(workspace string, specTFCRunTriggers []*tfc.RunTrigger) (bool, error) {
 	tfcWorkspace, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil {

@@ -298,7 +298,7 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 	return updatedVariables, nil
 }
 
-func (r* WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool,error) {
+func (r *WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool, error) {
 	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
 
 	specTFCRunTriggers := MapToTFCRunTrigger(workspace, instance.Spec.RunTriggers)
@@ -508,7 +508,7 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	if  updatedTerraform || updatedVariables || updatedRunTriggers || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
+	if updatedTerraform || updatedVariables || updatedRunTriggers || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
 		err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err

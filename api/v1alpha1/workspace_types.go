@@ -32,7 +32,6 @@ type VCS struct {
 	IngressSubmodules bool `json:"ingress_submodules,omitempty"`
 }
 
-
 // OutputSpec specifies which values need to be output
 type OutputSpec struct {
 	// Output name
