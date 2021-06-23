@@ -416,6 +416,15 @@ func (r *WorkspaceHelper) startRun(instance *appv1alpha1.Workspace) error {
 	return nil
 }
 
+func (r *WorkspaceHelper) reconcileNotifications(instance *appv1alpha1.Workspace) error {
+	err := r.tfclient.CheckNotifications(instance)
+	if err != nil {
+		r.reqLogger.Error(err, "while checking notifications")
+		return err
+	}
+	return nil
+}
+
 // Reconcile reads that state of the cluster for a Workspace object and makes changes based on the state read
 // and what is in the Workspace.Spec
 // Note:
@@ -441,6 +450,12 @@ func (r *WorkspaceHelper) Reconcile(ctx context.Context, request reconcile.Reque
 
 	// Create the workspace update instance with workspace information such as Workspace ID and Run ID.
 	err = r.reconcileWorkspace(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// Check if notifications exist, create them if they don't
+	err = r.reconcileNotifications(instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

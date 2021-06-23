@@ -180,5 +180,10 @@ func (t *TerraformCloudClient) CheckOutputs(workspaceID string, runID string) ([
 		return outputs, err
 	}
 
+	// The outputs don't always return in the same order
+	// so we're sorting them before we return.
+	sort.Slice(outputs, func(i, j int) bool {
+		return outputs[i].Key < outputs[j].Key
+	})
 	return outputs, nil
 }
