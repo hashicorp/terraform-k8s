@@ -125,7 +125,13 @@ func (r *WorkspaceHelper) initializeReconciliation(request reconcile.Request) (*
 }
 
 func (r *WorkspaceHelper) reconcileWorkspace(instance *appv1alpha1.Workspace) error {
-	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+	var workspace string
+	if instance.Spec.OmitNamespacePrefix == false {
+		workspace = fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+	} else {
+		workspace = fmt.Sprintf("%s", instance.Name)
+	}
+
 	organization := instance.Spec.Organization
 
 	ws, err := r.tfclient.CheckWorkspace(workspace, instance)
@@ -279,7 +285,12 @@ func (r *WorkspaceHelper) updateTerraformTemplate(instance *appv1alpha1.Workspac
 }
 
 func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool, error) {
-	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+	var workspace string
+	if instance.Spec.OmitNamespacePrefix == false {
+		workspace = fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+	} else {
+		workspace = fmt.Sprintf("%s", instance.Name)
+	}
 
 	for _, variable := range instance.Spec.Variables {
 		err := r.GetConfigMapForVariable(instance.Namespace, variable)
