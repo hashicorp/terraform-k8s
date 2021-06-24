@@ -96,6 +96,12 @@ type Notification struct {
 	Users []string `json:"users,omitempty"`
 }
 
+// Run Trigger from a source workspace
+type RunTrigger struct {
+	// Name of source workspace that triggers the current workspace
+	SourceableName string `json:"sourceableName"`
+}
+
 // WorkspaceSpec defines the desired state of Workspace
 // +k8s:openapi-gen=true
 type WorkspaceSpec struct {
@@ -112,6 +118,9 @@ type WorkspaceSpec struct {
 	// Variables as inputs to module
 	// +optional
 	Variables []*Variable `json:"variables,omitempty"`
+	// Run Triggers from source workspaces to trigger this workspace
+	// +optional
+	RunTriggers []*RunTrigger `json:"runTriggers,omitempty"`
 	// File path within operator pod to load workspace secrets
 	SecretsMountPath string `json:"secretsMountPath"`
 	// SSH Key ID. This key must already exist in the TF Cloud organization.  This can either be the user assigned name of the SSH Key, or the system assigned ID.
