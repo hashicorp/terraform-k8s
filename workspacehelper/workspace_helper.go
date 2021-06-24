@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/client-go/util/retry"
 	"os"
 	"reflect"
 	"time"
@@ -139,7 +138,7 @@ func (r *WorkspaceHelper) reconcileWorkspace(instance *appv1alpha1.Workspace) er
 	if instance.Status.WorkspaceID != workspaceID {
 		instance.Status.WorkspaceID = workspaceID
 		instance.Status.Outputs = []*appv1alpha1.OutputStatus{}
-		if err := retryableUpdateStatus(r.client, instance); err != nil {
+		if err := r.client.Status().Update(context.TODO(), instance); err != nil {
 			r.reqLogger.Error(err, "Failed to update output status")
 			return err
 		}
@@ -243,7 +242,7 @@ func (r *WorkspaceHelper) processFinishedRun(instance *appv1alpha1.Workspace) er
 
 	if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
 		instance.Status.Outputs = outputs
-		err := retryableUpdateStatus(r.client, instance)
+		err := r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
 			r.reqLogger.Error(err, "Failed to update output status")
 			return err
@@ -297,6 +296,18 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 	}
 
 	return updatedVariables, nil
+}
+
+func (r *WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool, error) {
+	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+
+	updatedRunTriggers, err := r.tfclient.CheckRunTriggers(workspace, instance.Spec.RunTriggers)
+	if err != nil {
+		r.reqLogger.Error(err, "Could not update run triggers")
+		return false, err
+	}
+
+	return updatedRunTriggers, nil
 }
 
 func (r *WorkspaceHelper) prepareModuleRun(instance *appv1alpha1.Workspace, options tfe.RunCreateOptions) (bool, error) {
@@ -538,18 +549,4 @@ func (r *WorkspaceHelper) updateAwsCredentials(instance *appv1alpha1.Workspace) 
 		return err
 	}
 	return nil
-}
-
-func retryableUpdateStatus(client client.Client, w *appv1alpha1.Workspace) error {
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		temp := &appv1alpha1.Workspace{}
-		err := client.Get(context.TODO(), types.NamespacedName{Name: w.Name, Namespace: w.Namespace}, temp)
-		if err != nil {
-			panic(fmt.Errorf("failed to get latest version of workspace: %v", err))
-		}
-		temp.Status = w.Status
-		updateErr := client.Update(context.TODO(), temp)
-		return updateErr
-	})
-	return retryErr
 }
