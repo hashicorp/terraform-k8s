@@ -118,6 +118,19 @@ spec:
                     type: string
                 type: object
               type: array
+            runTriggers:
+              description: Run Triggers from source workspaces to trigger this workspace
+              items:
+                description: Run Trigger from a source workspace
+                properties:
+                  sourceableName:
+                    description: Name of source workspace that triggers the current
+                      workspace
+                    type: string
+                required:
+                - sourceableName
+                type: object
+              type: array
             secretsMountPath:
               description: File path within operator pod to load workspace secrets
               type: string
