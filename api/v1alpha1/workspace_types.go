@@ -138,6 +138,9 @@ type WorkspaceSpec struct {
 	// Notification configuration
 	// +optional
 	Notifications []*Notification `json:"notifications,omitempty"`
+	// Omit namespace prefix in workspace name
+	// +optional
+	OmitNamespacePrefix bool `json:"omitNamespacePrefix,omitempty"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace

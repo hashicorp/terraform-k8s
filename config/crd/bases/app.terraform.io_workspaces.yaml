@@ -99,6 +99,9 @@ spec:
                 - type
                 type: object
               type: array
+            omitNamespacePrefix:
+              description: Omit namespace prefix in workspace name
+              type: boolean
             organization:
               description: Terraform Cloud organization
               type: string
