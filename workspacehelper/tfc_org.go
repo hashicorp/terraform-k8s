@@ -130,6 +130,7 @@ func (t *TerraformCloudClient) updateAgentPoolID(instance *appv1alpha1.Workspace
 func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1alpha1.Workspace) (*tfc.Workspace, error) {
 	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil && err == tfc.ErrResourceNotFound {
+		err = nil
 		id, err := t.CreateWorkspace(workspace, instance)
 		if err != nil {
 			return nil, err
