@@ -511,13 +511,18 @@ func (r *WorkspaceHelper) Reconcile(ctx context.Context, request reconcile.Reque
 		return reconcile.Result{}, err
 	}
 
-	if updatedTerraform || updatedVariables || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
-		err = r.updateAwsCredentials(instance)
+  // check that correct run triggers are configured to trigger the workspace
+	updatedRunTriggers, err := r.updateRunTriggers(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if updatedTerraform || updatedVariables || updatedRunTriggers || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
+    err = r.updateAwsCredentials(instance)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-
-		err := r.startRun(instance)
+    err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
