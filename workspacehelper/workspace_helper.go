@@ -127,6 +127,10 @@ func (r *WorkspaceHelper) initializeReconciliation(request reconcile.Request) (*
 
 func (r *WorkspaceHelper) reconcileWorkspace(instance *appv1alpha1.Workspace) error {
 	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+	if instance.Spec.OmitNamespacePrefix {
+		workspace = fmt.Sprintf("%s", instance.Name)
+	}
+
 	organization := instance.Spec.Organization
 
 	ws, err := r.tfclient.CheckWorkspace(workspace, instance)
@@ -281,6 +285,9 @@ func (r *WorkspaceHelper) updateTerraformTemplate(instance *appv1alpha1.Workspac
 
 func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool, error) {
 	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+	if instance.Spec.OmitNamespacePrefix {
+		workspace = fmt.Sprintf("%s", instance.Name)
+	}
 
 	for _, variable := range instance.Spec.Variables {
 		err := r.GetConfigMapForVariable(instance.Namespace, variable)
@@ -297,6 +304,21 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 	}
 
 	return updatedVariables, nil
+}
+
+func (r *WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool, error) {
+	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+	if instance.Spec.OmitNamespacePrefix {
+		workspace = fmt.Sprintf("%s", instance.Name)
+	}
+
+	updatedRunTriggers, err := r.tfclient.CheckRunTriggers(workspace, instance.Spec.RunTriggers)
+	if err != nil {
+		r.reqLogger.Error(err, "Could not update run triggers")
+		return false, err
+	}
+
+	return updatedRunTriggers, nil
 }
 
 func (r *WorkspaceHelper) prepareModuleRun(instance *appv1alpha1.Workspace, options tfe.RunCreateOptions) (bool, error) {
@@ -490,13 +512,18 @@ func (r *WorkspaceHelper) Reconcile(ctx context.Context, request reconcile.Reque
 		return reconcile.Result{}, err
 	}
 
-	if updatedTerraform || updatedVariables || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
-		err = r.updateAwsCredentials(instance)
+  // check that correct run triggers are configured to trigger the workspace
+	updatedRunTriggers, err := r.updateRunTriggers(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if updatedTerraform || updatedVariables || updatedRunTriggers || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
+    err = r.updateAwsCredentials(instance)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-
-		err := r.startRun(instance)
+    err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
