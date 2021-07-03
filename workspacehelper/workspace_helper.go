@@ -511,18 +511,18 @@ func (r *WorkspaceHelper) Reconcile(ctx context.Context, request reconcile.Reque
 		return reconcile.Result{}, err
 	}
 
-  // check that correct run triggers are configured to trigger the workspace
+	// check that correct run triggers are configured to trigger the workspace
 	updatedRunTriggers, err := r.updateRunTriggers(instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	if updatedTerraform || updatedVariables || updatedRunTriggers || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
-    err = r.updateAwsCredentials(instance)
+		err = r.updateAwsCredentials(instance)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-    err := r.startRun(instance)
+		err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -546,7 +546,9 @@ func (r *WorkspaceHelper) Reconcile(ctx context.Context, request reconcile.Reque
 
 func (r *WorkspaceHelper) updateAwsCredentials(instance *appv1alpha1.Workspace) error {
 	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
-
+	if instance.Spec.OmitNamespacePrefix {
+		workspace = instance.Name
+	}
 	// added for mocking
 	if workspace == "terraform-system-awesome-workspace" {
 		return nil
