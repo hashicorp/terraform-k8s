@@ -19,9 +19,23 @@ jobs:
       run: |
         curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.1/kubebuilder_2.3.1_linux_amd64.tar.gz -o /tmp/kb.tgz
         tar zxf /tmp/kb.tgz -C /tmp/
-    - name: Run GoReleaser
-      env:
-        KUBEBUILDER_ASSETS: /tmp/kubebuilder_2.3.1_linux_amd64/bin/
-      uses: goreleaser/goreleaser-action@v1.3.1
+#    - name: Run GoReleaser
+#      env:
+#        KUBEBUILDER_ASSETS: /tmp/kubebuilder_2.3.1_linux_amd64/bin/
+#      uses: goreleaser/goreleaser-action@v1.3.1
+#      with:
+#        args: release --snapshot --skip-publish --rm-dist --skip-sign
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Login to GitHub Packages Docker Registry
+      uses: docker/login-action@v1
       with:
-        args: release --snapshot --skip-publish --rm-dist --skip-sign
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.CR_PAT }}
+    - name: Build
+      run: make docker-build
+      env:
+        IMAGE_NAMESPACE: ghcr.io/nslhb

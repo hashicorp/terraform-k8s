@@ -3,13 +3,18 @@ before:
     - go test ./...
 
 builds:
-  - 
+  -
     env:
       - CGO_ENABLED=0
     ldflags:
-      - '-s -w -X "github.com/hashicorp/terraform-k8s/version.Version={{ .Version }}" -X "github.com/hashicorp/terraform-k8s/version.Prerelease="'
+      - '-s -w -X "github.com/nslhb/terraform-k8s/version.Version={{ .Version }}" -X "github.com/nslhb/terraform-k8s/version.Prerelease="'
+    goos:
+      - linux
+      - windows
+      - darwin
     targets:
-      - linux_amd64
+      - amd64
+      - arm64
 
 archives:
   -

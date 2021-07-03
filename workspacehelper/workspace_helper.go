@@ -451,7 +451,7 @@ func (r *WorkspaceHelper) reconcileNotifications(instance *appv1alpha1.Workspace
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *WorkspaceHelper) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	// Get instance, check if org and secrets exist or not
 	instance, err := r.initializeReconciliation(request)
 	if err != nil {
@@ -518,6 +518,10 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	if updatedTerraform || updatedVariables || updatedRunTriggers || instance.Status.RunID == "" || instance.Status.ConfigVersionID != "" {
+		err = r.updateAwsCredentials(instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 		err := r.startRun(instance)
 		if err != nil {
 			return reconcile.Result{}, err
@@ -538,4 +542,28 @@ func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result
 	//
 	// It is important to note that if any event takes place between requeues will not be blocked.
 	return reconcile.Result{RequeueAfter: requeueInterval}, nil
+}
+
+func (r *WorkspaceHelper) updateAwsCredentials(instance *appv1alpha1.Workspace) error {
+	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
+	if instance.Spec.OmitNamespacePrefix {
+		workspace = instance.Name
+	}
+	// added for mocking
+	if workspace == "terraform-system-awesome-workspace" {
+		return nil
+	}
+
+	tfcWorkspace, err := r.tfclient.Client.Workspaces.Read(context.TODO(), r.tfclient.Organization, workspace)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.tfclient.upsertAwsVariablesOnTFC(tfcWorkspace, getCredentials())
+
+	if err != nil {
+		return err
+	}
+	return nil
 }

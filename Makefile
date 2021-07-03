@@ -1,6 +1,7 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= terraform-k8s:latest
+VERSION?=$(shell git rev-parse --short HEAD)
+IMG ?= ghcr.io/nslhb/terraform-k8s
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -71,8 +72,8 @@ generate:
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 # Build the docker image
-docker-build: test
-	docker build . -t ${IMG}
+docker-build:
+	docker buildx build --platform="linux/amd64,linux/arm64" --push -t $(IMG):$(VERSION) .
 
 # Push the docker image
 docker-push:
