@@ -141,6 +141,9 @@ type WorkspaceSpec struct {
 	// Omit namespace prefix in workspace name
 	// +optional
 	OmitNamespacePrefix bool `json:"omitNamespacePrefix,omitempty"`
+	// Specifies the agent pool name we wish to use.
+	// +optional
+	AgentPoolName string `json:"agentPoolName,omitempty"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace
