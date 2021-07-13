@@ -18,7 +18,8 @@ import (
 
 var (
 	// AutoApply run to workspace
-	AutoApply = true
+	AutoApply     = true
+	AgentPageSize = 100
 )
 
 // TerraformCloudClient has a TFC Client and organization
@@ -104,16 +105,52 @@ func (t *TerraformCloudClient) SetTerraformVersion(workspace, terraformVersion s
 	return nil
 }
 
+// getAgentPoolID uses AgentPoolName to lookup and return AgentPoolID
+func getAgentPoolID(specTFCAgentPoolName string, agentPools []*tfc.AgentPool) (*tfc.AgentPool, error) {
+	for _, agentPool := range agentPools {
+		if specTFCAgentPoolName == agentPool.Name {
+			return agentPool, nil
+		}
+	}
+	return nil, fmt.Errorf("No valid agent pools exist with name %v", specTFCAgentPoolName)
+}
+
+func (t *TerraformCloudClient) listAgentPools() ([]*tfc.AgentPool, error) {
+	options := tfc.AgentPoolListOptions{
+		ListOptions: tfc.ListOptions{PageSize: AgentPageSize},
+	}
+
+	agentpools, err := t.Client.AgentPools.List(context.TODO(), t.Organization, options)
+	if err != nil {
+		return nil, fmt.Errorf("Problem fetching agent pools %s", err)
+	}
+	return agentpools.Items, nil
+}
+
 func (t *TerraformCloudClient) updateAgentPoolID(instance *appv1alpha1.Workspace, workspace *tfc.Workspace) error {
-	if instance.Spec.AgentPoolID == workspace.AgentPoolID {
+	var agentPoolID string
+
+	// When agent pool name provided, look it up otherwise set to id in spec
+	if instance.Spec.AgentPoolName != "" {
+		agentPools, err := t.listAgentPools()
+		agentPool, err := getAgentPoolID(instance.Spec.AgentPoolName, agentPools)
+		if err != nil {
+			return err
+		}
+		agentPoolID = agentPool.ID
+	} else if instance.Spec.AgentPoolID != "" {
+		agentPoolID = instance.Spec.AgentPoolID
+	}
+
+	if agentPoolID == workspace.AgentPoolID {
 		return nil
 	}
 
 	updateOptions := tfc.WorkspaceUpdateOptions{
-		AgentPoolID: &instance.Spec.AgentPoolID,
+		AgentPoolID: &agentPoolID,
 	}
 
-	if instance.Spec.AgentPoolID != "" {
+	if agentPoolID != "" {
 		updateOptions.ExecutionMode = tfc.String("agent")
 	} else {
 		updateOptions.ExecutionMode = tfc.String("")
@@ -126,17 +163,18 @@ func (t *TerraformCloudClient) updateAgentPoolID(instance *appv1alpha1.Workspace
 	return nil
 }
 
-// CheckWorkspace looks for a workspace
+// CheckWorkspace looks for a remote tfc workspace
 func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1alpha1.Workspace) (*tfc.Workspace, error) {
 	ws, err := t.Client.Workspaces.Read(context.TODO(), t.Organization, workspace)
 	if err != nil && err == tfc.ErrResourceNotFound {
 		id, wsErr := t.CreateWorkspace(workspace, instance)
 		if wsErr != nil {
-			return nil, err
+			return nil, wsErr
 		} else {
 			ws = &tfc.Workspace{ID: id}
 			err = nil
 		}
+		ws = &tfc.Workspace{ID: id}
 	} else if err != nil {
 		return nil, err
 	}
@@ -194,11 +232,26 @@ func (t *TerraformCloudClient) CreateWorkspace(workspace string, instance *appv1
 		}
 	}
 
+	if instance.Spec.AgentPoolID != "" {
+		options.AgentPoolID = &instance.Spec.AgentPoolID
+		options.ExecutionMode = tfc.String("agent")
+	} else if instance.Spec.AgentPoolName != "" {
+		agentPools, err := t.listAgentPools()
+		if err != nil {
+			return "", err
+		}
+		agentPool, err := getAgentPoolID(instance.Spec.AgentPoolName, agentPools)
+		if err != nil {
+			return "", err
+		}
+		options.AgentPoolID = &agentPool.ID
+		options.ExecutionMode = tfc.String("agent")
+	}
+
 	ws, err := t.Client.Workspaces.Create(context.TODO(), t.Organization, options)
 	if err != nil {
 		return "", err
 	}
-
 	return ws.ID, nil
 }
 
