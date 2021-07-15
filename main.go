@@ -37,9 +37,16 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	opts := zap.Options{}
+	opts.BindFlags(flag.CommandLine)
+	err := flag.Set("zap-devel", "true")
+	if err != nil {
+		setupLog.Error(err, "unable to set zap flag")
+	}
+
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Namespace:          namespaceName,
