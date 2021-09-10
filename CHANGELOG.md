@@ -1,3 +1,11 @@
+## 1.1.0 (September 9, 2021)
+
+* Upgrade go-tfe to 0.15.0
+* Support for workspace notifications.
+* Support for run triggers.
+* Agent Pools can now be looked up by Name.
+* Logging improvements.
+
 ## 1.0.0 (February 19, 2021)
 
 * Upgrade to operator SDK version 1.2.0 ([#83](https://github.com/hashicorp/terraform-k8s/pull/83))
