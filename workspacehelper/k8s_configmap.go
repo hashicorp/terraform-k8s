@@ -3,7 +3,6 @@ package workspacehelper
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 
 	"github.com/hashicorp/terraform-k8s/api/v1alpha1"
@@ -116,13 +115,53 @@ func outputsToMap(outputs []*v1alpha1.OutputStatus) map[string][]byte {
 	return data
 }
 
-// UpsertSecretOutputs creates a Secret for the outputs
-func (r *WorkspaceHelper) UpsertSecretOutputs(w *v1alpha1.Workspace, outputs []*v1alpha1.OutputStatus) error {
+// CleanPreviousSecretOutputsIfChanged cleans previous secret if output has changed
+func (r *WorkspaceHelper) CleanPreviousSecretOutputsIfChanged(outputName string, outputNamespace string, status *v1alpha1.WorkspaceStatus) error {
+	currentName := status.OutputName
+	currentNamespace := status.OutputNamespace
+
+	// no previous name was set, do nothing
+	if currentName == "" || currentNamespace == "" {
+		return nil
+	}
+
+	// no changes to name/namespace
+	if currentName == outputName && currentNamespace == outputNamespace {
+		return nil
+	}
+
+	// attempt to cleanup whatever is configured, if it exists
+	r.reqLogger.Info("Terraform Output Secret name has changed. Removing previous version.")
 	found := &corev1.Secret{}
-	outputName := fmt.Sprintf("%s-outputs", w.Name)
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: outputName, Namespace: w.Namespace}, found)
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: currentName, Namespace: currentNamespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
-		secret := secretForOutputs(outputName, w.Namespace, outputs)
+		// resource already removed, do nothing
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	if err := r.client.Delete(context.TODO(), found); err != nil {
+		// unable to remove object
+		return err
+	}
+
+	return nil
+}
+
+// UpsertSecretOutputs creates a Secret for the outputs
+func (r *WorkspaceHelper) UpsertSecretOutputs(outputName string, outputNamespace string, w *v1alpha1.Workspace) error {
+	found := &corev1.Secret{}
+
+	if err := r.CleanPreviousSecretOutputsIfChanged(outputName, outputNamespace, &w.Status); err != nil {
+		r.reqLogger.Error(err, "Failed to clean previous output Secret")
+		return err
+	}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: outputName, Namespace: outputNamespace}, found)
+	if err != nil && k8serrors.IsNotFound(err) {
+		secret := secretForOutputs(outputName, outputNamespace, w.Status.Outputs)
 		err = controllerutil.SetControllerReference(w, secret, r.scheme)
 		if err != nil {
 			return err
@@ -138,12 +177,12 @@ func (r *WorkspaceHelper) UpsertSecretOutputs(w *v1alpha1.Workspace, outputs []*
 		return err
 	}
 
-	currentOutputs := outputsToMap(outputs)
+	currentOutputs := outputsToMap(w.Status.Outputs)
 	if !reflect.DeepEqual(found.Data, currentOutputs) {
 		r.reqLogger.Info("Updating secrets", "name", outputName)
 		found.Data = currentOutputs
 		if err := r.client.Update(context.TODO(), found); err != nil {
-			r.reqLogger.Error(err, "Failed to update output secrets", "Namespace", w.Namespace, "Name", outputName)
+			r.reqLogger.Error(err, "Failed to update output secrets", "Namespace", outputNamespace, "Name", outputName)
 			return err
 		}
 		return nil

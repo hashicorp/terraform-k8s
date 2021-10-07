@@ -244,8 +244,26 @@ func (r *WorkspaceHelper) processFinishedRun(instance *appv1alpha1.Workspace) er
 		return err
 	}
 
-	if !reflect.DeepEqual(outputs, instance.Status.Outputs) {
+	outputName := fmt.Sprintf("%s-outputs", instance.Name)
+	if instance.Spec.OutputName != "" {
+		outputName = instance.Spec.OutputName
+	}
+
+	outputNamespace := instance.Namespace
+	if instance.Spec.OutputNamespace != "" {
+		outputNamespace = instance.Spec.OutputNamespace
+	}
+
+	if err = r.UpsertSecretOutputs(outputName, outputNamespace, instance); err != nil {
+		r.reqLogger.Error(err, "Error with creating Secret for Terraform Outputs")
+		return err
+	}
+
+	if !reflect.DeepEqual(outputs, instance.Status.Outputs) || instance.Status.OutputName != outputName || instance.Status.OutputNamespace != outputNamespace {
 		instance.Status.Outputs = outputs
+		instance.Status.OutputName = outputName
+		instance.Status.OutputNamespace = outputNamespace
+
 		err := r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
 			r.reqLogger.Error(err, "Failed to update output status")
@@ -256,10 +274,7 @@ func (r *WorkspaceHelper) processFinishedRun(instance *appv1alpha1.Workspace) er
 		r.recorder.Event(instance, corev1.EventTypeNormal, "WorkspaceEvent",
 			fmt.Sprintf("Updated outputs for run %s", instance.Status.RunID))
 	}
-	if err = r.UpsertSecretOutputs(instance, instance.Status.Outputs); err != nil {
-		r.reqLogger.Error(err, "Error with creating ConfigMap for Terraform Outputs")
-		return err
-	}
+
 	return nil
 }
 

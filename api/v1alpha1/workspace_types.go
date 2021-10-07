@@ -126,6 +126,12 @@ type WorkspaceSpec struct {
 	// SSH Key ID. This key must already exist in the TF Cloud organization.  This can either be the user assigned name of the SSH Key, or the system assigned ID.
 	// +optional
 	SSHKeyID string `json:"sshKeyID,omitempty"`
+	// Overrides default output name. Default output name is `<workspaceName>-outputs`.
+	// +optional
+	OutputName string `json:"outputName,omitempty"`
+	// Overrides default output namespace. Default namespace is the same namespace as the workspace.
+	// +optional
+	OutputNamespace string `json:"outputNamespace,omitempty"`
 	// Outputs denote outputs wanted
 	// +optional
 	Outputs []*OutputSpec `json:"outputs,omitempty"`
@@ -157,6 +163,14 @@ type WorkspaceStatus struct {
 	RunID string `json:"runID"`
 	// Configuration Version ID
 	ConfigVersionID string `json:"configVersionID"`
+	// Current output name
+	// +optional
+	// +nullable
+	OutputName string `json:"outputName"`
+	// Current output namespace
+	// +optional
+	// +nullable
+	OutputNamespace string `json:"outputNamespace"`
 	// Outputs from state file
 	// +optional
 	Outputs []*OutputStatus `json:"outputs,omitempty"`
