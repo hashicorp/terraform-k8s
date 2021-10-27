@@ -1,42 +1,40 @@
 module github.com/hashicorp/terraform-k8s
 
-go 1.15
+go 1.16
 
 require (
-	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/go-logr/logr v0.1.0
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
+	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/go-logr/logr v0.4.0
+	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/google/gofuzz v1.2.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/googleapis/gnostic v0.5.6 // indirect
 	github.com/hashicorp/go-tfe v0.15.0
-	github.com/hashicorp/terraform v0.14.3
-	github.com/onsi/ginkgo v1.12.1
-	github.com/onsi/gomega v1.10.1
-	github.com/stretchr/testify v1.6.1
-	github.com/zclconf/go-cty v1.7.1
-	k8s.io/api v0.18.6
-	k8s.io/apimachinery v0.18.6
+	github.com/hashicorp/terraform v0.15.2
+	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.15.0
+	github.com/prometheus/common v0.32.1 // indirect
+	github.com/prometheus/procfs v0.7.3 // indirect
+	github.com/stretchr/testify v1.7.0
+	github.com/zclconf/go-cty v1.9.1
+	golang.org/x/net v0.0.0-20211020060615-d418f374d309 // indirect
+	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1 // indirect
+	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
+	k8s.io/api v0.21.4
+	k8s.io/apimachinery v0.21.4
 	k8s.io/client-go v10.0.0+incompatible
-	sigs.k8s.io/controller-runtime v0.6.3
-	sigs.k8s.io/controller-tools v0.3.0 // indirect
+	sigs.k8s.io/controller-runtime v0.9.7
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-// Pinned to kubernetes-1.16.2
-//replace (
-//	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20191016112112-5190913f932d
-//	k8s.io/cli-runtime => k8s.io/cli-runtime v0.0.0-20191016114015-74ad18325ed5
-//	k8s.io/cloud-provider => k8s.io/cloud-provider v0.0.0-20191016115326-20453efc2458
-//	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.0.0-20191016115129-c07a134afb42
-//	k8s.io/code-generator => k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894
-//	k8s.io/component-base => k8s.io/component-base v0.0.0-20191016111319-039242c015a9
-//	k8s.io/cri-api => k8s.io/cri-api v0.0.0-20190828162817-608eb1dad4ac
-//	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.0.0-20191016115521-756ffa5af0bd
-//	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20191016112429-9587704a8ad4
-//	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.0.0-20191016114939-2b2b218dc1df
-//	k8s.io/kube-proxy => k8s.io/kube-proxy v0.0.0-20191016114407-2e83b6f20229
-//	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.0.0-20191016114748-65049c67a58b
-//	k8s.io/kubectl => k8s.io/kubectl v0.0.0-20191016120415-2ed914427d51
-//	k8s.io/kubelet => k8s.io/kubelet v0.0.0-20191016114556-7841ed97f1b2
-//	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20191016115753-cf0698c3a16b
-//	k8s.io/metrics => k8s.io/metrics v0.0.0-20191016113814-3b1a734dba6e
-//	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20191016112829-06bb3c9d77c9
-//)
-
-replace k8s.io/client-go => k8s.io/client-go v0.18.6
+replace (
+	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.5
+	github.com/hashicorp/consul/api => github.com/hashicorp/consul/api v1.11.0
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common => github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.277
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tag => github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tag v1.0.277
+	k8s.io/client-go => k8s.io/client-go v0.21.4
+)
