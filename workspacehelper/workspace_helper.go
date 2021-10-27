@@ -451,7 +451,7 @@ func (r *WorkspaceHelper) reconcileNotifications(instance *appv1alpha1.Workspace
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *WorkspaceHelper) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *WorkspaceHelper) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	// Get instance, check if org and secrets exist or not
 	instance, err := r.initializeReconciliation(request)
 	if err != nil {
