@@ -15,7 +15,7 @@ COPY . .
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o terraform-k8s main.go
 
-FROM alpine:3.12.1
+FROM alpine:3.15.0
 WORKDIR /
 COPY --from=builder /workspace/terraform-k8s /bin/terraform-k8s
 USER nobody:nobody
