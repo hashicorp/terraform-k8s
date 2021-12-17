@@ -16,7 +16,7 @@ var _ Workspaces = (*workspaces)(nil)
 // Workspaces describes all the workspace related methods that the Terraform
 // Enterprise API supports.
 //
-// TFE API docs: https://www.terraform.io/docs/enterprise/api/workspaces.html
+// TFE API docs: https://www.terraform.io/docs/cloud/api/workspaces.html
 type Workspaces interface {
 	// List all the workspaces within an organization.
 	List(ctx context.Context, organization string, options WorkspaceListOptions) (*WorkspaceList, error)
@@ -24,14 +24,20 @@ type Workspaces interface {
 	// Create is used to create a new workspace.
 	Create(ctx context.Context, organization string, options WorkspaceCreateOptions) (*Workspace, error)
 
-	// Read a workspace by its name.
+	// Read a workspace by its name and organization name.
 	Read(ctx context.Context, organization string, workspace string) (*Workspace, error)
+
+	// ReadWithOptions reads a workspace by name and organization name with given options.
+	ReadWithOptions(ctx context.Context, organization string, workspace string, options *WorkspaceReadOptions) (*Workspace, error)
 
 	// Readme gets the readme of a workspace by its ID.
 	Readme(ctx context.Context, workspaceID string) (io.Reader, error)
 
 	// ReadByID reads a workspace by its ID.
 	ReadByID(ctx context.Context, workspaceID string) (*Workspace, error)
+
+	// ReadByIDWithOptions reads a workspace by its ID with the given options.
+	ReadByIDWithOptions(ctx context.Context, workspaceID string, options *WorkspaceReadOptions) (*Workspace, error)
 
 	// Update settings of an existing workspace.
 	Update(ctx context.Context, organization string, workspace string, options WorkspaceUpdateOptions) (*Workspace, error)
@@ -67,7 +73,7 @@ type Workspaces interface {
 	UnassignSSHKey(ctx context.Context, workspaceID string) (*Workspace, error)
 
 	// RemoteStateConsumers reads the remote state consumers for a workspace.
-	RemoteStateConsumers(ctx context.Context, workspaceID string) (*WorkspaceList, error)
+	RemoteStateConsumers(ctx context.Context, workspaceID string, options *RemoteStateConsumersListOptions) (*WorkspaceList, error)
 
 	// AddRemoteStateConsumers adds remote state consumers to a workspace.
 	AddRemoteStateConsumers(ctx context.Context, workspaceID string, options WorkspaceAddRemoteStateConsumersOptions) error
@@ -78,6 +84,15 @@ type Workspaces interface {
 	// UpdateRemoteStateConsumers updates all the remote state consumers for a workspace
 	// to match the workspaces in the update options.
 	UpdateRemoteStateConsumers(ctx context.Context, workspaceID string, options WorkspaceUpdateRemoteStateConsumersOptions) error
+
+	// Tags reads the tags for a workspace.
+	Tags(ctx context.Context, workspaceID string, options WorkspaceTagListOptions) (*TagList, error)
+
+	// AddTags appends tags to a workspace
+	AddTags(ctx context.Context, workspaceID string, options WorkspaceAddTagsOptions) error
+
+	// RemoveTags removes tags from a workspace
+	RemoveTags(ctx context.Context, workspaceID string, options WorkspaceRemoveTagsOptions) error
 }
 
 // workspaces implements Workspaces.
@@ -93,42 +108,56 @@ type WorkspaceList struct {
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID                   string                `jsonapi:"primary,workspaces"`
-	Actions              *WorkspaceActions     `jsonapi:"attr,actions"`
-	AgentPoolID          string                `jsonapi:"attr,agent-pool-id"`
-	AllowDestroyPlan     bool                  `jsonapi:"attr,allow-destroy-plan"`
-	AutoApply            bool                  `jsonapi:"attr,auto-apply"`
-	CanQueueDestroyPlan  bool                  `jsonapi:"attr,can-queue-destroy-plan"`
-	CreatedAt            time.Time             `jsonapi:"attr,created-at,iso8601"`
-	Description          string                `jsonapi:"attr,description"`
-	Environment          string                `jsonapi:"attr,environment"`
-	ExecutionMode        string                `jsonapi:"attr,execution-mode"`
-	FileTriggersEnabled  bool                  `jsonapi:"attr,file-triggers-enabled"`
-	GlobalRemoteState    bool                  `jsonapi:"attr,global-remote-state"`
-	Locked               bool                  `jsonapi:"attr,locked"`
-	MigrationEnvironment string                `jsonapi:"attr,migration-environment"`
-	Name                 string                `jsonapi:"attr,name"`
-	Operations           bool                  `jsonapi:"attr,operations"`
-	Permissions          *WorkspacePermissions `jsonapi:"attr,permissions"`
-	QueueAllRuns         bool                  `jsonapi:"attr,queue-all-runs"`
-	SpeculativeEnabled   bool                  `jsonapi:"attr,speculative-enabled"`
-	TerraformVersion     string                `jsonapi:"attr,terraform-version"`
-	TriggerPrefixes      []string              `jsonapi:"attr,trigger-prefixes"`
-	VCSRepo              *VCSRepo              `jsonapi:"attr,vcs-repo"`
-	WorkingDirectory     string                `jsonapi:"attr,working-directory"`
-	UpdatedAt            time.Time             `jsonapi:"attr,updated-at,iso8601"`
-	ResourceCount        int                   `jsonapi:"attr,resource-count"`
-	ApplyDurationAverage time.Duration         `jsonapi:"attr,apply-duration-average"`
-	PlanDurationAverage  time.Duration         `jsonapi:"attr,plan-duration-average"`
-	PolicyCheckFailures  int                   `jsonapi:"attr,policy-check-failures"`
-	RunFailures          int                   `jsonapi:"attr,run-failures"`
-	RunsCount            int                   `jsonapi:"attr,workspace-kpis-runs-count"`
+	ID                         string                `jsonapi:"primary,workspaces"`
+	Actions                    *WorkspaceActions     `jsonapi:"attr,actions"`
+	AgentPoolID                string                `jsonapi:"attr,agent-pool-id"`
+	AllowDestroyPlan           bool                  `jsonapi:"attr,allow-destroy-plan"`
+	AutoApply                  bool                  `jsonapi:"attr,auto-apply"`
+	CanQueueDestroyPlan        bool                  `jsonapi:"attr,can-queue-destroy-plan"`
+	CreatedAt                  time.Time             `jsonapi:"attr,created-at,iso8601"`
+	Description                string                `jsonapi:"attr,description"`
+	Environment                string                `jsonapi:"attr,environment"`
+	ExecutionMode              string                `jsonapi:"attr,execution-mode"`
+	FileTriggersEnabled        bool                  `jsonapi:"attr,file-triggers-enabled"`
+	GlobalRemoteState          bool                  `jsonapi:"attr,global-remote-state"`
+	Locked                     bool                  `jsonapi:"attr,locked"`
+	MigrationEnvironment       string                `jsonapi:"attr,migration-environment"`
+	Name                       string                `jsonapi:"attr,name"`
+	Operations                 bool                  `jsonapi:"attr,operations"`
+	Permissions                *WorkspacePermissions `jsonapi:"attr,permissions"`
+	QueueAllRuns               bool                  `jsonapi:"attr,queue-all-runs"`
+	SpeculativeEnabled         bool                  `jsonapi:"attr,speculative-enabled"`
+	SourceName                 string                `jsonapi:"attr,source-name"`
+	SourceURL                  string                `jsonapi:"attr,source-url"`
+	StructuredRunOutputEnabled bool                  `jsonapi:"attr,structured-run-output-enabled"`
+	TerraformVersion           string                `jsonapi:"attr,terraform-version"`
+	TriggerPrefixes            []string              `jsonapi:"attr,trigger-prefixes"`
+	VCSRepo                    *VCSRepo              `jsonapi:"attr,vcs-repo"`
+	WorkingDirectory           string                `jsonapi:"attr,working-directory"`
+	UpdatedAt                  time.Time             `jsonapi:"attr,updated-at,iso8601"`
+	ResourceCount              int                   `jsonapi:"attr,resource-count"`
+	ApplyDurationAverage       time.Duration         `jsonapi:"attr,apply-duration-average"`
+	PlanDurationAverage        time.Duration         `jsonapi:"attr,plan-duration-average"`
+	PolicyCheckFailures        int                   `jsonapi:"attr,policy-check-failures"`
+	RunFailures                int                   `jsonapi:"attr,run-failures"`
+	RunsCount                  int                   `jsonapi:"attr,workspace-kpis-runs-count"`
+	TagNames                   []string              `jsonapi:"attr,tag-names"`
 
 	// Relations
-	AgentPool    *AgentPool    `jsonapi:"relation,agent-pool"`
-	CurrentRun   *Run          `jsonapi:"relation,current-run"`
-	Organization *Organization `jsonapi:"relation,organization"`
-	SSHKey       *SSHKey       `jsonapi:"relation,ssh-key"`
+	AgentPool    *AgentPool          `jsonapi:"relation,agent-pool"`
+	CurrentRun   *Run                `jsonapi:"relation,current-run"`
+	Organization *Organization       `jsonapi:"relation,organization"`
+	SSHKey       *SSHKey             `jsonapi:"relation,ssh-key"`
+	Outputs      []*WorkspaceOutputs `jsonapi:"relation,outputs"`
+	Tags         []*Tag              `jsonapi:"relation,tags"`
+}
+
+type WorkspaceOutputs struct {
+	ID        string      `jsonapi:"primary,workspace-outputs"`
+	Name      string      `jsonapi:"attr,name"`
+	Sensitive bool        `jsonapi:"attr,sensitive"`
+	Type      string      `jsonapi:"attr,output-type"`
+	Value     interface{} `jsonapi:"attr,value"`
 }
 
 // workspaceWithReadme is the same as a workspace but it has a readme.
@@ -173,6 +202,11 @@ type WorkspacePermissions struct {
 	CanUpdateVariable bool `jsonapi:"attr,can-update-variable"`
 }
 
+// WorkspaceReadOptions represents the options for reading a workspace.
+type WorkspaceReadOptions struct {
+	Include string `url:"include"`
+}
+
 // WorkspaceListOptions represents the options for listing workspaces.
 type WorkspaceListOptions struct {
 	ListOptions
@@ -180,8 +214,11 @@ type WorkspaceListOptions struct {
 	// A search string (partial workspace name) used to filter the results.
 	Search *string `url:"search[name],omitempty"`
 
+	// A search string (comma-separated tag names) used to filter the results.
+	Tags *string `url:"search[tags],omitempty"`
+
 	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
-	Include *string `url:"include"`
+	Include *string `url:"include,omitempty"`
 }
 
 // List all the workspaces within an organization.
@@ -265,6 +302,22 @@ type WorkspaceCreateOptions struct {
 	// repository is public or includes untrusted contributors.
 	SpeculativeEnabled *bool `jsonapi:"attr,speculative-enabled,omitempty"`
 
+	// BETA. A friendly name for the application or client creating this
+	// workspace. If set, this will be displayed on the workspace as
+	// "Created via <SOURCE NAME>".
+	SourceName *string `jsonapi:"attr,source-name,omitempty"`
+
+	// BETA. A URL for the application or client creating this workspace. This
+	// can be the URL of a related resource in another app, or a link to
+	// documentation or other info about the client.
+	SourceURL *string `jsonapi:"attr,source-url,omitempty"`
+
+	// BETA. Enable the experimental advanced run user interface.
+	// This only applies to runs using Terraform version 0.15.2 or newer,
+	// and runs executed using older versions will see the classic experience
+	// regardless of this setting.
+	StructuredRunOutputEnabled *bool `jsonapi:"attr,structured-run-output-enabled,omitempty"`
+
 	// The version of Terraform to use for this workspace. Upon creating a
 	// workspace, the latest version is selected unless otherwise specified.
 	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
@@ -282,6 +335,10 @@ type WorkspaceCreateOptions struct {
 	// root of your repository and is typically set to a subdirectory matching the
 	// environment when multiple environments exist within the same repository.
 	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
+
+	// A list of tags to attach to the workspace. If the tag does not already
+	// exist, it is created and added to the workspace.
+	Tags []*Tag `jsonapi:"relation,tags,omitempty"`
 }
 
 // TODO: move this struct out. VCSRepoOptions is used by workspaces, policy sets, and registry modules
@@ -337,8 +394,13 @@ func (s *workspaces) Create(ctx context.Context, organization string, options Wo
 	return w, nil
 }
 
-// Read a workspace by its name.
+// Read a workspace by its name and organization name.
 func (s *workspaces) Read(ctx context.Context, organization, workspace string) (*Workspace, error) {
+	return s.ReadWithOptions(ctx, organization, workspace, nil)
+}
+
+// ReadWithOptions reads a workspace by name and organization name with given options.
+func (s *workspaces) ReadWithOptions(ctx context.Context, organization string, workspace string, options *WorkspaceReadOptions) (*Workspace, error) {
 	if !validStringID(&organization) {
 		return nil, ErrInvalidOrg
 	}
@@ -351,7 +413,7 @@ func (s *workspaces) Read(ctx context.Context, organization, workspace string) (
 		url.QueryEscape(organization),
 		url.QueryEscape(workspace),
 	)
-	req, err := s.client.newRequest("GET", u, nil)
+	req, err := s.client.newRequest("GET", u, options)
 	if err != nil {
 		return nil, err
 	}
@@ -371,12 +433,17 @@ func (s *workspaces) Read(ctx context.Context, organization, workspace string) (
 
 // ReadByID reads a workspace by its ID.
 func (s *workspaces) ReadByID(ctx context.Context, workspaceID string) (*Workspace, error) {
+	return s.ReadByIDWithOptions(ctx, workspaceID, nil)
+}
+
+// ReadByIDWithOptions reads a workspace by its ID with the given options.
+func (s *workspaces) ReadByIDWithOptions(ctx context.Context, workspaceID string, options *WorkspaceReadOptions) (*Workspace, error) {
 	if !validStringID(&workspaceID) {
 		return nil, ErrInvalidWorkspaceID
 	}
 
 	u := fmt.Sprintf("workspaces/%s", url.QueryEscape(workspaceID))
-	req, err := s.client.newRequest("GET", u, nil)
+	req, err := s.client.newRequest("GET", u, options)
 	if err != nil {
 		return nil, err
 	}
@@ -473,6 +540,12 @@ type WorkspaceUpdateOptions struct {
 	// running plans on pull requests, which can improve security if the VCS
 	// repository is public or includes untrusted contributors.
 	SpeculativeEnabled *bool `jsonapi:"attr,speculative-enabled,omitempty"`
+
+	// BETA. Enable the experimental advanced run user interface.
+	// This only applies to runs using Terraform version 0.15.2 or newer,
+	// and runs executed using older versions will see the classic experience
+	// regardless of this setting.
+	StructuredRunOutputEnabled *bool `jsonapi:"attr,structured-run-output-enabled,omitempty"`
 
 	// The version of Terraform to use for this workspace.
 	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
@@ -805,15 +878,19 @@ func (s *workspaces) UnassignSSHKey(ctx context.Context, workspaceID string) (*W
 	return w, nil
 }
 
+type RemoteStateConsumersListOptions struct {
+	ListOptions
+}
+
 // RemoteStateConsumers returns the remote state consumers for a given workspace.
-func (s *workspaces) RemoteStateConsumers(ctx context.Context, workspaceID string) (*WorkspaceList, error) {
+func (s *workspaces) RemoteStateConsumers(ctx context.Context, workspaceID string, options *RemoteStateConsumersListOptions) (*WorkspaceList, error) {
 	if !validStringID(&workspaceID) {
 		return nil, ErrInvalidWorkspaceID
 	}
 
 	u := fmt.Sprintf("workspaces/%s/relationships/remote-state-consumers", url.QueryEscape(workspaceID))
 
-	req, err := s.client.newRequest("GET", u, nil)
+	req, err := s.client.newRequest("GET", u, &options)
 	if err != nil {
 		return nil, err
 	}
@@ -925,6 +1002,106 @@ func (s *workspaces) UpdateRemoteStateConsumers(ctx context.Context, workspaceID
 
 	u := fmt.Sprintf("workspaces/%s/relationships/remote-state-consumers", url.QueryEscape(workspaceID))
 	req, err := s.client.newRequest("PATCH", u, options.Workspaces)
+	if err != nil {
+		return err
+	}
+
+	return s.client.do(ctx, req, nil)
+}
+
+type WorkspaceTagListOptions struct {
+	ListOptions
+
+	// A query string used to filter workspace tags.
+	// Any workspace tag with a name partially matching this value will be returned.
+	Query *string `url:"name,omitempty"`
+}
+
+// Tags returns the tags for a given workspace.
+func (s *workspaces) Tags(ctx context.Context, workspaceID string, options WorkspaceTagListOptions) (*TagList, error) {
+	if !validStringID(&workspaceID) {
+		return nil, ErrInvalidWorkspaceID
+	}
+
+	u := fmt.Sprintf("workspaces/%s/relationships/tags", url.QueryEscape(workspaceID))
+
+	req, err := s.client.newRequest("GET", u, &options)
+	if err != nil {
+		return nil, err
+	}
+
+	tl := &TagList{}
+	err = s.client.do(ctx, req, tl)
+	if err != nil {
+		return nil, err
+	}
+
+	return tl, nil
+}
+
+type WorkspaceAddTagsOptions struct {
+	Tags []*Tag
+}
+
+func (o WorkspaceAddTagsOptions) valid() error {
+	if len(o.Tags) == 0 {
+		return ErrMissingTagIdentifier
+	}
+	for _, s := range o.Tags {
+		if s.Name == "" && s.ID == "" {
+			return ErrMissingTagIdentifier
+		}
+	}
+
+	return nil
+}
+
+// AddTags adds a list of tags to a workspace.
+func (s *workspaces) AddTags(ctx context.Context, workspaceID string, options WorkspaceAddTagsOptions) error {
+	if !validStringID(&workspaceID) {
+		return ErrInvalidWorkspaceID
+	}
+	if err := options.valid(); err != nil {
+		return err
+	}
+
+	u := fmt.Sprintf("workspaces/%s/relationships/tags", url.QueryEscape(workspaceID))
+	req, err := s.client.newRequest("POST", u, options.Tags)
+	if err != nil {
+		return err
+	}
+
+	return s.client.do(ctx, req, nil)
+}
+
+type WorkspaceRemoveTagsOptions struct {
+	Tags []*Tag
+}
+
+func (o WorkspaceRemoveTagsOptions) valid() error {
+	if len(o.Tags) == 0 {
+		return ErrMissingTagIdentifier
+	}
+	for _, s := range o.Tags {
+		if s.Name == "" && s.ID == "" {
+			return ErrMissingTagIdentifier
+		}
+	}
+
+	return nil
+}
+
+// RemoveTags removes a list of tags from a workspace.
+func (s *workspaces) RemoveTags(ctx context.Context, workspaceID string, options WorkspaceRemoveTagsOptions) error {
+	if !validStringID(&workspaceID) {
+		return ErrInvalidWorkspaceID
+	}
+	if err := options.valid(); err != nil {
+		return err
+	}
+
+	u := fmt.Sprintf("workspaces/%s/relationships/tags", url.QueryEscape(workspaceID))
+	req, err := s.client.newRequest("DELETE", u, options.Tags)
 	if err != nil {
 		return err
 	}

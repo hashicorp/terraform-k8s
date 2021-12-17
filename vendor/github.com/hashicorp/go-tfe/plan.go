@@ -16,7 +16,7 @@ var _ Plans = (*plans)(nil)
 // Plans describes all the plan related methods that the Terraform Enterprise
 // API supports.
 //
-// TFE API docs: https://www.terraform.io/docs/enterprise/api/plan.html
+// TFE API docs: https://www.terraform.io/docs/cloud/api/plan.html
 type Plans interface {
 	// Read a plan by its ID.
 	Read(ctx context.Context, planID string) (*Plan, error)

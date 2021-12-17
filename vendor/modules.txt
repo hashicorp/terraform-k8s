@@ -45,7 +45,7 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-querystring v1.0.0
+# github.com/google/go-querystring v1.1.0
 github.com/google/go-querystring/query
 # github.com/google/gofuzz v1.2.0
 ## explicit
@@ -62,17 +62,17 @@ github.com/googleapis/gnostic/jsonschema
 github.com/googleapis/gnostic/openapiv2
 # github.com/hashicorp/errwrap v1.1.0
 github.com/hashicorp/errwrap
-# github.com/hashicorp/go-cleanhttp v0.5.1
+# github.com/hashicorp/go-cleanhttp v0.5.2
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-hclog v0.15.0
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-multierror v1.1.1
 github.com/hashicorp/go-multierror
-# github.com/hashicorp/go-retryablehttp v0.5.2
+# github.com/hashicorp/go-retryablehttp v0.7.0
 github.com/hashicorp/go-retryablehttp
-# github.com/hashicorp/go-slug v0.4.1
+# github.com/hashicorp/go-slug v0.7.0
 github.com/hashicorp/go-slug
-# github.com/hashicorp/go-tfe v0.15.0
+# github.com/hashicorp/go-tfe v0.21.0
 ## explicit
 github.com/hashicorp/go-tfe
 # github.com/hashicorp/go-version v1.2.1
@@ -99,7 +99,7 @@ github.com/hashicorp/hcl/v2/hclparse
 github.com/hashicorp/hcl/v2/hclsyntax
 github.com/hashicorp/hcl/v2/hclwrite
 github.com/hashicorp/hcl/v2/json
-# github.com/hashicorp/jsonapi v0.0.0-20210518035559-1e50d74c8db3
+# github.com/hashicorp/jsonapi v0.0.0-20210826224640-ee7dae0fb22d
 github.com/hashicorp/jsonapi
 # github.com/hashicorp/terraform v0.15.2
 ## explicit
@@ -243,7 +243,7 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/mod v0.3.1-0.20200828183125-ce943fd02449
+# golang.org/x/mod v0.4.2
 golang.org/x/mod/sumdb/dirhash
 # golang.org/x/net v0.0.0-20211020060615-d418f374d309
 ## explicit
@@ -295,7 +295,8 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
+# golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
+## explicit
 golang.org/x/time/rate
 # gomodules.xyz/jsonpatch/v2 v2.2.0
 gomodules.xyz/jsonpatch/v2

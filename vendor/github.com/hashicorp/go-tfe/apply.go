@@ -14,7 +14,7 @@ var _ Applies = (*applies)(nil)
 // Applies describes all the apply related methods that the Terraform
 // Enterprise API supports.
 //
-// TFE API docs: https://www.terraform.io/docs/enterprise/api/apply.html
+// TFE API docs: https://www.terraform.io/docs/cloud/api/applies.html
 type Applies interface {
 	// Read an apply by its ID.
 	Read(ctx context.Context, applyID string) (*Apply, error)

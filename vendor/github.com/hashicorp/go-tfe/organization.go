@@ -15,7 +15,7 @@ var _ Organizations = (*organizations)(nil)
 // Terraform Enterprise API supports.
 //
 // TFE API docs:
-// https://www.terraform.io/docs/enterprise/api/organizations.html
+// https://www.terraform.io/docs/cloud/api/organizations.html
 type Organizations interface {
 	// List all the organizations visible to the current user.
 	List(ctx context.Context, options OrganizationListOptions) (*OrganizationList, error)
@@ -56,17 +56,6 @@ const (
 	AuthPolicyTwoFactor AuthPolicyType = "two_factor_mandatory"
 )
 
-// EnterprisePlanType represents an enterprise plan type.
-type EnterprisePlanType string
-
-// List of available enterprise plan types.
-const (
-	EnterprisePlanDisabled EnterprisePlanType = "disabled"
-	EnterprisePlanPremium  EnterprisePlanType = "premium"
-	EnterprisePlanPro      EnterprisePlanType = "pro"
-	EnterprisePlanTrial    EnterprisePlanType = "trial"
-)
-
 // OrganizationList represents a list of organizations.
 type OrganizationList struct {
 	*Pagination
@@ -75,20 +64,20 @@ type OrganizationList struct {
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	Name                   string                   `jsonapi:"primary,organizations"`
-	CollaboratorAuthPolicy AuthPolicyType           `jsonapi:"attr,collaborator-auth-policy"`
-	CostEstimationEnabled  bool                     `jsonapi:"attr,cost-estimation-enabled"`
-	CreatedAt              time.Time                `jsonapi:"attr,created-at,iso8601"`
-	Email                  string                   `jsonapi:"attr,email"`
-	EnterprisePlan         EnterprisePlanType       `jsonapi:"attr,enterprise-plan"`
-	ExternalID             string                   `jsonapi:"attr,external-id"`
-	OwnersTeamSAMLRoleID   string                   `jsonapi:"attr,owners-team-saml-role-id"`
-	Permissions            *OrganizationPermissions `jsonapi:"attr,permissions"`
-	SAMLEnabled            bool                     `jsonapi:"attr,saml-enabled"`
-	SessionRemember        int                      `jsonapi:"attr,session-remember"`
-	SessionTimeout         int                      `jsonapi:"attr,session-timeout"`
-	TrialExpiresAt         time.Time                `jsonapi:"attr,trial-expires-at,iso8601"`
-	TwoFactorConformant    bool                     `jsonapi:"attr,two-factor-conformant"`
+	Name                                              string                   `jsonapi:"primary,organizations"`
+	CollaboratorAuthPolicy                            AuthPolicyType           `jsonapi:"attr,collaborator-auth-policy"`
+	CostEstimationEnabled                             bool                     `jsonapi:"attr,cost-estimation-enabled"`
+	CreatedAt                                         time.Time                `jsonapi:"attr,created-at,iso8601"`
+	Email                                             string                   `jsonapi:"attr,email"`
+	ExternalID                                        string                   `jsonapi:"attr,external-id"`
+	OwnersTeamSAMLRoleID                              string                   `jsonapi:"attr,owners-team-saml-role-id"`
+	Permissions                                       *OrganizationPermissions `jsonapi:"attr,permissions"`
+	SAMLEnabled                                       bool                     `jsonapi:"attr,saml-enabled"`
+	SessionRemember                                   int                      `jsonapi:"attr,session-remember"`
+	SessionTimeout                                    int                      `jsonapi:"attr,session-timeout"`
+	TrialExpiresAt                                    time.Time                `jsonapi:"attr,trial-expires-at,iso8601"`
+	TwoFactorConformant                               bool                     `jsonapi:"attr,two-factor-conformant"`
+	SendPassingStatusesForUntriggeredSpeculativePlans bool                     `jsonapi:"attr,send-passing-statuses-for-untriggered-speculative-plans"`
 }
 
 // Capacity represents the current run capacity of an organization.
@@ -181,6 +170,9 @@ type OrganizationCreateOptions struct {
 
 	// The name of the "owners" team
 	OwnersTeamSAMLRoleID *string `jsonapi:"attr,owners-team-saml-role-id,omitempty"`
+
+	// SendPassingStatusesForUntriggeredSpeculativePlans toggles behavior of untriggered speculative plans to send status updates to version control systems like GitHub.
+	SendPassingStatusesForUntriggeredSpeculativePlans *bool `jsonapi:"attr,send-passing-statuses-for-untriggered-speculative-plans,omitempty"`
 }
 
 func (o OrganizationCreateOptions) valid() error {
@@ -265,6 +257,9 @@ type OrganizationUpdateOptions struct {
 
 	// The name of the "owners" team
 	OwnersTeamSAMLRoleID *string `jsonapi:"attr,owners-team-saml-role-id,omitempty"`
+
+	// SendPassingStatusesForUntriggeredSpeculativePlans toggles behavior of untriggered speculative plans to send status updates to version control systems like GitHub.
+	SendPassingStatusesForUntriggeredSpeculativePlans *bool `jsonapi:"attr,send-passing-statuses-for-untriggered-speculative-plans,omitempty"`
 }
 
 // Update attributes of an existing organization.

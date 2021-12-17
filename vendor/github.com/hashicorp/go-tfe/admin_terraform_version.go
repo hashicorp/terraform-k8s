@@ -106,9 +106,9 @@ type AdminTerraformVersionCreateOptions struct {
 	Version  *string `jsonapi:"attr,version"`
 	URL      *string `jsonapi:"attr,url"`
 	Sha      *string `jsonapi:"attr,sha"`
-	Official *bool   `jsonapi:"attr,official"`
-	Enabled  *bool   `jsonapi:"attr,enabled"`
-	Beta     *bool   `jsonapi:"attr,beta"`
+	Official *bool   `jsonapi:"attr,official,omitempty"`
+	Enabled  *bool   `jsonapi:"attr,enabled,omitempty"`
+	Beta     *bool   `jsonapi:"attr,beta,omitempty"`
 }
 
 // Create a new terraform version.

@@ -14,7 +14,7 @@ var _ SSHKeys = (*sshKeys)(nil)
 // Enterprise API supports.
 //
 // TFE API docs:
-// https://www.terraform.io/docs/enterprise/api/ssh-keys.html
+// https://www.terraform.io/docs/cloud/api/ssh-keys.html
 type SSHKeys interface {
 	// List all the SSH keys for a given organization
 	List(ctx context.Context, organization string, options SSHKeyListOptions) (*SSHKeyList, error)

@@ -10,7 +10,7 @@ var _ Users = (*users)(nil)
 // Users describes all the user related methods that the Terraform
 // Enterprise API supports.
 //
-// TFE API docs: https://www.terraform.io/docs/enterprise/api/user.html
+// TFE API docs: https://www.terraform.io/docs/cloud/api/account.html
 type Users interface {
 	// ReadCurrent reads the details of the currently authenticated user.
 	ReadCurrent(ctx context.Context) (*User, error)

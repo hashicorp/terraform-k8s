@@ -14,7 +14,7 @@ var _ TeamAccesses = (*teamAccesses)(nil)
 // Terraform Enterprise API supports.
 //
 // TFE API docs:
-// https://www.terraform.io/docs/enterprise/api/team-access.html
+// https://www.terraform.io/docs/cloud/api/team-access.html
 type TeamAccesses interface {
 	// List all the team accesses for a given workspace.
 	List(ctx context.Context, options TeamAccessListOptions) (*TeamAccessList, error)

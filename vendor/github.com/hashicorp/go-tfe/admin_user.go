@@ -85,7 +85,7 @@ type AdminUserListOptions struct {
 
 // List all user accounts in the Terraform Enterprise installation
 func (a *adminUsers) List(ctx context.Context, options AdminUserListOptions) (*AdminUserList, error) {
-	u := fmt.Sprintf("admin/users")
+	u := "admin/users"
 	req, err := a.client.newRequest("GET", u, &options)
 	if err != nil {
 		return nil, err

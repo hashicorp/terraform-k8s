@@ -13,7 +13,7 @@ var _ Teams = (*teams)(nil)
 // Teams describes all the team related methods that the Terraform
 // Enterprise API supports.
 //
-// TFE API docs: https://www.terraform.io/docs/enterprise/api/teams.html
+// TFE API docs: https://www.terraform.io/docs/cloud/api/teams.html
 type Teams interface {
 	// List all the teams of the given organization.
 	List(ctx context.Context, organization string, options TeamListOptions) (*TeamList, error)

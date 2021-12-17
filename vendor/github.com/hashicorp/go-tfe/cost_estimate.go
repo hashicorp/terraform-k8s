@@ -15,7 +15,7 @@ var _ CostEstimates = (*costEstimates)(nil)
 // CostEstimates describes all the costEstimate related methods that
 // the Terraform Enterprise API supports.
 //
-// TFE API docs: https://www.terraform.io/docs/enterprise/api/ (TBD)
+// TFE API docs: https://www.terraform.io/docs/cloud/api/cost-estimates.html
 type CostEstimates interface {
 	// Read a costEstimate by its ID.
 	Read(ctx context.Context, costEstimateID string) (*CostEstimate, error)

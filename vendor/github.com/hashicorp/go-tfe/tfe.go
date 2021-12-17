@@ -1,6 +1,8 @@
 package tfe
 
 import (
+	"log"
+
 	"bytes"
 	"context"
 	"encoding/json"
@@ -21,6 +23,8 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/jsonapi"
 	"golang.org/x/time/rate"
+
+	slug "github.com/hashicorp/go-slug"
 )
 
 const (
@@ -105,12 +109,14 @@ type Client struct {
 	OAuthTokens                OAuthTokens
 	Organizations              Organizations
 	OrganizationMemberships    OrganizationMemberships
+	OrganizationTags           OrganizationTags
 	OrganizationTokens         OrganizationTokens
 	Plans                      Plans
 	PlanExports                PlanExports
 	Policies                   Policies
 	PolicyChecks               PolicyChecks
 	PolicySetParameters        PolicySetParameters
+	PolicySetVersions          PolicySetVersions
 	PolicySets                 PolicySets
 	RegistryModules            RegistryModules
 	Runs                       Runs
@@ -152,7 +158,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	config := DefaultConfig()
 
 	// Layer in the provided config for any non-blank values.
-	if cfg != nil {
+	if cfg != nil { // nolint
 		if cfg.Address != "" {
 			config.Address = cfg.Address
 		}
@@ -240,12 +246,14 @@ func NewClient(cfg *Config) (*Client, error) {
 	client.OAuthTokens = &oAuthTokens{client: client}
 	client.Organizations = &organizations{client: client}
 	client.OrganizationMemberships = &organizationMemberships{client: client}
+	client.OrganizationTags = &organizationTags{client: client}
 	client.OrganizationTokens = &organizationTokens{client: client}
 	client.Plans = &plans{client: client}
 	client.PlanExports = &planExports{client: client}
 	client.Policies = &policies{client: client}
 	client.PolicyChecks = &policyChecks{client: client}
 	client.PolicySetParameters = &policySetParameters{client: client}
+	client.PolicySetVersions = &policySetVersions{client: client}
 	client.PolicySets = &policySets{client: client}
 	client.RegistryModules = &registryModules{client: client}
 	client.Runs = &runs{client: client}
@@ -352,14 +360,15 @@ func rateLimitBackoff(min, max time.Duration, attemptNum int, resp *http.Respons
 	// First create some jitter bounded by the min and max durations.
 	jitter := time.Duration(rnd.Float64() * float64(max-min))
 
-	if resp != nil {
-		if v := resp.Header.Get(headerRateReset); v != "" {
-			if reset, _ := strconv.ParseFloat(v, 64); reset > 0 {
-				// Only update min if the given time to wait is longer.
-				if wait := time.Duration(reset * 1e9); wait > min {
-					min = wait
-				}
-			}
+	if resp != nil && resp.Header.Get(headerRateReset) != "" {
+		v := resp.Header.Get(headerRateReset)
+		reset, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// Only update min if the given time to wait is longer
+		if reset > 0 && time.Duration(reset*1e9) > min {
+			min = time.Duration(reset * 1e9)
 		}
 	}
 
@@ -413,13 +422,15 @@ func (c *Client) getRawAPIMetadata() (rawAPIMetadata, error) {
 
 // configureLimiter configures the rate limiter.
 func (c *Client) configureLimiter(rawLimit string) {
-
 	// Set default values for when rate limiting is disabled.
 	limit := rate.Inf
 	burst := 0
 
 	if v := rawLimit; v != "" {
-		if rateLimit, _ := strconv.ParseFloat(v, 64); rateLimit > 0 {
+		if rateLimit, err := strconv.ParseFloat(v, 64); rateLimit > 0 {
+			if err != nil {
+				log.Fatal(err)
+			}
 			// Configure the limit and burst using a split of 2/3 for the limit and
 			// 1/3 for the burst. This enables clients to burst 1/3 of the allowed
 			// calls before the limiter kicks in. The remaining calls will then be
@@ -527,18 +538,18 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 
 	// Infer whether the request uses jsonapi or regular json
 	// serialization based on how the fields are tagged.
-	jsonApiFields := 0
+	jsonAPIFields := 0
 	jsonFields := 0
 	for i := 0; i < modelType.NumField(); i++ {
 		structField := modelType.Field(i)
 		if structField.Tag.Get("jsonapi") != "" {
-			jsonApiFields++
+			jsonAPIFields++
 		}
 		if structField.Tag.Get("json") != "" {
 			jsonFields++
 		}
 	}
-	if jsonApiFields > 0 && jsonFields > 0 {
+	if jsonAPIFields > 0 && jsonFields > 0 {
 		// Defining a struct with both json and jsonapi tags doesn't
 		// make sense, because a struct can only be serialized
 		// as one or another. If this does happen, it's a bug
@@ -548,13 +559,12 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 
 	if jsonFields > 0 {
 		return json.Marshal(v)
-	} else {
-		buf := bytes.NewBuffer(nil)
-		if err := jsonapi.MarshalPayloadWithoutIncluded(buf, v); err != nil {
-			return nil, err
-		}
-		return buf, nil
 	}
+	buf := bytes.NewBuffer(nil)
+	if err := jsonapi.MarshalPayloadWithoutIncluded(buf, v); err != nil {
+		return nil, err
+	}
+	return buf, nil
 }
 
 // do sends an API request and returns the API response. The API response
@@ -574,10 +584,10 @@ func (c *Client) do(ctx context.Context, req *retryablehttp.Request, v interface
 	}
 
 	// Add the context to the request.
-	req = req.WithContext(ctx)
+	reqWithCxt := req.WithContext(ctx)
 
 	// Execute the request and check the response.
-	resp, err := c.http.Do(req)
+	resp, err := c.http.Do(reqWithCxt)
 	if err != nil {
 		// If we got an error, and the context has been canceled,
 		// the context's error is probably more useful.
@@ -602,7 +612,7 @@ func (c *Client) do(ctx context.Context, req *retryablehttp.Request, v interface
 
 	// If v implements io.Writer, write the raw response body.
 	if w, ok := v.(io.Writer); ok {
-		_, err = io.Copy(w, resp.Body)
+		_, err := io.Copy(w, resp.Body)
 		return err
 	}
 
@@ -615,7 +625,7 @@ func unmarshalResponse(responseBody io.Reader, model interface{}) error {
 
 	// Return an error if model is not a struct or an io.Writer.
 	if dst.Kind() != reflect.Struct {
-		return fmt.Errorf("v must be a struct or an io.Writer")
+		return fmt.Errorf("%v must be a struct or an io.Writer", dst)
 	}
 
 	// Try to get the Items and Pagination struct fields.
@@ -742,4 +752,23 @@ func checkResponseCode(r *http.Response) error {
 	}
 
 	return fmt.Errorf(strings.Join(errs, "\n"))
+}
+
+func packContents(path string) (*bytes.Buffer, error) {
+	body := bytes.NewBuffer(nil)
+
+	file, err := os.Stat(path)
+	if err != nil {
+		return body, err
+	}
+	if !file.Mode().IsDir() {
+		return body, ErrMissingDirectory
+	}
+
+	_, errSlug := slug.Pack(path, body, true)
+	if errSlug != nil {
+		return body, errSlug
+	}
+
+	return body, nil
 }

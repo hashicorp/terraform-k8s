@@ -15,7 +15,7 @@ var _ Policies = (*policies)(nil)
 // Policies describes all the policy related methods that the Terraform
 // Enterprise API supports.
 //
-// TFE API docs: https://www.terraform.io/docs/enterprise/api/policies.html
+// TFE API docs: https://www.terraform.io/docs/cloud/api/policies.html
 type Policies interface {
 	// List all the policies for a given organization
 	List(ctx context.Context, organization string, options PolicyListOptions) (*PolicyList, error)
@@ -35,7 +35,7 @@ type Policies interface {
 	// Upload the policy content of the policy.
 	Upload(ctx context.Context, policyID string, content []byte) error
 
-	// Upload the policy content of the policy.
+	// Download the policy content of the policy.
 	Download(ctx context.Context, policyID string) ([]byte, error)
 }
 

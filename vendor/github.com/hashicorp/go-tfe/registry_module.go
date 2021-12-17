@@ -1,14 +1,10 @@
 package tfe
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
-
-	slug "github.com/hashicorp/go-slug"
 )
 
 // Compile-time proof of interface implementation.
@@ -114,20 +110,10 @@ type RegistryModuleVersion struct {
 func (r *registryModules) Upload(ctx context.Context, rmv RegistryModuleVersion, path string) error {
 	uploadURL, ok := rmv.Links["upload"].(string)
 	if !ok {
-		return fmt.Errorf("Provided RegistryModuleVersion does not contain an upload link")
+		return fmt.Errorf("provided RegistryModuleVersion does not contain an upload link")
 	}
 
-	file, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if !file.Mode().IsDir() {
-		return ErrMissingDirectory
-	}
-
-	body := bytes.NewBuffer(nil)
-
-	_, err = slug.Pack(path, body, true)
+	body, err := packContents(path)
 	if err != nil {
 		return err
 	}

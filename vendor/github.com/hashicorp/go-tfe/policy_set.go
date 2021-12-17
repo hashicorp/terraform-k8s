@@ -14,7 +14,7 @@ var _ PolicySets = (*policySets)(nil)
 // PolicySets describes all the policy set related methods that the Terraform
 // Enterprise API supports.
 //
-// TFE API docs: https://www.terraform.io/docs/enterprise/api/policies.html
+// TFE API docs: https://www.terraform.io/docs/cloud/api/policies.html
 type PolicySets interface {
 	// List all the policy sets for a given organization.
 	List(ctx context.Context, organization string, options PolicySetListOptions) (*PolicySetList, error)
@@ -24,6 +24,9 @@ type PolicySets interface {
 
 	// Read a policy set by its ID.
 	Read(ctx context.Context, policySetID string) (*PolicySet, error)
+
+	// ReadWithOptions reads a policy set by its ID using the options supplied.
+	ReadWithOptions(ctx context.Context, policySetID string, options *PolicySetReadOptions) (*PolicySet, error)
 
 	// Update an existing policy set.
 	Update(ctx context.Context, policySetID string, options PolicySetUpdateOptions) (*PolicySet, error)
@@ -71,9 +74,18 @@ type PolicySet struct {
 	UpdatedAt      time.Time `jsonapi:"attr,updated-at,iso8601"`
 
 	// Relations
+	// The organization to which the policy set belongs to.
 	Organization *Organization `jsonapi:"relation,organization"`
-	Policies     []*Policy     `jsonapi:"relation,policies"`
-	Workspaces   []*Workspace  `jsonapi:"relation,workspaces"`
+	// The workspaces to which the policy set applies.
+	Workspaces []*Workspace `jsonapi:"relation,workspaces"`
+	// Individually managed policies which are associated with the policy set.
+	Policies []*Policy `jsonapi:"relation,policies"`
+	// The most recently created policy set version, regardless of status.
+	// Note that this relationship may include an errored and unusable version,
+	// and is intended to allow checking for errors.
+	NewestVersion *PolicySetVersion `jsonapi:"relation,newest-version"`
+	// The most recent successful policy set version.
+	CurrentVersion *PolicySetVersion `jsonapi:"relation,current-version"`
 }
 
 // PolicySetListOptions represents the options for listing policy sets.
@@ -175,14 +187,26 @@ func (s *policySets) Create(ctx context.Context, organization string, options Po
 	return ps, err
 }
 
+// PolicySetReadOptions are read options.
+// For a full list of relations, please see:
+// https://www.terraform.io/docs/cloud/api/policy-sets.html#relationships
+type PolicySetReadOptions struct {
+	Include string `url:"include"`
+}
+
 // Read a policy set by its ID.
 func (s *policySets) Read(ctx context.Context, policySetID string) (*PolicySet, error) {
+	return s.ReadWithOptions(ctx, policySetID, nil)
+}
+
+// ReadWithOptions reads a policy by its ID using the options supplied.
+func (s *policySets) ReadWithOptions(ctx context.Context, policySetID string, options *PolicySetReadOptions) (*PolicySet, error) {
 	if !validStringID(&policySetID) {
 		return nil, errors.New("invalid value for policy set ID")
 	}
 
 	u := fmt.Sprintf("policy-sets/%s", url.QueryEscape(policySetID))
-	req, err := s.client.newRequest("GET", u, nil)
+	req, err := s.client.newRequest("GET", u, options)
 	if err != nil {
 		return nil, err
 	}
