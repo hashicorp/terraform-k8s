@@ -15,7 +15,7 @@ var _ NotificationConfigurations = (*notificationConfigurations)(nil)
 // related methods that the Terraform Enterprise API supports.
 //
 // TFE API docs:
-// https://www.terraform.io/docs/enterprise/api/notification-configurations.html
+// https://www.terraform.io/docs/cloud/api/notification-configurations.html
 type NotificationConfigurations interface {
 	// List all the notification configurations within a workspace.
 	List(ctx context.Context, workspaceID string, options NotificationConfigurationListOptions) (*NotificationConfigurationList, error)

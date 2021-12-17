@@ -14,7 +14,7 @@ var _ OrganizationTokens = (*organizationTokens)(nil)
 // that the Terraform Enterprise API supports.
 //
 // TFE API docs:
-// https://www.terraform.io/docs/enterprise/api/organization-tokens.html
+// https://www.terraform.io/docs/cloud/api/organization-tokens.html
 type OrganizationTokens interface {
 	// Generate a new organization token, replacing any existing token.
 	Generate(ctx context.Context, organization string) (*OrganizationToken, error)

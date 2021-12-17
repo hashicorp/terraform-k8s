@@ -17,7 +17,7 @@ var _ PolicyChecks = (*policyChecks)(nil)
 // Terraform Enterprise API supports.
 //
 // TFE API docs:
-// https://www.terraform.io/docs/enterprise/api/policy-checks.html
+// https://www.terraform.io/docs/cloud/api/policy-checks.html
 type PolicyChecks interface {
 	// List all policy checks of the given run.
 	List(ctx context.Context, runID string, options PolicyCheckListOptions) (*PolicyCheckList, error)

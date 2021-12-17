@@ -6,7 +6,7 @@ If you are planning to run the full suite of tests or work on policy sets or reg
 
 Your policy set repository will need the following: 
 1. A policy set stored in a subdirectory `policy-sets/foo`
-1. A branch other than master named `policies`
+1. A branch other than `main` named `policies`
 
 Your registry module repository will need to be a [valid module](https://www.terraform.io/docs/cloud/registry/publish.html#preparing-a-module-repository).
 It will need the following: 
@@ -55,24 +55,25 @@ command (as the default timeout is 10m).
 
 ##### With envchain:
 ```sh
-$ envchain YOUR_NAMESPACE_HERE go test ./... -timeout=30m
+$ envchain YOUR_NAMESPACE_HERE go test ./... -timeout=30m -tags=integration
 ```
 
 ##### Without envchain:
 ```sh
-$ go test ./... -timeout=30m
+$ TFE_TOKEN=xyz TFE_ADDRESS=xyz ENABLE_TFE=1 go test ./... -timeout=30m -tags=integration
 ```
+
 #### Running specific tests
 
 The commands below use notification configurations as an example.
 
 ##### With envchain:
 ```sh
-$ envchain YOUR_NAMESPACE_HERE go test -run TestNotificationConfiguration -v ./...
+$ envchain YOUR_NAMESPACE_HERE go test -run TestNotificationConfiguration -v ./... -tags=integration
 ```
 
 ##### Without envchain:
 ```sh
-$ go test -run TestNotificationConfiguration -v ./...
+$ TFE_TOKEN=xyz TFE_ADDRESS=xyz ENABLE_TFE=1 go test -run TestNotificationConfiguration -v ./... -tags=integration
 ```   
 

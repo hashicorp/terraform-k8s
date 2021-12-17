@@ -48,14 +48,14 @@ type AdminSAMLSetting struct {
 }
 
 // Read returns the SAML settings.
-func (s *adminSAMLSettings) Read(ctx context.Context) (*AdminSAMLSetting, error) {
-	req, err := s.client.newRequest("GET", "admin/saml-settings", nil)
+func (a *adminSAMLSettings) Read(ctx context.Context) (*AdminSAMLSetting, error) {
+	req, err := a.client.newRequest("GET", "admin/saml-settings", nil)
 	if err != nil {
 		return nil, err
 	}
 
 	saml := &AdminSAMLSetting{}
-	err = s.client.do(ctx, req, saml)
+	err = a.client.do(ctx, req, saml)
 	if err != nil {
 		return nil, err
 	}

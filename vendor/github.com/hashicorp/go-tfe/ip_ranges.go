@@ -83,7 +83,7 @@ func (i *ipRanges) customDo(ctx context.Context, req *retryablehttp.Request, ir 
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 && resp.StatusCode >= 400 {
-		return fmt.Errorf("Error HTTP response while retrieving IP ranges: %d", resp.StatusCode)
+		return fmt.Errorf("error HTTP response while retrieving IP ranges: %d", resp.StatusCode)
 	} else if resp.StatusCode == 304 {
 		return nil
 	}

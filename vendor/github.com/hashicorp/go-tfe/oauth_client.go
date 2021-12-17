@@ -26,6 +26,9 @@ type OAuthClients interface {
 	// Read an OAuth client by its ID.
 	Read(ctx context.Context, oAuthClientID string) (*OAuthClient, error)
 
+	// Update an existing OAuth client by its ID.
+	Update(ctx context.Context, oAuthClientID string, options OAuthClientUpdateOptions) (*OAuthClient, error)
+
 	// Delete an OAuth client by its ID.
 	Delete(ctx context.Context, oAuthClientID string) error
 }
@@ -71,6 +74,7 @@ type OAuthClient struct {
 	HTTPURL             string              `jsonapi:"attr,http-url"`
 	Key                 string              `jsonapi:"attr,key"`
 	RSAPublicKey        string              `jsonapi:"attr,rsa-public-key"`
+	Secret              string              `jsonapi:"attr,secret"`
 	ServiceProvider     ServiceProviderType `jsonapi:"attr,service-provider"`
 	ServiceProviderName string              `jsonapi:"attr,service-provider-display-name"`
 
@@ -114,17 +118,30 @@ type OAuthClientCreateOptions struct {
 	// https://jsonapi.org/format/#crud-creating
 	Type string `jsonapi:"primary,oauth-clients"`
 
+	// A display name for the OAuth Client.
+	Name *string `jsonapi:"attr,name"`
+
 	// The base URL of your VCS provider's API.
 	APIURL *string `jsonapi:"attr,api-url"`
 
 	// The homepage of your VCS provider.
 	HTTPURL *string `jsonapi:"attr,http-url"`
 
+	// The OAuth Client key.
+	Key *string `jsonapi:"attr,key,omitempty"`
+
 	// The token string you were given by your VCS provider.
-	OAuthToken *string `jsonapi:"attr,oauth-token-string"`
+	OAuthToken *string `jsonapi:"attr,oauth-token-string,omitempty"`
 
 	// Private key associated with this vcs provider - only available for ado_server
-	PrivateKey *string `jsonapi:"attr,private-key"`
+	PrivateKey *string `jsonapi:"attr,private-key,omitempty"`
+
+	// Secret key associated with this vcs provider - only available for ado_server
+	Secret *string `jsonapi:"attr,secret,omitempty"`
+
+	// RSAPublicKey the text of the SSH public key associated with your BitBucket
+	// Server Application Link.
+	RSAPublicKey *string `jsonapi:"attr,rsa-public-key,omitempty"`
 
 	// The VCS provider being connected with.
 	ServiceProvider *ServiceProviderType `jsonapi:"attr,service-provider"`
@@ -137,14 +154,14 @@ func (o OAuthClientCreateOptions) valid() error {
 	if !validString(o.HTTPURL) {
 		return errors.New("HTTP URL is required")
 	}
-	if !validString(o.OAuthToken) {
-		return errors.New("OAuth token is required")
-	}
 	if o.ServiceProvider == nil {
 		return errors.New("service provider is required")
 	}
+	if !validString(o.OAuthToken) && *o.ServiceProvider != *ServiceProvider(ServiceProviderBitbucketServer) {
+		return errors.New("OAuth token is required")
+	}
 	if validString(o.PrivateKey) && *o.ServiceProvider != *ServiceProvider(ServiceProviderAzureDevOpsServer) {
-		return errors.New("Private Key can only be present with Azure DevOps Server service provider")
+		return errors.New("private Key can only be present with Azure DevOps Server service provider")
 	}
 	return nil
 }
@@ -181,6 +198,52 @@ func (s *oAuthClients) Read(ctx context.Context, oAuthClientID string) (*OAuthCl
 
 	u := fmt.Sprintf("oauth-clients/%s", url.QueryEscape(oAuthClientID))
 	req, err := s.client.newRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	oc := &OAuthClient{}
+	err = s.client.do(ctx, req, oc)
+	if err != nil {
+		return nil, err
+	}
+
+	return oc, err
+}
+
+// OAuthClientUpdateOptions represents the options for updating an OAuth client.
+type OAuthClientUpdateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,oauth-clients"`
+
+	// A display name for the OAuth Client.
+	Name *string `jsonapi:"attr,name,omitempty"`
+
+	// The OAuth Client key.
+	Key *string `jsonapi:"attr,key,omitempty"`
+
+	// Secret key associated with this vcs provider - only available for ado_server
+	Secret *string `jsonapi:"attr,secret,omitempty"`
+
+	// RSAPublicKey the text of the SSH public key associated with your BitBucket
+	// Server Application Link.
+	RSAPublicKey *string `jsonapi:"attr,rsa-public-key,omitempty"`
+
+	// The token string you were given by your VCS provider.
+	OAuthToken *string `jsonapi:"attr,oauth-token-string,omitempty"`
+}
+
+// Update an OAuth client by its ID.
+func (s *oAuthClients) Update(ctx context.Context, oAuthClientID string, options OAuthClientUpdateOptions) (*OAuthClient, error) {
+	if !validStringID(&oAuthClientID) {
+		return nil, errors.New("invalid value for OAuth client ID")
+	}
+
+	u := fmt.Sprintf("oauth-clients/%s", url.QueryEscape(oAuthClientID))
+	req, err := s.client.newRequest("PATCH", u, &options)
 	if err != nil {
 		return nil, err
 	}

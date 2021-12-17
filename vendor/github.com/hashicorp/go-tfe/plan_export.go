@@ -15,7 +15,7 @@ var _ PlanExports = (*planExports)(nil)
 // PlanExports describes all the plan export related methods that the Terraform
 // Enterprise API supports.
 //
-// TFE API docs: https://www.terraform.io/docs/enterprise/api/plan-exports.html
+// TFE API docs: https://www.terraform.io/docs/cloud/api/plan-exports.html
 type PlanExports interface {
 	// Export a plan by its ID with the given options.
 	Create(ctx context.Context, options PlanExportCreateOptions) (*PlanExport, error)
