@@ -104,6 +104,12 @@ spec:
             organization:
               description: Terraform Cloud organization
               type: string
+            outputName:
+              description: Overrides default output name. Default output name is <workspaceName>-outputs.
+              type: string
+            outputNamespace:
+              description: Overrides default output namespace. Default namespace is the same namespace as the workspace.
+              type: string
             outputs:
               description: Outputs denote outputs wanted
               items:
