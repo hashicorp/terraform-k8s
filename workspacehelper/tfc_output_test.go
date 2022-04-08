@@ -70,7 +70,7 @@ func TestShouldReturnStringFromObject(t *testing.T) {
 }
 
 func TestShouldReturnEmptyStringFromNullObject(t *testing.T) {
-	expected := ""
+	expected := "null"
 	value := cty.NullVal(cty.Map(cty.String))
 	formatted := convertValueToString(value)
 	assert.Equal(t, expected, formatted)
@@ -126,7 +126,7 @@ func TestOutputsFromState(t *testing.T) {
           }
       }
   }`,
-			want: []*v1alpha1.OutputStatus{},
+			want: []*v1alpha1.OutputStatus{{Key: "map1", Value: "[{\"null_map\":null}]"}},
 		},
 		{
 			name: "embedded JSON empty array returns no status",
