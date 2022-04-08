@@ -40,6 +40,9 @@ type OutputSpec struct {
 	// Attribute name in module
 	// +optional
 	ModuleOutputName string `json:"moduleOutputName"`
+	// Sensitive value
+	// +optional
+	Sensitive bool `json:"sensitive,omitempty"`
 }
 
 // OutputStatus outputs the values of Terraform output

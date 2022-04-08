@@ -125,6 +125,9 @@ spec:
                     moduleOutputName:
                       description: Attribute name in module
                       type: string
+                    sensitive:
+                      description: Sensitive value
+                      type: boolean
                   type: object
                 type: array
               runTriggers:
