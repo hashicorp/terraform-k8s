@@ -66,8 +66,10 @@ type Variable struct {
 	// +optional
 	HCL bool `json:"hcl"`
 	// Variable is a secret and should be retrieved from file
+	// +optional
 	Sensitive bool `json:"sensitive"`
 	// EnvironmentVariable denotes if this variable should be created as environment variable
+	// +optional
 	EnvironmentVariable bool `json:"environmentVariable"`
 }
 
