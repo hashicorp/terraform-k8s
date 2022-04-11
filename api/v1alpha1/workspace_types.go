@@ -144,6 +144,9 @@ type WorkspaceSpec struct {
 	// Specifies the agent pool name we wish to use.
 	// +optional
 	AgentPoolName string `json:"agentPoolName,omitempty"`
+	// Annotations for the output secret.
+	// +optional
+	OutputAnnotations map[string]string `json:"outputAnnotations,omitempty"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace

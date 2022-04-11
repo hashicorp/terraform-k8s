@@ -26,12 +26,13 @@ func configMapForTerraform(name string, namespace string, template []byte) *core
 	}
 }
 
-func secretForOutputs(name string, namespace string, outputs []*v1alpha1.OutputStatus) *corev1.Secret {
+func secretForOutputs(name string, namespace string, outputs []*v1alpha1.OutputStatus, annotations map[string]string) *corev1.Secret {
 	data := outputsToMap(outputs)
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:        name,
+			Namespace:   namespace,
+			Annotations: annotations,
 		},
 		Data: data,
 	}
@@ -122,7 +123,7 @@ func (r *WorkspaceHelper) UpsertSecretOutputs(w *v1alpha1.Workspace, outputs []*
 	outputName := fmt.Sprintf("%s-outputs", w.Name)
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: outputName, Namespace: w.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
-		secret := secretForOutputs(outputName, w.Namespace, outputs)
+		secret := secretForOutputs(outputName, w.Namespace, outputs, w.Spec.OutputAnnotations)
 		err = controllerutil.SetControllerReference(w, secret, r.scheme)
 		if err != nil {
 			return err
