@@ -140,6 +140,11 @@ spec:
                   - sourceableName
                   type: object
                 type: array
+              secretName:
+                description: Name of the secret in the same namespace as the Workspace
+                  CR that contains workspace secrets. Those secrets are merged with
+                  secrets in the secretsMountPath.
+                type: string
               secretsMountPath:
                 description: File path within operator pod to load workspace secrets
                 type: string

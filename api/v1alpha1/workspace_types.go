@@ -123,6 +123,9 @@ type WorkspaceSpec struct {
 	RunTriggers []*RunTrigger `json:"runTriggers,omitempty"`
 	// File path within operator pod to load workspace secrets
 	SecretsMountPath string `json:"secretsMountPath"`
+	// Name of the secret in the same namespace as the Workspace CR that contains workspace secrets. Those secrets are merged with secrets in the secretsMountPath.
+	// +optional
+	SecretName string `json:"secretName"`
 	// SSH Key ID. This key must already exist in the TF Cloud organization.  This can either be the user assigned name of the SSH Key, or the system assigned ID.
 	// +optional
 	SSHKeyID string `json:"sshKeyID,omitempty"`
