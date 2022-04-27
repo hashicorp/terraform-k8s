@@ -32,7 +32,7 @@ func (r *WorkspaceHelper) GetSecretData(namespace string, name string) (map[stri
 
 // GetSecretForVariable retrieves the sensitive value associated with the variable from a secret
 func (r *WorkspaceHelper) GetSecretForVariable(namespace string, variable *v1alpha1.Variable) error {
-	if variable.Sensitive == false {
+	if variable.Sensitive == false || variable.ValueFrom == nil {
 		return nil
 	}
 
