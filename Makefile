@@ -122,7 +122,6 @@ define go-get-tool
 set -e ;\
 TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
-go mod init tmp ;\
 echo "Downloading $(2)" ;\
 GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 rm -rf $$TMP_DIR ;\
