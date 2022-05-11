@@ -2,7 +2,6 @@ package tfe
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 )
@@ -16,7 +15,7 @@ var _ PolicySetParameters = (*policySetParameters)(nil)
 // TFE API docs: https://www.terraform.io/docs/cloud/api/policy-set-params.html
 type PolicySetParameters interface {
 	// List all the parameters associated with the given policy-set.
-	List(ctx context.Context, policySetID string, options PolicySetParameterListOptions) (*PolicySetParameterList, error)
+	List(ctx context.Context, policySetID string, options *PolicySetParameterListOptions) (*PolicySetParameterList, error)
 
 	// Create is used to create a new parameter.
 	Create(ctx context.Context, policySetID string, options PolicySetParameterCreateOptions) (*PolicySetParameter, error)
@@ -59,21 +58,53 @@ type PolicySetParameterListOptions struct {
 	ListOptions
 }
 
-func (o PolicySetParameterListOptions) valid() error {
-	return nil
+// PolicySetParameterCreateOptions represents the options for creating a new parameter.
+type PolicySetParameterCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,vars"`
+
+	// Required: The name of the parameter.
+	Key *string `jsonapi:"attr,key"`
+
+	// Optional: The value of the parameter.
+	Value *string `jsonapi:"attr,value,omitempty"`
+
+	// Required: The Category of the parameter, should always be "policy-set"
+	Category *CategoryType `jsonapi:"attr,category"`
+
+	// Optional: Whether the value is sensitive.
+	Sensitive *bool `jsonapi:"attr,sensitive,omitempty"`
+}
+
+// PolicySetParameterUpdateOptions represents the options for updating a parameter.
+type PolicySetParameterUpdateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,vars"`
+
+	// Optional: The name of the parameter.
+	Key *string `jsonapi:"attr,key,omitempty"`
+
+	// Optional: The value of the parameter.
+	Value *string `jsonapi:"attr,value,omitempty"`
+
+	// Optional: Whether the value is sensitive.
+	Sensitive *bool `jsonapi:"attr,sensitive,omitempty"`
 }
 
 // List all the parameters associated with the given policy-set.
-func (s *policySetParameters) List(ctx context.Context, policySetID string, options PolicySetParameterListOptions) (*PolicySetParameterList, error) {
+func (s *policySetParameters) List(ctx context.Context, policySetID string, options *PolicySetParameterListOptions) (*PolicySetParameterList, error) {
 	if !validStringID(&policySetID) {
-		return nil, errors.New("invalid value for policy set ID")
-	}
-	if err := options.valid(); err != nil {
-		return nil, err
+		return nil, ErrInvalidPolicySetID
 	}
 
 	u := fmt.Sprintf("policy-sets/%s/parameters", policySetID)
-	req, err := s.client.newRequest("GET", u, &options)
+	req, err := s.client.newRequest("GET", u, options)
 	if err != nil {
 		return nil, err
 	}
@@ -87,44 +118,10 @@ func (s *policySetParameters) List(ctx context.Context, policySetID string, opti
 	return vl, nil
 }
 
-// PolicySetParameterCreateOptions represents the options for creating a new parameter.
-type PolicySetParameterCreateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,vars"`
-
-	// The name of the parameter.
-	Key *string `jsonapi:"attr,key"`
-
-	// The value of the parameter.
-	Value *string `jsonapi:"attr,value,omitempty"`
-
-	// The Category of the parameter, should always be "policy-set"
-	Category *CategoryType `jsonapi:"attr,category"`
-
-	// Whether the value is sensitive.
-	Sensitive *bool `jsonapi:"attr,sensitive,omitempty"`
-}
-
-func (o PolicySetParameterCreateOptions) valid() error {
-	if !validString(o.Key) {
-		return errors.New("key is required")
-	}
-	if o.Category == nil {
-		return errors.New("category is required")
-	}
-	if *o.Category != CategoryPolicySet {
-		return errors.New("category must be policy-set")
-	}
-	return nil
-}
-
 // Create is used to create a new parameter.
 func (s *policySetParameters) Create(ctx context.Context, policySetID string, options PolicySetParameterCreateOptions) (*PolicySetParameter, error) {
 	if !validStringID(&policySetID) {
-		return nil, errors.New("invalid value for policy set ID")
+		return nil, ErrInvalidPolicySetID
 	}
 	if err := options.valid(); err != nil {
 		return nil, err
@@ -146,12 +143,12 @@ func (s *policySetParameters) Create(ctx context.Context, policySetID string, op
 }
 
 // Read a parameter by its ID.
-func (s *policySetParameters) Read(ctx context.Context, policySetID string, parameterID string) (*PolicySetParameter, error) {
+func (s *policySetParameters) Read(ctx context.Context, policySetID, parameterID string) (*PolicySetParameter, error) {
 	if !validStringID(&policySetID) {
-		return nil, errors.New("invalid value for policy set ID")
+		return nil, ErrInvalidPolicySetID
 	}
 	if !validStringID(&parameterID) {
-		return nil, errors.New("invalid value for parameter ID")
+		return nil, ErrInvalidParamID
 	}
 
 	u := fmt.Sprintf("policy-sets/%s/parameters/%s", url.QueryEscape(policySetID), url.QueryEscape(parameterID))
@@ -169,31 +166,13 @@ func (s *policySetParameters) Read(ctx context.Context, policySetID string, para
 	return p, err
 }
 
-// PolicySetParameterUpdateOptions represents the options for updating a parameter.
-type PolicySetParameterUpdateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,vars"`
-
-	// The name of the parameter.
-	Key *string `jsonapi:"attr,key,omitempty"`
-
-	// The value of the parameter.
-	Value *string `jsonapi:"attr,value,omitempty"`
-
-	// Whether the value is sensitive.
-	Sensitive *bool `jsonapi:"attr,sensitive,omitempty"`
-}
-
 // Update values of an existing parameter.
-func (s *policySetParameters) Update(ctx context.Context, policySetID string, parameterID string, options PolicySetParameterUpdateOptions) (*PolicySetParameter, error) {
+func (s *policySetParameters) Update(ctx context.Context, policySetID, parameterID string, options PolicySetParameterUpdateOptions) (*PolicySetParameter, error) {
 	if !validStringID(&policySetID) {
-		return nil, errors.New("invalid value for policy set ID")
+		return nil, ErrInvalidPolicySetID
 	}
 	if !validStringID(&parameterID) {
-		return nil, errors.New("invalid value for parameter ID")
+		return nil, ErrInvalidParamID
 	}
 
 	u := fmt.Sprintf("policy-sets/%s/parameters/%s", url.QueryEscape(policySetID), url.QueryEscape(parameterID))
@@ -212,12 +191,12 @@ func (s *policySetParameters) Update(ctx context.Context, policySetID string, pa
 }
 
 // Delete a parameter by its ID.
-func (s *policySetParameters) Delete(ctx context.Context, policySetID string, parameterID string) error {
+func (s *policySetParameters) Delete(ctx context.Context, policySetID, parameterID string) error {
 	if !validStringID(&policySetID) {
-		return errors.New("invalid value for policy set ID")
+		return ErrInvalidPolicySetID
 	}
 	if !validStringID(&parameterID) {
-		return errors.New("invalid value for parameter ID")
+		return ErrInvalidParamID
 	}
 
 	u := fmt.Sprintf("policy-sets/%s/parameters/%s", url.QueryEscape(policySetID), url.QueryEscape(parameterID))
@@ -227,4 +206,17 @@ func (s *policySetParameters) Delete(ctx context.Context, policySetID string, pa
 	}
 
 	return s.client.do(ctx, req, nil)
+}
+
+func (o PolicySetParameterCreateOptions) valid() error {
+	if !validString(o.Key) {
+		return ErrRequiredKey
+	}
+	if o.Category == nil {
+		return ErrRequiredCategory
+	}
+	if *o.Category != CategoryPolicySet {
+		return ErrInvalidCategory
+	}
+	return nil
 }

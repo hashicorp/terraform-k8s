@@ -7,7 +7,7 @@ import (
 // Compile-time proof of interface implementation.
 var _ SMTPSettings = (*adminSMTPSettings)(nil)
 
-// SMTPSettings describes all the SMTP admin settings.
+// SMTPSettings describes all the SMTP admin settings for the Admin Setting API https://www.terraform.io/cloud-docs/api-docs/admin/settings.
 type SMTPSettings interface {
 	// Read returns the SMTP settings.
 	Read(ctx context.Context) (*AdminSMTPSetting, error)
@@ -29,12 +29,6 @@ const (
 	SMTPAuthPlain SMTPAuthType = "plain"
 	SMTPAuthLogin SMTPAuthType = "login"
 )
-
-var validSMTPAuthType = map[SMTPAuthType]struct{}{
-	SMTPAuthNone:  struct{}{},
-	SMTPAuthPlain: struct{}{},
-	SMTPAuthLogin: struct{}{},
-}
 
 // AdminSMTPSetting represents a the SMTP settings in Terraform Enterprise.
 type AdminSMTPSetting struct {
@@ -77,11 +71,12 @@ type AdminSMTPSettingsUpdateOptions struct {
 	TestEmailAddress *string       `jsonapi:"attr,test-email-address,omitempty"`
 }
 
-// Updat updates the SMTP settings.
+// Update updates the SMTP settings.
 func (a *adminSMTPSettings) Update(ctx context.Context, options AdminSMTPSettingsUpdateOptions) (*AdminSMTPSetting, error) {
-	if !options.valid() {
-		return nil, ErrInvalidSMTPAuth
+	if err := options.valid(); err != nil {
+		return nil, err
 	}
+
 	req, err := a.client.newRequest("PATCH", "admin/smtp-settings", &options)
 	if err != nil {
 		return nil, err
@@ -96,7 +91,23 @@ func (a *adminSMTPSettings) Update(ctx context.Context, options AdminSMTPSetting
 	return smtp, nil
 }
 
-func (o AdminSMTPSettingsUpdateOptions) valid() bool {
-	_, isValidType := validSMTPAuthType[*o.Auth]
-	return isValidType
+func (o AdminSMTPSettingsUpdateOptions) valid() error {
+	if validString((*string)(o.Auth)) {
+		if err := validateAdminSettingSMTPAuth(*o.Auth); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateAdminSettingSMTPAuth(authVal SMTPAuthType) error {
+	switch authVal {
+	case SMTPAuthNone, SMTPAuthPlain, SMTPAuthLogin:
+		// do nothing
+	default:
+		return ErrInvalidSMTPAuth
+	}
+
+	return nil
 }

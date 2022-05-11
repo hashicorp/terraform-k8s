@@ -3,7 +3,6 @@ package tfe
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -81,23 +80,14 @@ type PlanExportCreateOptions struct {
 	// https://jsonapi.org/format/#crud-creating
 	Type string `jsonapi:"primary,plan-exports"`
 
-	// The plan to export.
+	// Required: The plan to export.
 	Plan *Plan `jsonapi:"relation,plan"`
 
-	// The name of the policy set.
+	// Required: The name of the policy set.
 	DataType *PlanExportDataType `jsonapi:"attr,data-type"`
 }
 
-func (o PlanExportCreateOptions) valid() error {
-	if o.Plan == nil {
-		return errors.New("plan is required")
-	}
-	if o.DataType == nil {
-		return errors.New("data type is required")
-	}
-	return nil
-}
-
+// Create a plan export
 func (s *planExports) Create(ctx context.Context, options PlanExportCreateOptions) (*PlanExport, error) {
 	if err := options.valid(); err != nil {
 		return nil, err
@@ -120,7 +110,7 @@ func (s *planExports) Create(ctx context.Context, options PlanExportCreateOption
 // Read a plan export by its ID.
 func (s *planExports) Read(ctx context.Context, planExportID string) (*PlanExport, error) {
 	if !validStringID(&planExportID) {
-		return nil, errors.New("invalid value for plan export ID")
+		return nil, ErrInvalidPlanExportID
 	}
 
 	u := fmt.Sprintf("plan-exports/%s", url.QueryEscape(planExportID))
@@ -141,7 +131,7 @@ func (s *planExports) Read(ctx context.Context, planExportID string) (*PlanExpor
 // Delete a plan export by ID.
 func (s *planExports) Delete(ctx context.Context, planExportID string) error {
 	if !validStringID(&planExportID) {
-		return errors.New("invalid value for plan export ID")
+		return ErrInvalidPlanExportID
 	}
 
 	u := fmt.Sprintf("plan-exports/%s", url.QueryEscape(planExportID))
@@ -156,7 +146,7 @@ func (s *planExports) Delete(ctx context.Context, planExportID string) error {
 // Download a plan export's data. Data is exported in a .tar.gz format.
 func (s *planExports) Download(ctx context.Context, planExportID string) ([]byte, error) {
 	if !validStringID(&planExportID) {
-		return nil, errors.New("invalid value for plan export ID")
+		return nil, ErrInvalidPlanExportID
 	}
 
 	u := fmt.Sprintf("plan-exports/%s/download", url.QueryEscape(planExportID))
@@ -172,4 +162,14 @@ func (s *planExports) Download(ctx context.Context, planExportID string) ([]byte
 	}
 
 	return buf.Bytes(), nil
+}
+
+func (o PlanExportCreateOptions) valid() error {
+	if o.Plan == nil {
+		return ErrRequiredPlan
+	}
+	if o.DataType == nil {
+		return ErrRequiredDataType
+	}
+	return nil
 }

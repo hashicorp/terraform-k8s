@@ -7,7 +7,8 @@ import (
 // Compile-time proof of interface implementation.
 var _ GeneralSettings = (*adminGeneralSettings)(nil)
 
-// GeneralSettings describes the general admin settings.
+// GeneralSettings describes the general admin settings for the Admin Setting API.
+// https://www.terraform.io/cloud-docs/api-docs/admin/settings
 type GeneralSettings interface {
 	// Read returns the general settings
 	Read(ctx context.Context) (*AdminGeneralSetting, error)
@@ -39,6 +40,18 @@ type AdminGeneralSetting struct {
 	DefaultRemoteStateAccess         bool   `jsonapi:"attr,default-remote-state-access"`
 }
 
+// AdminGeneralSettingsUpdateOptions represents the admin options for updating
+// general settings.
+// https://www.terraform.io/docs/cloud/api/admin/settings.html#request-body
+type AdminGeneralSettingsUpdateOptions struct {
+	LimitUserOrgCreation              *bool `jsonapi:"attr,limit-user-organization-creation,omitempty"`
+	APIRateLimitingEnabled            *bool `jsonapi:"attr,api-rate-limiting-enabled,omitempty"`
+	APIRateLimit                      *int  `jsonapi:"attr,api-rate-limit,omitempty"`
+	SendPassingStatusUntriggeredPlans *bool `jsonapi:"attr,send-passing-statuses-for-untriggered-speculative-plans,omitempty"`
+	AllowSpeculativePlansOnPR         *bool `jsonapi:"attr,allow-speculative-plans-on-pull-requests-from-forks,omitempty"`
+	DefaultRemoteStateAccess          *bool `jsonapi:"attr,default-remote-state-access,omitempty"`
+}
+
 // Read returns the general settings.
 func (a *adminGeneralSettings) Read(ctx context.Context) (*AdminGeneralSetting, error) {
 	req, err := a.client.newRequest("GET", "admin/general-settings", nil)
@@ -53,18 +66,6 @@ func (a *adminGeneralSettings) Read(ctx context.Context) (*AdminGeneralSetting, 
 	}
 
 	return ags, nil
-}
-
-// AdminGeneralSettingsUpdateOptions represents the admin options for updating
-// general settings.
-// https://www.terraform.io/docs/cloud/api/admin/settings.html#request-body
-type AdminGeneralSettingsUpdateOptions struct {
-	LimitUserOrgCreation              *bool `jsonapi:"attr,limit-user-organization-creation,omitempty"`
-	APIRateLimitingEnabled            *bool `jsonapi:"attr,api-rate-limiting-enabled,omitempty"`
-	APIRateLimit                      *int  `jsonapi:"attr,api-rate-limit,omitempty"`
-	SendPassingStatusUntriggeredPlans *bool `jsonapi:"attr,send-passing-statuses-for-untriggered-speculative-plans,omitempty"`
-	AllowSpeculativePlansOnPR         *bool `jsonapi:"attr,allow-speculative-plans-on-pull-requests-from-forks,omitempty"`
-	DefaultRemoteStateAccess          *bool `jsonapi:"attr,default-remote-state-access,omitempty"`
 }
 
 // Update updates the general settings.

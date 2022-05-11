@@ -16,8 +16,8 @@ var _ OrganizationTokens = (*organizationTokens)(nil)
 // TFE API docs:
 // https://www.terraform.io/docs/cloud/api/organization-tokens.html
 type OrganizationTokens interface {
-	// Generate a new organization token, replacing any existing token.
-	Generate(ctx context.Context, organization string) (*OrganizationToken, error)
+	// Create a new organization token, replacing any existing token.
+	Create(ctx context.Context, organization string) (*OrganizationToken, error)
 
 	// Read an organization token.
 	Read(ctx context.Context, organization string) (*OrganizationToken, error)
@@ -40,8 +40,8 @@ type OrganizationToken struct {
 	Token       string    `jsonapi:"attr,token"`
 }
 
-// Generate a new organization token, replacing any existing token.
-func (s *organizationTokens) Generate(ctx context.Context, organization string) (*OrganizationToken, error) {
+// Create a new organization token, replacing any existing token.
+func (s *organizationTokens) Create(ctx context.Context, organization string) (*OrganizationToken, error) {
 	if !validStringID(&organization) {
 		return nil, ErrInvalidOrg
 	}

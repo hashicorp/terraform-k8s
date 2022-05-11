@@ -9,9 +9,13 @@ import (
 
 var _ OrganizationTags = (*organizationTags)(nil)
 
+// OrganizationMemberships describes all the list of tags used with all resources across the organization.
+//
+// TFE API docs:
+// https://www.terraform.io/cloud-docs/api-docs/organization-tags
 type OrganizationTags interface {
 	// List all tags within an organization
-	List(ctx context.Context, organization string, options OrganizationTagsListOptions) (*OrganizationTagsList, error)
+	List(ctx context.Context, organization string, options *OrganizationTagsListOptions) (*OrganizationTagsList, error)
 
 	// Delete tags from an organization
 	Delete(ctx context.Context, organization string, options OrganizationTagsDeleteOptions) error
@@ -20,6 +24,7 @@ type OrganizationTags interface {
 	AddWorkspaces(ctx context.Context, tag string, options AddWorkspacesToTagOptions) error
 }
 
+// organizationTags implements OrganizationTags.
 type organizationTags struct {
 	client *Client
 }
@@ -32,10 +37,11 @@ type OrganizationTagsList struct {
 
 // OrganizationTag represents a Terraform Enterprise Organization tag
 type OrganizationTag struct {
-	ID   string `jsonapi:"primary,tags"`
+	ID string `jsonapi:"primary,tags"`
+	// Optional:
 	Name string `jsonapi:"attr,name,omitempty"`
 
-	// Number of workspaces that have this tag
+	// Optional: Number of workspaces that have this tag
 	InstanceCount int `jsonapi:"attr,instance-count,omitempty"`
 
 	// The org this tag belongs to
@@ -45,18 +51,38 @@ type OrganizationTag struct {
 // OrganizationTagsListOptions represents the options for listing organization tags
 type OrganizationTagsListOptions struct {
 	ListOptions
+	// Optional:
+	Filter string `url:"filter[exclude][taggable][id],omitempty"`
+}
 
-	Filter *string `url:"filter[exclude][taggable][id],omitempty"`
+// OrganizationTagsDeleteOptions represents the request body for deleting a tag in an organization
+type OrganizationTagsDeleteOptions struct {
+	IDs []string // Required
+}
+
+// AddWorkspacesToTagOptions represents the request body to add a workspace to a tag
+type AddWorkspacesToTagOptions struct {
+	WorkspaceIDs []string // Required
+}
+
+// this represents a single tag ID
+type tagID struct {
+	ID string `jsonapi:"primary,tags"`
+}
+
+// this represents a single workspace ID
+type workspaceID struct {
+	ID string `jsonapi:"primary,workspaces"`
 }
 
 // List all the tags in an organization. You can provide query params through OrganizationTagsListOptions
-func (s *organizationTags) List(ctx context.Context, organization string, options OrganizationTagsListOptions) (*OrganizationTagsList, error) {
+func (s *organizationTags) List(ctx context.Context, organization string, options *OrganizationTagsListOptions) (*OrganizationTagsList, error) {
 	if !validStringID(&organization) {
 		return nil, ErrInvalidOrg
 	}
 
 	u := fmt.Sprintf("organizations/%s/tags", url.QueryEscape(organization))
-	req, err := s.client.newRequest("GET", u, &options)
+	req, err := s.client.newRequest("GET", u, options)
 	if err != nil {
 		return nil, err
 	}
@@ -68,31 +94,6 @@ func (s *organizationTags) List(ctx context.Context, organization string, option
 	}
 
 	return tags, nil
-}
-
-// OrganizationTagsDeleteOptions represents the request body for deleting a tag in an organization
-type OrganizationTagsDeleteOptions struct {
-	IDs []string
-}
-
-// this represents a single tag ID sent over the wire
-type tagID struct {
-	ID string `jsonapi:"primary,tags"`
-}
-
-func (opts *OrganizationTagsDeleteOptions) valid() error {
-	if opts.IDs == nil || len(opts.IDs) == 0 {
-		return errors.New("you must specify at least one tag id to remove")
-	}
-
-	for _, id := range opts.IDs {
-		if !validStringID(&id) {
-			errorMsg := fmt.Sprintf("%s is not a valid id value", id)
-			return errors.New(errorMsg)
-		}
-	}
-
-	return nil
 }
 
 // Delete tags from a Terraform Enterprise organization
@@ -119,35 +120,10 @@ func (s *organizationTags) Delete(ctx context.Context, organization string, opti
 	return s.client.do(ctx, req, nil)
 }
 
-// AddWorkspacesToTagOptions represents the request body to add a workspace to a tag
-type AddWorkspacesToTagOptions struct {
-	WorkspaceIDs []string
-}
-
-func (w *AddWorkspacesToTagOptions) valid() error {
-	if w.WorkspaceIDs == nil || len(w.WorkspaceIDs) == 0 {
-		return errors.New("you must specify at least one workspace to add tag to")
-	}
-
-	for _, id := range w.WorkspaceIDs {
-		if !validStringID(&id) {
-			errorMsg := fmt.Sprintf("%s is not a valid id value", id)
-			return errors.New(errorMsg)
-		}
-	}
-
-	return nil
-}
-
-// this represents how workspace IDs will be sent over the wire
-type workspaceID struct {
-	ID string `jsonapi:"primary,workspaces"`
-}
-
 // Add workspaces to a tag
 func (s *organizationTags) AddWorkspaces(ctx context.Context, tag string, options AddWorkspacesToTagOptions) error {
 	if !validStringID(&tag) {
-		return errors.New("invalid tag id")
+		return ErrInvalidTag
 	}
 
 	if err := options.valid(); err != nil {
@@ -166,4 +142,34 @@ func (s *organizationTags) AddWorkspaces(ctx context.Context, tag string, option
 	}
 
 	return s.client.do(ctx, req, nil)
+}
+
+func (opts *OrganizationTagsDeleteOptions) valid() error {
+	if opts.IDs == nil || len(opts.IDs) == 0 {
+		return ErrRequiredTagID
+	}
+
+	for _, id := range opts.IDs {
+		if !validStringID(&id) {
+			errorMsg := fmt.Sprintf("%s is not a valid id value", id)
+			return errors.New(errorMsg)
+		}
+	}
+
+	return nil
+}
+
+func (w *AddWorkspacesToTagOptions) valid() error {
+	if w.WorkspaceIDs == nil || len(w.WorkspaceIDs) == 0 {
+		return ErrRequiredTagWorkspaceID
+	}
+
+	for _, id := range w.WorkspaceIDs {
+		if !validStringID(&id) {
+			errorMsg := fmt.Sprintf("%s is not a valid id value", id)
+			return errors.New(errorMsg)
+		}
+	}
+
+	return nil
 }

@@ -2,7 +2,6 @@ package tfe
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -48,7 +47,7 @@ const (
 // PolicySetVersionStatus represents a policy set version status.
 type PolicySetVersionStatus string
 
-//List all available policy set version statuses.
+// List all available policy set version statuses.
 const (
 	PolicySetVersionErrored    PolicySetVersionStatus = "errored"
 	PolicySetVersionIngressing PolicySetVersionStatus = "ingressing"
@@ -65,6 +64,7 @@ type PolicySetVersionStatusTimestamps struct {
 	ErroredAt    time.Time `jsonapi:"attr,errored-at,rfc3339"`
 }
 
+// PolicySetVersion represents a Terraform Enterprise Policy Set Version
 type PolicySetVersion struct {
 	ID               string                           `jsonapi:"primary,policy-set-versions"`
 	Source           PolicySetVersionSource           `jsonapi:"attr,source"`
@@ -98,7 +98,7 @@ func (p PolicySetVersion) uploadURL() (string, error) {
 // Create is used to create a new Policy Set Version.
 func (p *policySetVersions) Create(ctx context.Context, policySetID string) (*PolicySetVersion, error) {
 	if !validStringID(&policySetID) {
-		return nil, errors.New("invalid value for policy set ID")
+		return nil, ErrInvalidPolicySetID
 	}
 
 	u := fmt.Sprintf("policy-sets/%s/versions", url.QueryEscape(policySetID))
@@ -119,7 +119,7 @@ func (p *policySetVersions) Create(ctx context.Context, policySetID string) (*Po
 // Read is used to read a Policy Set Version by its ID.
 func (p *policySetVersions) Read(ctx context.Context, policySetVersionID string) (*PolicySetVersion, error) {
 	if !validStringID(&policySetVersionID) {
-		return nil, errors.New("invalid value for policy set ID")
+		return nil, ErrInvalidPolicySetID
 	}
 
 	u := fmt.Sprintf("policy-set-versions/%s", url.QueryEscape(policySetVersionID))

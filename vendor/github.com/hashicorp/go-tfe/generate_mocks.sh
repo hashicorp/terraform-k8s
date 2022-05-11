@@ -17,6 +17,7 @@ mockgen -source=admin_workspace.go -destination=mocks/admin_workspace_mocks.go -
 mockgen -source=agent_pool.go -destination=mocks/agent_pool_mocks.go -package=mocks
 mockgen -source=agent_token.go -destination=mocks/agent_token_mocks.go -package=mocks
 mockgen -source=apply.go -destination=mocks/apply_mocks.go -package=mocks
+mockgen -source=audit_trail.go -destination=mocks/audit_trail.go -package=mocks
 mockgen -source=configuration_version.go -destination=mocks/configuration_version_mocks.go -package=mocks
 mockgen -source=cost_estimate.go -destination=mocks/cost_estimate_mocks.go -package=mocks
 mockgen -source=ip_ranges.go -destination=mocks/ip_ranges_mocks.go -package=mocks
@@ -35,7 +36,11 @@ mockgen -source=policy_set.go -destination=mocks/policy_set_mocks.go -package=mo
 mockgen -source=policy_set_parameter.go -destination=mocks/policy_set_parameter_mocks.go -package=mocks
 mockgen -source=policy_set_version.go -destination=mocks/policy_set_version_mocks.go -package=mocks
 mockgen -source=registry_module.go -destination=mocks/registry_module_mocks.go -package=mocks
+mockgen -source=registry_provider.go -destination=mocks/registry_provider_mocks.go -package=mocks
+mockgen -source=registry_provider_platform.go -destination=mocks/registry_provider_platform_mocks.go -package=mocks
+mockgen -source=registry_provider_version.go -destination=mocks/registry_provider_version_mocks.go -package=mocks
 mockgen -source=run.go -destination=mocks/run_mocks.go -package=mocks
+mockgen -source=run_task.go -destination=mocks/run_tasks.go -package=mocks
 mockgen -source=run_trigger.go -destination=mocks/run_trigger_mocks.go -package=mocks
 mockgen -source=ssh_key.go -destination=mocks/ssh_key_mocks.go -package=mocks
 mockgen -source=state_version.go -destination=mocks/state_version_mocks.go -package=mocks
@@ -48,4 +53,6 @@ mockgen -source=team_token.go -destination=mocks/team_token_mocks.go -package=mo
 mockgen -source=user.go -destination=mocks/user_mocks.go -package=mocks
 mockgen -source=user_token.go -destination=mocks/user_token_mocks.go -package=mocks
 mockgen -source=variable.go -destination=mocks/variable_mocks.go -package=mocks
+mockgen -source=variable_set.go -destination=mocks/variable_set_mocks.go -package=mocks
 mockgen -source=workspace.go -destination=mocks/workspace_mocks.go -package=mocks
+mockgen -source=workspace_run_task.go -destination=mocks/workspace_run_tasks.go -package=mocks

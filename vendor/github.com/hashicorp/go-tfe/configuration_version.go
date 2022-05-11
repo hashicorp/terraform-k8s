@@ -3,7 +3,9 @@ package tfe
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/url"
 	"os"
 	"time"
@@ -21,7 +23,7 @@ var _ ConfigurationVersions = (*configurationVersions)(nil)
 // https://www.terraform.io/docs/enterprise/api/configuration-versions.html
 type ConfigurationVersions interface {
 	// List returns all configuration versions of a workspace.
-	List(ctx context.Context, workspaceID string, options ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
+	List(ctx context.Context, workspaceID string, options *ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
 
 	// Create is used to create a new configuration version. The created
 	// configuration version will be usable once data is uploaded to it.
@@ -37,6 +39,13 @@ type ConfigurationVersions interface {
 	// the upload URL from a configuration version and the full path to the
 	// configuration files on disk.
 	Upload(ctx context.Context, url string, path string) error
+
+	// Archive a configuration version. This can only be done on configuration versions that
+	// were created with the API or CLI, are in an uploaded state, and have no runs in progress.
+	Archive(ctx context.Context, cvID string) error
+
+	// Download a configuration version.  Only configuration versions in the uploaded state may be downloaded.
+	Download(ctx context.Context, cvID string) ([]byte, error)
 }
 
 // configurationVersions implements ConfigurationVersions.
@@ -47,9 +56,11 @@ type configurationVersions struct {
 // ConfigurationStatus represents a configuration version status.
 type ConfigurationStatus string
 
-//List all available configuration version statuses.
+// List all available configuration version statuses.
 const (
+	ConfigurationArchived ConfigurationStatus = "archived"
 	ConfigurationErrored  ConfigurationStatus = "errored"
+	ConfigurationFetching ConfigurationStatus = "fetching"
 	ConfigurationPending  ConfigurationStatus = "pending"
 	ConfigurationUploaded ConfigurationStatus = "uploaded"
 )
@@ -93,24 +104,53 @@ type ConfigurationVersion struct {
 // CVStatusTimestamps holds the timestamps for individual configuration version
 // statuses.
 type CVStatusTimestamps struct {
+	ArchivedAt time.Time `jsonapi:"attr,archived-at,rfc3339"`
+	FetchingAt time.Time `jsonapi:"attr,fetching-at,rfc3339"`
 	FinishedAt time.Time `jsonapi:"attr,finished-at,rfc3339"`
 	QueuedAt   time.Time `jsonapi:"attr,queued-at,rfc3339"`
 	StartedAt  time.Time `jsonapi:"attr,started-at,rfc3339"`
 }
 
+// ConfigVerIncludeOpt represents the available options for include query params.
+// https://www.terraform.io/docs/cloud/api/configuration-versions.html#available-related-resources
+type ConfigVerIncludeOpt string
+
+const (
+	ConfigVerIngressAttributes ConfigVerIncludeOpt = "ingress_attributes"
+	ConfigVerRun               ConfigVerIncludeOpt = "run"
+)
+
 // ConfigurationVersionReadOptions represents the options for reading a configuration version.
 type ConfigurationVersionReadOptions struct {
-	Include string `url:"include"`
+	// Optional: A list of relations to include. See available resources:
+	// https://www.terraform.io/docs/cloud/api/configuration-versions.html#available-related-resources
+	Include []ConfigVerIncludeOpt `url:"include,omitempty"`
 }
 
 // ConfigurationVersionListOptions represents the options for listing
 // configuration versions.
 type ConfigurationVersionListOptions struct {
 	ListOptions
-
-	// A list of relations to include. See available resources:
+	// Optional: A list of relations to include. See available resources:
 	// https://www.terraform.io/docs/cloud/api/configuration-versions.html#available-related-resources
-	Include *string `url:"include"`
+	Include []ConfigVerIncludeOpt `url:"include,omitempty"`
+}
+
+// ConfigurationVersionCreateOptions represents the options for creating a
+// configuration version.
+type ConfigurationVersionCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,configuration-versions"`
+
+	// Optional: When true, runs are queued automatically when the configuration version
+	// is uploaded.
+	AutoQueueRuns *bool `jsonapi:"attr,auto-queue-runs,omitempty"`
+
+	// Optional: When true, this configuration version can only be used for planning.
+	Speculative *bool `jsonapi:"attr,speculative,omitempty"`
 }
 
 // IngressAttributes include commit information associated with configuration versions sourced from VCS.
@@ -139,13 +179,16 @@ type IngressAttributes struct {
 }
 
 // List returns all configuration versions of a workspace.
-func (s *configurationVersions) List(ctx context.Context, workspaceID string, options ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
+func (s *configurationVersions) List(ctx context.Context, workspaceID string, options *ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
 	if !validStringID(&workspaceID) {
 		return nil, ErrInvalidWorkspaceID
 	}
+	if err := options.valid(); err != nil {
+		return nil, err
+	}
 
 	u := fmt.Sprintf("workspaces/%s/configuration-versions", url.QueryEscape(workspaceID))
-	req, err := s.client.newRequest("GET", u, &options)
+	req, err := s.client.newRequest("GET", u, options)
 	if err != nil {
 		return nil, err
 	}
@@ -157,23 +200,6 @@ func (s *configurationVersions) List(ctx context.Context, workspaceID string, op
 	}
 
 	return cvl, nil
-}
-
-// ConfigurationVersionCreateOptions represents the options for creating a
-// configuration version.
-type ConfigurationVersionCreateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,configuration-versions"`
-
-	// When true, runs are queued automatically when the configuration version
-	// is uploaded.
-	AutoQueueRuns *bool `jsonapi:"attr,auto-queue-runs,omitempty"`
-
-	// When true, this configuration version can only be used for planning.
-	Speculative *bool `jsonapi:"attr,speculative,omitempty"`
 }
 
 // Create is used to create a new configuration version. The created
@@ -208,6 +234,9 @@ func (s *configurationVersions) ReadWithOptions(ctx context.Context, cvID string
 	if !validStringID(&cvID) {
 		return nil, ErrInvalidConfigVersionID
 	}
+	if err := options.valid(); err != nil {
+		return nil, err
+	}
 
 	u := fmt.Sprintf("configuration-versions/%s", url.QueryEscape(cvID))
 	req, err := s.client.newRequest("GET", u, options)
@@ -227,11 +256,16 @@ func (s *configurationVersions) ReadWithOptions(ctx context.Context, cvID string
 // Upload packages and uploads Terraform configuration files. It requires the
 // upload URL from a configuration version and the path to the configuration
 // files on disk.
-func (s *configurationVersions) Upload(ctx context.Context, url, path string) error {
+func (s *configurationVersions) Upload(ctx context.Context, u, path string) error {
 	file, err := os.Stat(path)
+
 	if err != nil {
-		return err
+		if errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf(`failed to find terraform configuration files under the path "%v": %w`, path, err)
+		}
+		return fmt.Errorf(`unable to upload terraform configuration files from the path "%v": %w`, path, err)
 	}
+
 	if !file.Mode().IsDir() {
 		return ErrMissingDirectory
 	}
@@ -243,10 +277,86 @@ func (s *configurationVersions) Upload(ctx context.Context, url, path string) er
 		return err
 	}
 
-	req, err := s.client.newRequest("PUT", url, body)
+	req, err := s.client.newRequest("PUT", u, body)
 	if err != nil {
 		return err
 	}
 
 	return s.client.do(ctx, req, nil)
+}
+
+// Archive a configuration version. This can only be done on configuration versions that
+// were created with the API or CLI, are in an uploaded state, and have no runs in progress.
+func (s *configurationVersions) Archive(ctx context.Context, cvID string) error {
+	if !validStringID(&cvID) {
+		return ErrInvalidConfigVersionID
+	}
+
+	body := bytes.NewBuffer(nil)
+
+	u := fmt.Sprintf("configuration-versions/%s/actions/archive", url.QueryEscape(cvID))
+	req, err := s.client.newRequest("POST", u, body)
+	if err != nil {
+		return err
+	}
+
+	return s.client.do(ctx, req, nil)
+}
+
+func (o *ConfigurationVersionReadOptions) valid() error {
+	if o == nil {
+		return nil // nothing to validate
+	}
+
+	if err := validateConfigVerIncludeParams(o.Include); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o *ConfigurationVersionListOptions) valid() error {
+	if o == nil {
+		return nil // nothing to validate
+	}
+
+	if err := validateConfigVerIncludeParams(o.Include); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateConfigVerIncludeParams(params []ConfigVerIncludeOpt) error {
+	for _, p := range params {
+		switch p {
+		case ConfigVerIngressAttributes, ConfigVerRun:
+			// do nothing
+		default:
+			return ErrInvalidIncludeValue
+		}
+	}
+
+	return nil
+}
+
+// Download a configuration version.  Only configuration versions in the uploaded state may be downloaded.
+func (s *configurationVersions) Download(ctx context.Context, cvID string) ([]byte, error) {
+	if !validStringID(&cvID) {
+		return nil, ErrInvalidConfigVersionID
+	}
+
+	u := fmt.Sprintf("configuration-versions/%s/download", url.QueryEscape(cvID))
+	req, err := s.client.newRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	err = s.client.do(ctx, req, &buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }

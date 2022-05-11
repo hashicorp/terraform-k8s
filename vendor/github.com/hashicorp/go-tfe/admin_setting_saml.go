@@ -7,7 +7,8 @@ import (
 // Compile-time proof of interface implementation.
 var _ SAMLSettings = (*adminSAMLSettings)(nil)
 
-// SAMLSettings describes all the SAML admin settings.
+// SAMLSettings describes all the SAML admin settings for the Admin Setting API.
+// https://www.terraform.io/cloud-docs/api-docs/admin/settings
 type SAMLSettings interface {
 	// Read returns the SAML settings.
 	Read(ctx context.Context) (*AdminSAMLSetting, error)

@@ -2,7 +2,6 @@ package tfe
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -20,8 +19,8 @@ type UserTokens interface {
 	// List all the tokens of the given user ID.
 	List(ctx context.Context, userID string) (*UserTokenList, error)
 
-	// Generate a new user token
-	Generate(ctx context.Context, userID string, options UserTokenGenerateOptions) (*UserToken, error)
+	// Create a new user token
+	Create(ctx context.Context, userID string, options UserTokenCreateOptions) (*UserToken, error)
 
 	// Read a user token by its ID.
 	Read(ctx context.Context, tokenID string) (*UserToken, error)
@@ -50,16 +49,16 @@ type UserToken struct {
 	Token       string    `jsonapi:"attr,token"`
 }
 
-// UserTokenGenerateOptions the options for creating a user token.
-type UserTokenGenerateOptions struct {
-	// Description of the token
+// UserTokenCreateOptions the options for creating a user token.
+type UserTokenCreateOptions struct {
+	// Optional: Description of the token
 	Description string `jsonapi:"attr,description,omitempty"`
 }
 
-// Generate a new user token
-func (s *userTokens) Generate(ctx context.Context, userID string, options UserTokenGenerateOptions) (*UserToken, error) {
+// Create a new user token
+func (s *userTokens) Create(ctx context.Context, userID string, options UserTokenCreateOptions) (*UserToken, error) {
 	if !validStringID(&userID) {
-		return nil, errors.New("invalid value for user ID")
+		return nil, ErrInvalidUserID
 	}
 
 	u := fmt.Sprintf("users/%s/authentication-tokens", url.QueryEscape(userID))
@@ -80,7 +79,7 @@ func (s *userTokens) Generate(ctx context.Context, userID string, options UserTo
 // List shows existing user tokens
 func (s *userTokens) List(ctx context.Context, userID string) (*UserTokenList, error) {
 	if !validStringID(&userID) {
-		return nil, errors.New("invalid value for user ID")
+		return nil, ErrInvalidUserID
 	}
 
 	u := fmt.Sprintf("users/%s/authentication-tokens", url.QueryEscape(userID))
@@ -101,7 +100,7 @@ func (s *userTokens) List(ctx context.Context, userID string) (*UserTokenList, e
 // Read a user token by its ID.
 func (s *userTokens) Read(ctx context.Context, tokenID string) (*UserToken, error) {
 	if !validStringID(&tokenID) {
-		return nil, errors.New("invalid value for token ID")
+		return nil, ErrInvalidTokenID
 	}
 
 	u := fmt.Sprintf("authentication-tokens/%s", url.QueryEscape(tokenID))
@@ -122,7 +121,7 @@ func (s *userTokens) Read(ctx context.Context, tokenID string) (*UserToken, erro
 // Delete a user token by its ID.
 func (s *userTokens) Delete(ctx context.Context, tokenID string) error {
 	if !validStringID(&tokenID) {
-		return errors.New("invalid value for token ID")
+		return ErrInvalidTokenID
 	}
 
 	u := fmt.Sprintf("authentication-tokens/%s", url.QueryEscape(tokenID))

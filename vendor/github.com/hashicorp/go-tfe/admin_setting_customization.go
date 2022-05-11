@@ -20,7 +20,8 @@ type adminCustomizationSettings struct {
 	client *Client
 }
 
-// AdminCustomizationSetting represents the Customization settings in Terraform Enterprise.
+// AdminCustomizationSetting represents the Customization settings in Terraform Enterprise for the Admin Settings API.
+// https://www.terraform.io/cloud-docs/api-docs/admin/settings
 type AdminCustomizationSetting struct {
 	ID           string `jsonapi:"primary,customization-settings"`
 	SupportEmail string `jsonapi:"attr,support-email-address"`

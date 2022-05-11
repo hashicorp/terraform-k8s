@@ -2,7 +2,6 @@ package tfe
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -18,7 +17,7 @@ var _ Organizations = (*organizations)(nil)
 // https://www.terraform.io/docs/cloud/api/organizations.html
 type Organizations interface {
 	// List all the organizations visible to the current user.
-	List(ctx context.Context, options OrganizationListOptions) (*OrganizationList, error)
+	List(ctx context.Context, options *OrganizationListOptions) (*OrganizationList, error)
 
 	// Create a new organization with the given options.
 	Create(ctx context.Context, options OrganizationCreateOptions) (*Organization, error)
@@ -32,14 +31,14 @@ type Organizations interface {
 	// Delete an organization by its name.
 	Delete(ctx context.Context, organization string) error
 
-	// Capacity shows the current run capacity of an organization.
-	Capacity(ctx context.Context, organization string) (*Capacity, error)
+	// ReadCapacity shows the current run capacity of an organization.
+	ReadCapacity(ctx context.Context, organization string) (*Capacity, error)
 
-	// Entitlements shows the entitlements of an organization.
-	Entitlements(ctx context.Context, organization string) (*Entitlements, error)
+	// ReadEntitlements shows the entitlements of an organization.
+	ReadEntitlements(ctx context.Context, organization string) (*Entitlements, error)
 
-	// RunQueue shows the current run queue of an organization.
-	RunQueue(ctx context.Context, organization string, options RunQueueOptions) (*RunQueue, error)
+	// ReadRunQueue shows the current run queue of an organization.
+	ReadRunQueue(ctx context.Context, organization string, options ReadRunQueueOptions) (*RunQueue, error)
 }
 
 // organizations implements Organizations.
@@ -95,6 +94,7 @@ type Entitlements struct {
 	CostEstimation        bool   `jsonapi:"attr,cost-estimation"`
 	Operations            bool   `jsonapi:"attr,operations"`
 	PrivateModuleRegistry bool   `jsonapi:"attr,private-module-registry"`
+	RunTasks              bool   `jsonapi:"attr,run-tasks"`
 	SSO                   bool   `jsonapi:"attr,sso"`
 	Sentinel              bool   `jsonapi:"attr,sentinel"`
 	StateStorage          bool   `jsonapi:"attr,state-storage"`
@@ -114,6 +114,7 @@ type OrganizationPermissions struct {
 	CanCreateWorkspace          bool `jsonapi:"attr,can-create-workspace"`
 	CanCreateWorkspaceMigration bool `jsonapi:"attr,can-create-workspace-migration"`
 	CanDestroy                  bool `jsonapi:"attr,can-destroy"`
+	CanManageRunTasks           bool `jsonapi:"attr,can-manage-run-tasks"`
 	CanTraverse                 bool `jsonapi:"attr,can-traverse"`
 	CanUpdate                   bool `jsonapi:"attr,can-update"`
 	CanUpdateAPIToken           bool `jsonapi:"attr,can-update-api-token"`
@@ -126,22 +127,6 @@ type OrganizationListOptions struct {
 	ListOptions
 }
 
-// List all the organizations visible to the current user.
-func (s *organizations) List(ctx context.Context, options OrganizationListOptions) (*OrganizationList, error) {
-	req, err := s.client.newRequest("GET", "organizations", &options)
-	if err != nil {
-		return nil, err
-	}
-
-	orgl := &OrganizationList{}
-	err = s.client.do(ctx, req, orgl)
-	if err != nil {
-		return nil, err
-	}
-
-	return orgl, nil
-}
-
 // OrganizationCreateOptions represents the options for creating an organization.
 type OrganizationCreateOptions struct {
 	// Type is a public field utilized by JSON:API to
@@ -150,11 +135,44 @@ type OrganizationCreateOptions struct {
 	// https://jsonapi.org/format/#crud-creating
 	Type string `jsonapi:"primary,organizations"`
 
-	// Name of the organization.
+	// Required: Name of the organization.
 	Name *string `jsonapi:"attr,name"`
 
-	// Admin email address.
+	// Required: Admin email address.
 	Email *string `jsonapi:"attr,email"`
+
+	// Optional: Session expiration (minutes).
+	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
+
+	// Optional: Session timeout after inactivity (minutes).
+	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
+
+	// Optional: Authentication policy.
+	CollaboratorAuthPolicy *AuthPolicyType `jsonapi:"attr,collaborator-auth-policy,omitempty"`
+
+	// Optional: Enable Cost Estimation
+	CostEstimationEnabled *bool `jsonapi:"attr,cost-estimation-enabled,omitempty"`
+
+	// Optional: The name of the "owners" team
+	OwnersTeamSAMLRoleID *string `jsonapi:"attr,owners-team-saml-role-id,omitempty"`
+
+	// Optional: SendPassingStatusesForUntriggeredSpeculativePlans toggles behavior of untriggered speculative plans to send status updates to version control systems like GitHub.
+	SendPassingStatusesForUntriggeredSpeculativePlans *bool `jsonapi:"attr,send-passing-statuses-for-untriggered-speculative-plans,omitempty"`
+}
+
+// OrganizationUpdateOptions represents the options for updating an organization.
+type OrganizationUpdateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,organizations"`
+
+	// New name for the organization.
+	Name *string `jsonapi:"attr,name,omitempty"`
+
+	// New admin email address.
+	Email *string `jsonapi:"attr,email,omitempty"`
 
 	// Session expiration (minutes).
 	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
@@ -175,17 +193,25 @@ type OrganizationCreateOptions struct {
 	SendPassingStatusesForUntriggeredSpeculativePlans *bool `jsonapi:"attr,send-passing-statuses-for-untriggered-speculative-plans,omitempty"`
 }
 
-func (o OrganizationCreateOptions) valid() error {
-	if !validString(o.Name) {
-		return ErrRequiredName
+// ReadRunQueueOptions represents the options for showing the queue.
+type ReadRunQueueOptions struct {
+	ListOptions
+}
+
+// List all the organizations visible to the current user.
+func (s *organizations) List(ctx context.Context, options *OrganizationListOptions) (*OrganizationList, error) {
+	req, err := s.client.newRequest("GET", "organizations", options)
+	if err != nil {
+		return nil, err
 	}
-	if !validStringID(o.Name) {
-		return ErrInvalidName
+
+	orgl := &OrganizationList{}
+	err = s.client.do(ctx, req, orgl)
+	if err != nil {
+		return nil, err
 	}
-	if !validString(o.Email) {
-		return errors.New("email is required")
-	}
-	return nil
+
+	return orgl, nil
 }
 
 // Create a new organization with the given options.
@@ -229,39 +255,6 @@ func (s *organizations) Read(ctx context.Context, organization string) (*Organiz
 	return org, nil
 }
 
-// OrganizationUpdateOptions represents the options for updating an organization.
-type OrganizationUpdateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,organizations"`
-
-	// New name for the organization.
-	Name *string `jsonapi:"attr,name,omitempty"`
-
-	// New admin email address.
-	Email *string `jsonapi:"attr,email,omitempty"`
-
-	// Session expiration (minutes).
-	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
-
-	// Session timeout after inactivity (minutes).
-	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
-
-	// Authentication policy.
-	CollaboratorAuthPolicy *AuthPolicyType `jsonapi:"attr,collaborator-auth-policy,omitempty"`
-
-	// Enable Cost Estimation
-	CostEstimationEnabled *bool `jsonapi:"attr,cost-estimation-enabled,omitempty"`
-
-	// The name of the "owners" team
-	OwnersTeamSAMLRoleID *string `jsonapi:"attr,owners-team-saml-role-id,omitempty"`
-
-	// SendPassingStatusesForUntriggeredSpeculativePlans toggles behavior of untriggered speculative plans to send status updates to version control systems like GitHub.
-	SendPassingStatusesForUntriggeredSpeculativePlans *bool `jsonapi:"attr,send-passing-statuses-for-untriggered-speculative-plans,omitempty"`
-}
-
 // Update attributes of an existing organization.
 func (s *organizations) Update(ctx context.Context, organization string, options OrganizationUpdateOptions) (*Organization, error) {
 	if !validStringID(&organization) {
@@ -298,8 +291,8 @@ func (s *organizations) Delete(ctx context.Context, organization string) error {
 	return s.client.do(ctx, req, nil)
 }
 
-// Capacity shows the currently used capacity of an organization.
-func (s *organizations) Capacity(ctx context.Context, organization string) (*Capacity, error) {
+// ReadCapacity shows the currently used capacity of an organization.
+func (s *organizations) ReadCapacity(ctx context.Context, organization string) (*Capacity, error) {
 	if !validStringID(&organization) {
 		return nil, ErrInvalidOrg
 	}
@@ -319,8 +312,8 @@ func (s *organizations) Capacity(ctx context.Context, organization string) (*Cap
 	return c, nil
 }
 
-// Entitlements shows the entitlements of an organization.
-func (s *organizations) Entitlements(ctx context.Context, organization string) (*Entitlements, error) {
+// ReadEntitlements shows the entitlements of an organization.
+func (s *organizations) ReadEntitlements(ctx context.Context, organization string) (*Entitlements, error) {
 	if !validStringID(&organization) {
 		return nil, ErrInvalidOrg
 	}
@@ -340,13 +333,8 @@ func (s *organizations) Entitlements(ctx context.Context, organization string) (
 	return e, nil
 }
 
-// RunQueueOptions represents the options for showing the queue.
-type RunQueueOptions struct {
-	ListOptions
-}
-
-// RunQueue shows the current run queue of an organization.
-func (s *organizations) RunQueue(ctx context.Context, organization string, options RunQueueOptions) (*RunQueue, error) {
+// ReadRunQueue shows the current run queue of an organization.
+func (s *organizations) ReadRunQueue(ctx context.Context, organization string, options ReadRunQueueOptions) (*RunQueue, error) {
 	if !validStringID(&organization) {
 		return nil, ErrInvalidOrg
 	}
@@ -364,4 +352,17 @@ func (s *organizations) RunQueue(ctx context.Context, organization string, optio
 	}
 
 	return rq, nil
+}
+
+func (o OrganizationCreateOptions) valid() error {
+	if !validString(o.Name) {
+		return ErrRequiredName
+	}
+	if !validStringID(o.Name) {
+		return ErrInvalidName
+	}
+	if !validString(o.Email) {
+		return ErrRequiredEmail
+	}
+	return nil
 }

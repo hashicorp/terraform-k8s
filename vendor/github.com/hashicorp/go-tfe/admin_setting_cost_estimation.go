@@ -7,7 +7,8 @@ import (
 // Compile-time proof of interface implementation.
 var _ CostEstimationSettings = (*adminCostEstimationSettings)(nil)
 
-// CostEstimationSettings describes all the cost estimation admin settings.
+// CostEstimationSettings describes all the cost estimation admin settings for the Admin Setting API.
+// https://www.terraform.io/cloud-docs/api-docs/admin/settings
 type CostEstimationSettings interface {
 	// Read returns the cost estimation settings.
 	Read(ctx context.Context) (*AdminCostEstimationSetting, error)
@@ -37,6 +38,20 @@ type AdminCostEstimationSetting struct {
 	AzureTenantID             string `jsonapi:"attr,azure-tenant-id"`
 }
 
+// AdminCostEstimationSettingOptions represents the admin options for updating
+// the cost estimation settings.
+// https://www.terraform.io/docs/cloud/api/admin/settings.html#request-body-1
+type AdminCostEstimationSettingOptions struct {
+	Enabled             *bool   `jsonapi:"attr,enabled,omitempty"`
+	AWSAccessKeyID      *string `jsonapi:"attr,aws-access-key-id,omitempty"`
+	AWSAccessKey        *string `jsonapi:"attr,aws-secret-key,omitempty"`
+	GCPCredentials      *string `jsonapi:"attr,gcp-credentials,omitempty"`
+	AzureClientID       *string `jsonapi:"attr,azure-client-id,omitempty"`
+	AzureClientSecret   *string `jsonapi:"attr,azure-client-secret,omitempty"`
+	AzureSubscriptionID *string `jsonapi:"attr,azure-subscription-id,omitempty"`
+	AzureTenantID       *string `jsonapi:"attr,azure-tenant-id,omitempty"`
+}
+
 // Read returns the cost estimation settings.
 func (a *adminCostEstimationSettings) Read(ctx context.Context) (*AdminCostEstimationSetting, error) {
 	req, err := a.client.newRequest("GET", "admin/cost-estimation-settings", nil)
@@ -51,20 +66,6 @@ func (a *adminCostEstimationSettings) Read(ctx context.Context) (*AdminCostEstim
 	}
 
 	return ace, nil
-}
-
-// AdminCostEstimationSettingOptions represents the admin options for updating
-// the cost estimation settings.
-// https://www.terraform.io/docs/cloud/api/admin/settings.html#request-body-1
-type AdminCostEstimationSettingOptions struct {
-	Enabled             *bool   `jsonapi:"attr,enabled,omitempty"`
-	AWSAccessKeyID      *string `jsonapi:"attr,aws-access-key-id,omitempty"`
-	AWSAccessKey        *string `jsonapi:"attr,aws-secret-key,omitempty"`
-	GCPCredentials      *string `jsonapi:"attr,gcp-credentials,omitempty"`
-	AzureClientID       *string `jsonapi:"attr,azure-client-id,omitempty"`
-	AzureClientSecret   *string `jsonapi:"attr,azure-client-secret,omitempty"`
-	AzureSubscriptionID *string `jsonapi:"attr,azure-subscription-id,omitempty"`
-	AzureTenantID       *string `jsonapi:"attr,azure-tenant-id,omitempty"`
 }
 
 // Update updates the cost-estimation settings.
