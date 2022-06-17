@@ -45,7 +45,7 @@ func convertValueToString(val cty.Value) string {
 					return convertValueToString(jv)
 				}
 			}
-			return `"` + val.AsString() + `"`
+			return val.AsString()
 		case cty.Bool:
 			if val.True() {
 				return "true"
