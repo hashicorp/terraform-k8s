@@ -263,16 +263,6 @@ $ kubectl apply -n $NAMESPACE -f workspace.yml
 
 ### Delete a Workspace
 
-In order for workspace destruction to work automatically, you must set the `CONFIRM_DESTROY` environment variable in the Terraform Cloud workspace. When you delete the Workspace CustomResource, the operator will attempt to destroy the workspace. As a secondary check, you must deploy the operator with this environment variable defined in the `variables` section if you would like to destroy the workspace in Terraform Cloud.
-
-```yaml
-variables:
-  - key: CONFIRM_DESTROY
-    value: "1"
-    sensitive: false
-    environmentVariable: true
-```
-
 When deleting the Workspace CustomResource, the command line will wait for a few moments.
 
 ```shell
