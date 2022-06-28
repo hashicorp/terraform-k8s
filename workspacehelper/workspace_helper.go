@@ -293,6 +293,10 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 		if err != nil {
 			return false, err
 		}
+		err = r.GetSecretForVariable(instance.Namespace, variable)
+		if err != nil {
+			return false, err
+		}
 	}
 
 	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
