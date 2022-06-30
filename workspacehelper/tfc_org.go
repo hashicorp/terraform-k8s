@@ -17,8 +17,6 @@ import (
 )
 
 var (
-	// AutoApply run to workspace
-	AutoApply     = true
 	AgentPageSize = 100
 )
 
@@ -218,7 +216,7 @@ func (t *TerraformCloudClient) CreateWorkspace(workspace string, instance *appv1
 	}
 
 	options := tfc.WorkspaceCreateOptions{
-		AutoApply:        &AutoApply,
+		AutoApply:        &instance.Spec.AutoApply,
 		Name:             &workspace,
 		TerraformVersion: &tfVersion,
 	}
