@@ -24,7 +24,7 @@ func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspaceID string) (s
 
 func convertValueToString(val cty.Value) string {
 	if val.IsNull() {
-		return ""
+		return "null"
 	}
 	ty := val.Type()
 	switch {
@@ -76,17 +76,19 @@ func convertValueToString(val cty.Value) string {
 		var b bytes.Buffer
 
 		i := 0
+		valLen := val.LengthInt()
 		for it := val.ElementIterator(); it.Next(); {
 			key, value := it.Element()
 			k := convertValueToString(key)
 			v := convertValueToString(value)
 			if k == "" || v == "" {
+				valLen--
 				continue
 			}
 			b.WriteString(k)
 			b.WriteString(":")
 			b.WriteString(v)
-			if i < (val.LengthInt() - 1) {
+			if i < (valLen - 1) {
 				b.WriteString(",")
 			}
 			i++
@@ -109,19 +111,20 @@ func convertValueToString(val cty.Value) string {
 
 		var b bytes.Buffer
 		i := 0
+		atysLen := len(atys)
 		for _, attr := range attrNames {
 			val := val.GetAttr(attr)
 			v := convertValueToString(val)
 			if v == "" {
+				atysLen--
 				continue
 			}
-
 			b.WriteString(`"`)
 			b.WriteString(attr)
 			b.WriteString(`"`)
 			b.WriteString(":")
 			b.WriteString(v)
-			if i < (len(atys) - 1) {
+			if i < (atysLen - 1) {
 				b.WriteString(",")
 			}
 			i++
