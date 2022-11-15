@@ -133,6 +133,9 @@ func (t *TerraformCloudClient) updateAgentPoolID(instance *appv1alpha1.Workspace
 	// When agent pool name provided, look it up otherwise set to id in spec
 	if instance.Spec.AgentPoolName != "" {
 		agentPools, err := t.listAgentPools()
+		if err != nil {
+			return err
+		}
 		agentPool, err := getAgentPoolID(instance.Spec.AgentPoolName, agentPools)
 		if err != nil {
 			return err

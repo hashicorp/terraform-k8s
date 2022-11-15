@@ -24,7 +24,7 @@ func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspaceID string) (s
 
 func convertValueToString(val cty.Value) string {
 	if val.IsNull() {
-		return ""
+		return "null"
 	}
 	ty := val.Type()
 	switch {
@@ -45,7 +45,7 @@ func convertValueToString(val cty.Value) string {
 					return convertValueToString(jv)
 				}
 			}
-			return `"` + val.AsString() + `"`
+			return val.AsString()
 		case cty.Bool:
 			if val.True() {
 				return "true"
@@ -61,40 +61,37 @@ func convertValueToString(val cty.Value) string {
 		var b bytes.Buffer
 		i := 0
 		for it := val.ElementIterator(); it.Next(); {
-			_, value := it.Element()
-			b.WriteString(convertValueToString(value))
+			_, v := it.Element()
+			if v.Type() == cty.String {
+				b.WriteString(fmt.Sprintf("%q", convertValueToString(v)))
+			} else {
+				b.WriteString(convertValueToString(v))
+			}
 			if i < (val.LengthInt() - 1) {
 				b.WriteString(",")
 			}
 			i++
 		}
-		if b.Len() == 0 {
-			return ""
-		}
-		return "[" + b.String() + "]"
+		return fmt.Sprintf("[%s]", b.String())
 	case ty.IsMapType():
 		var b bytes.Buffer
 
 		i := 0
 		for it := val.ElementIterator(); it.Next(); {
-			key, value := it.Element()
-			k := convertValueToString(key)
-			v := convertValueToString(value)
-			if k == "" || v == "" {
-				continue
+			k, v := it.Element()
+			b.WriteString(fmt.Sprintf("%q:", convertValueToString(k)))
+			if v.Type() == cty.String {
+				b.WriteString(fmt.Sprintf("%q", convertValueToString(v)))
+			} else {
+				b.WriteString(convertValueToString(v))
 			}
-			b.WriteString(k)
-			b.WriteString(":")
-			b.WriteString(v)
+
 			if i < (val.LengthInt() - 1) {
 				b.WriteString(",")
 			}
 			i++
 		}
-		if b.Len() == 0 {
-			return ""
-		}
-		return "{" + b.String() + "}"
+		return fmt.Sprintf("{%s}", b.String())
 	case ty.IsObjectType():
 		atys := ty.AttributeTypes()
 		attrNames := make([]string, 0, len(atys))
@@ -110,26 +107,19 @@ func convertValueToString(val cty.Value) string {
 		var b bytes.Buffer
 		i := 0
 		for _, attr := range attrNames {
-			val := val.GetAttr(attr)
-			v := convertValueToString(val)
-			if v == "" {
-				continue
+			v := val.GetAttr(attr)
+			b.WriteString(fmt.Sprintf("%q:", attr))
+			if val.Type() == cty.String {
+				b.WriteString(fmt.Sprintf("%q", convertValueToString(v)))
+			} else {
+				b.WriteString(convertValueToString(v))
 			}
-
-			b.WriteString(`"`)
-			b.WriteString(attr)
-			b.WriteString(`"`)
-			b.WriteString(":")
-			b.WriteString(v)
 			if i < (len(atys) - 1) {
 				b.WriteString(",")
 			}
 			i++
 		}
-		if b.Len() == 0 {
-			return ""
-		}
-		return "{" + b.String() + "}"
+		return fmt.Sprintf("{%s}", b.String())
 	}
 	return ""
 }

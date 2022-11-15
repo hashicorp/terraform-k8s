@@ -3,13 +3,11 @@ package workspacehelper
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/hashicorp/go-tfe"
 	tfc "github.com/hashicorp/go-tfe"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -127,7 +125,7 @@ func (r *WorkspaceHelper) initializeReconciliation(request reconcile.Request) (*
 func (r *WorkspaceHelper) reconcileWorkspace(instance *appv1alpha1.Workspace) error {
 	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
 	if instance.Spec.OmitNamespacePrefix {
-		workspace = fmt.Sprintf("%s", instance.Name)
+		workspace = instance.Name
 	}
 
 	organization := instance.Spec.Organization
@@ -179,7 +177,7 @@ func (r *WorkspaceHelper) condDeleteWorkspace(instance *appv1alpha1.Workspace) (
 	}
 
 	err := r.tfclient.CheckWorkspacebyID(instance.Status.WorkspaceID)
-	if err != nil && err != tfe.ErrResourceNotFound {
+	if err != nil && err != tfc.ErrResourceNotFound {
 		return false, err
 	}
 
@@ -285,7 +283,7 @@ func (r *WorkspaceHelper) updateTerraformTemplate(instance *appv1alpha1.Workspac
 func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool, error) {
 	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
 	if instance.Spec.OmitNamespacePrefix {
-		workspace = fmt.Sprintf("%s", instance.Name)
+		workspace = instance.Name
 	}
 
 	for _, variable := range instance.Spec.Variables {
@@ -312,7 +310,7 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 func (r *WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bool, error) {
 	workspace := fmt.Sprintf("%s-%s", instance.Namespace, instance.Name)
 	if instance.Spec.OmitNamespacePrefix {
-		workspace = fmt.Sprintf("%s", instance.Name)
+		workspace = instance.Name
 	}
 
 	updatedRunTriggers, err := r.tfclient.CheckRunTriggers(workspace, instance.Spec.RunTriggers)
@@ -324,12 +322,12 @@ func (r *WorkspaceHelper) updateRunTriggers(instance *appv1alpha1.Workspace) (bo
 	return updatedRunTriggers, nil
 }
 
-func (r *WorkspaceHelper) prepareModuleRun(instance *appv1alpha1.Workspace, options tfe.RunCreateOptions) (bool, error) {
+func (r *WorkspaceHelper) prepareModuleRun(instance *appv1alpha1.Workspace, options tfc.RunCreateOptions) (bool, error) {
 	r.reqLogger.Info("Starting module backed run", "Organization",
 		instance.Spec.Organization, "Name", instance.Name, "Namespace", instance.Namespace)
 
 	var (
-		configVersion *tfe.ConfigurationVersion
+		configVersion *tfc.ConfigurationVersion
 		err           error
 	)
 	if instance.Status.ConfigVersionID == "" {
@@ -352,7 +350,7 @@ func (r *WorkspaceHelper) prepareModuleRun(instance *appv1alpha1.Workspace, opti
 			}
 		}
 
-		if err = ioutil.WriteFile(configurationFilePath, tf, 0777); err != nil {
+		if err = os.WriteFile(configurationFilePath, tf, 0777); err != nil {
 			return true, err
 		}
 
@@ -392,7 +390,7 @@ func (r *WorkspaceHelper) prepareVCSRun(instance *appv1alpha1.Workspace) (bool, 
 		instance.Spec.Organization, "Name", instance.Name, "Namespace", instance.Namespace)
 
 	configVersions, err := r.tfclient.Client.ConfigurationVersions.List(context.TODO(),
-		instance.Status.WorkspaceID, tfe.ConfigurationVersionListOptions{})
+		instance.Status.WorkspaceID, tfc.ConfigurationVersionListOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -407,9 +405,9 @@ func (r *WorkspaceHelper) prepareVCSRun(instance *appv1alpha1.Workspace) (bool, 
 
 func (r *WorkspaceHelper) startRun(instance *appv1alpha1.Workspace) error {
 	message := fmt.Sprintf("%s, apply", TerraformOperator)
-	options := tfe.RunCreateOptions{
+	options := tfc.RunCreateOptions{
 		Message: &message,
-		Workspace: &tfe.Workspace{
+		Workspace: &tfc.Workspace{
 			ID: instance.Status.WorkspaceID,
 		},
 	}
