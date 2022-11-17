@@ -3,6 +3,7 @@ package workspacehelper
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -227,7 +228,7 @@ func checkAndRetrieveIfSensitive(variable *tfc.Variable, secretsMountPath string
 	if variable.Sensitive && variable.Value == "" {
 		filePath := fmt.Sprintf("%s/%s", secretsMountPath, variable.Key)
 
-		data, err := os.ReadFile(filePath)
+		data, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			return fmt.Errorf("could not get secret, %s", err)
 		}
