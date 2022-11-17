@@ -90,7 +90,7 @@ func TestShouldReturnArrayFromArray(t *testing.T) {
 	assert.Equal(t, expected, formatted)
 }
 
-func TestOutputsFromState(t *testing.T) {
+func TestEmbeddedStructures(t *testing.T) {
 	tests := []struct {
 		name    string
 		resp    string
@@ -98,7 +98,7 @@ func TestOutputsFromState(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "null map value returns an empty string",
+			name: "Embedded map with null value",
 			resp: `
     {
       "version": 4,
@@ -129,7 +129,7 @@ func TestOutputsFromState(t *testing.T) {
 			want: []*v1alpha1.OutputStatus{{Key: "map", Value: `[{"data":null}]`}},
 		},
 		{
-			name: "embedded JSON empty array returns empty array",
+			name: "Embedded map with an emptly list as value",
 			resp: ` {
         "version": 4,
         "outputs": {
@@ -164,7 +164,7 @@ func TestOutputsFromState(t *testing.T) {
 			want: []*v1alpha1.OutputStatus{{Key: "map", Value: `[{"data":{"key":[]}}]`}},
 		},
 		{
-			name: "embedded JSON array returned as string",
+			name: "Embedded map with a list of strings as value",
 			resp: ` {
         "version": 4,
         "outputs": {
