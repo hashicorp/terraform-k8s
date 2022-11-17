@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/hashicorp/go-tfe"
+	tfc "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-k8s/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/zclconf/go-cty/cty"
@@ -198,12 +198,12 @@ func TestOutputsFromState(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintln(w, tt.resp)
 			}))
-			config := &tfe.Config{
+			config := &tfc.Config{
 				Address:    srv.URL,
 				Token:      "token1",
 				HTTPClient: srv.Client(),
 			}
-			client, err := tfe.NewClient(config)
+			client, err := tfc.NewClient(config)
 			assert.NoError(t, err)
 
 			cloud := &TerraformCloudClient{
