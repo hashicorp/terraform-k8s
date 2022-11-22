@@ -1,3 +1,9 @@
+## 1.1.2 (November 22, 2022)
+
+:bug: BUG FIXES:
+
+* Fix multiple issues with the output parsing when unnecessary double quotes around the `string` type are added and empty or `null` outputs are omitted.
+
 ## 1.1.0 (September 9, 2021)
 
 * Upgrade go-tfe to 0.15.0
