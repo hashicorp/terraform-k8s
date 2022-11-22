@@ -41,7 +41,7 @@ jobs:
           curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${{ env.KUBEBUILDER_VERSION }}/kubebuilder_${{ env.KUBEBUILDER_VERSION }}_linux_amd64.tar.gz -o /tmp/kb.tgz
           tar zxf /tmp/kb.tgz -C /tmp/
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v3.0.0
         if: startsWith(github.ref, 'refs/tags/')
         with:
           args: release --skip-sign --release-notes ${{ env.RELEASE_NOTES }}
