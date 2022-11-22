@@ -9,7 +9,9 @@ permissions:
   contents: write
 
 env:
+  DOCKER_REPO_NAME: hashicorp/terraform-k8s
   KUBEBUILDER_VERSION: 3.3.0
+  RELEASE_NOTES: /tmp/release-notes.txt
 
 jobs:
   go-version:
@@ -31,6 +33,9 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "${{ needs.go-version.outputs.version }}"
+      - name: Generate Release Notes
+        # Fetch CHANGELOG.md contents up to Git tag prior to this release, skipping top two lines
+        run: sed -n -e "1{/# /d;}" -e "2{/^$/d;}" -e "/# $(git describe --abbrev=0 --exclude="$(git describe --abbrev=0 --match='v*.*.*' --tags)" --match='v*.*.*' --tags | tr -d v)/q;p" CHANGELOG.md > ${{ env.RELEASE_NOTES }}
       - name: Install kubebuilder
         run: |
           curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${{ env.KUBEBUILDER_VERSION }}/kubebuilder_${{ env.KUBEBUILDER_VERSION }}_linux_amd64.tar.gz -o /tmp/kb.tgz
@@ -39,23 +44,36 @@ jobs:
         uses: goreleaser/goreleaser-action@v3.0.0
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          args: release --skip-sign
+          args: release --skip-sign --release-notes ${{ env.RELEASE_NOTES }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           KUBEBUILDER_ASSETS: /tmp/kubebuilder_${{ env.KUBEBUILDER_VERSION }}_linux_amd64/bin/
+
   release-docker-hub:
     runs-on: ubuntu-latest
     steps:
-      - name: Login to DockerHub
+      - name: Get Docker image tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          echo "DOCKER_IMAGE_TAG=${TAG#v}" >> $GITHUB_ENV
+      - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: amd64,arm64
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build and push Docker image
         uses: docker/build-push-action@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          push: false
-          tags: hashicorp/terraform-k8s:${{ github.ref_name }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ env.DOCKER_REPO_NAME }}:${{ env.DOCKER_IMAGE_TAG }},${{ env.DOCKER_REPO_NAME }}:latest
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
