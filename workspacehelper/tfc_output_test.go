@@ -20,8 +20,8 @@ func TestShouldReturnStringFromNumber(t *testing.T) {
 }
 
 func TestShouldReturnStringFromJSONStringNull(t *testing.T) {
-	expected := `""{\"hi\":null}""`
-	value := cty.Value(cty.StringVal(`"{\"hi\":null}"`))
+	expected := `"{"hi":null}"`
+	value := cty.Value(cty.StringVal(`"{"hi":null}"`))
 	formatted := convertValueToString(value)
 	assert.Equal(t, expected, formatted)
 }
@@ -69,28 +69,28 @@ func TestShouldReturnStringFromObject(t *testing.T) {
 	assert.Equal(t, expected, formatted)
 }
 
-func TestShouldReturnEmptyStringFromNullObject(t *testing.T) {
-	expected := ""
+func TestShouldReturnNullFromNullObject(t *testing.T) {
+	expected := "null"
 	value := cty.NullVal(cty.Map(cty.String))
 	formatted := convertValueToString(value)
 	assert.Equal(t, expected, formatted)
 }
 
 func TestShouldReturnEmptyFromEmptyArray(t *testing.T) {
-	expected := ""
-	value := cty.StringVal("[]\n")
+	expected := "[]"
+	value := cty.StringVal("[]")
 	formatted := convertValueToString(value)
 	assert.Equal(t, expected, formatted)
 }
 
 func TestShouldReturnArrayFromArray(t *testing.T) {
 	expected := "[1,2,3]"
-	value := cty.StringVal("[1, 2, 3]\n")
+	value := cty.StringVal("[1, 2, 3]")
 	formatted := convertValueToString(value)
 	assert.Equal(t, expected, formatted)
 }
 
-func TestOutputsFromState(t *testing.T) {
+func TestEmbeddedStructures(t *testing.T) {
 	tests := []struct {
 		name    string
 		resp    string
@@ -98,15 +98,15 @@ func TestOutputsFromState(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "null map returns no status",
+			name: "Embedded map with null value",
 			resp: `
     {
       "version": 4,
       "outputs": {
-          "map1": {
+          "map": {
               "value": [
                   {
-                      "null_map": null
+                      "data": null
                   }
               ],
               "type": [
@@ -115,7 +115,7 @@ func TestOutputsFromState(t *testing.T) {
                       [
                           "object",
                           {
-                              "null_map": [
+                              "data": [
                                   "map",
                                   "string"
                               ]
@@ -126,18 +126,18 @@ func TestOutputsFromState(t *testing.T) {
           }
       }
   }`,
-			want: []*v1alpha1.OutputStatus{},
+			want: []*v1alpha1.OutputStatus{{Key: "map", Value: `[{"data":null}]`}},
 		},
 		{
-			name: "embedded JSON empty array returns no status",
+			name: "Embedded map with an emptly list as value",
 			resp: ` {
         "version": 4,
         "outputs": {
-            "map1": {
+            "map": {
                 "value": [
                     {
                         "data": {
-                            "k1": "[]\n"
+                            "key": []
                         }
                     }
                 ],
@@ -149,7 +149,10 @@ func TestOutputsFromState(t *testing.T) {
                             {
                                 "data": [
                                     "map",
-                                    "string"
+                                    [
+                                        "list",
+                                        "string"
+                                    ]
                                 ]
                             }
                         ]
@@ -158,18 +161,18 @@ func TestOutputsFromState(t *testing.T) {
             }
         }
     } `,
-			want: []*v1alpha1.OutputStatus{},
+			want: []*v1alpha1.OutputStatus{{Key: "map", Value: `[{"data":{"key":[]}}]`}},
 		},
 		{
-			name: "embedded JSON array returned as string",
+			name: "Embedded map with a list of strings as value",
 			resp: ` {
         "version": 4,
         "outputs": {
-            "map1": {
+            "map": {
                 "value": [
                     {
                         "data": {
-                            "k1": "[1, 2, 3]\n"
+                            "key": [1, 2, 3]
                         }
                     }
                 ],
@@ -181,7 +184,10 @@ func TestOutputsFromState(t *testing.T) {
                             {
                                 "data": [
                                     "map",
-                                    "string"
+                                    [
+                                        "list",
+                                        "string"
+                                    ]
                                 ]
                             }
                         ]
@@ -190,7 +196,7 @@ func TestOutputsFromState(t *testing.T) {
             }
         }
     } `,
-			want: []*v1alpha1.OutputStatus{{Key: "map1", Value: `[{"data":{"k1":[1,2,3]}}]`}},
+			want: []*v1alpha1.OutputStatus{{Key: "map", Value: `[{"data":{"key":["1","2","3"]}}]`}},
 		},
 	}
 	for _, tt := range tests {
