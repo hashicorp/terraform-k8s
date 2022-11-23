@@ -10,7 +10,7 @@ permissions:
 
 env:
   DOCKER_REPO_NAME: hashicorp/terraform-k8s
-  KUBEBUILDER_VERSION: 3.3.0
+  KUBEBUILDER_VERSION: 2.3.2
   RELEASE_NOTES: /tmp/release-notes.txt
 
 jobs:
