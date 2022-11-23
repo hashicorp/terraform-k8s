@@ -9,7 +9,7 @@ on:
       - '*'
 
 env:
-  KUBEBUILDER_VERSION: 3.3.0
+  KUBEBUILDER_VERSION: 2.3.2
 
 jobs:
   build:
@@ -22,7 +22,7 @@ jobs:
         go-version: 1.16.9
     - name: Install kubebuilder
       run: |
-        curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${{ env.KUBEBUILDER_VERSION }}/kubebuilder_linux_amd64 -o /tmp/kb.tgz
+        curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${{ env.KUBEBUILDER_VERSION }}/kubebuilder_${{ env.KUBEBUILDER_VERSION }}_linux_amd64.tar.gz -o /tmp/kb.tgz
         tar zxf /tmp/kb.tgz -C /tmp/
     - name: Run GoReleaser
       env:
