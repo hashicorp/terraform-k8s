@@ -1,4 +1,4 @@
-## 1.1.2 (November 22, 2022)
+## 1.1.2 (November 23, 2022)
 
 :bug: BUG FIXES:
 
