@@ -1,3 +1,7 @@
+### :mega: Terraform Cloud Operator v2 Beta :mega: 
+
+We are working on a new version of the Terraform Cloud Operator for Kubernetes at [hashicorp/terraform-cloud-operator](https://github.com/hashicorp/terraform-cloud-operator). This new version of the operator will bring a cleaner set of CRDs and support for features such as Agent Pools and deploying agents, Run Tasks, and Workspace Notifications. If you would like to participate in our beta please see our [installation instructions](https://github.com/hashicorp/terraform-cloud-operator#install-beta-version). 
+  
 <a href="https://terraform.io">
     <img src=".github/tf.png" alt="Terraform logo" title="Terraform" align="left" height="50" />
 </a>
