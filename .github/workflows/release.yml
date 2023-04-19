@@ -19,18 +19,18 @@ jobs:
     outputs:
       version: ${{ steps.go-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
       - id: go-version
         run: echo "::set-output name=version::$(cat ./.go-version)"
   release-github:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
           fetch-depth: 0
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
         with:
           go-version: "${{ needs.go-version.outputs.version }}"
       - name: Generate Release Notes
@@ -41,7 +41,7 @@ jobs:
           curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${{ env.KUBEBUILDER_VERSION }}/kubebuilder_${{ env.KUBEBUILDER_VERSION }}_linux_amd64.tar.gz -o /tmp/kb.tgz
           tar zxf /tmp/kb.tgz -C /tmp/
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3.0.0
+        uses: goreleaser/goreleaser-action@f82d6c1c344bcacabba2c841718984797f664a6b # v4.2.0
         if: startsWith(github.ref, 'refs/tags/')
         with:
           args: release --skip-sign --release-notes ${{ env.RELEASE_NOTES }}
@@ -58,18 +58,18 @@ jobs:
         run: |
           echo "DOCKER_IMAGE_TAG=${TAG#v}" >> $GITHUB_ENV
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # v2.1.0
         with:
           platforms: amd64
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@f03ac48505955848960e80bbb68046aa35c7b9e7 # v2.4.1
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671 # v4.0.0
         if: startsWith(github.ref, 'refs/tags/')
         with:
           push: true
