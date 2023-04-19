@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Build & Test
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v1
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+    - uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
       with:
         go-version: 1.16.9
     - name: Install kubebuilder
@@ -27,6 +27,6 @@ jobs:
     - name: Run GoReleaser
       env:
         KUBEBUILDER_ASSETS: /tmp/kubebuilder_${{ env.KUBEBUILDER_VERSION }}_linux_amd64/bin/
-      uses: goreleaser/goreleaser-action@v3.0.0
+      uses: goreleaser/goreleaser-action@f82d6c1c344bcacabba2c841718984797f664a6b # v4.2.0
       with:
         args: release --snapshot --skip-publish --rm-dist --skip-sign
