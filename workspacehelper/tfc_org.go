@@ -156,7 +156,7 @@ func (t *TerraformCloudClient) updateAgentPoolID(instance *appv1alpha1.Workspace
 		updateOptions.ExecutionMode = tfc.String("")
 	}
 
-	_, err := t.Client.Workspaces.Update(context.TODO(), t.Organization, workspace.Name, updateOptions)
+	_, err := t.Client.Workspaces.UpdateByID(context.TODO(), workspace.ID, updateOptions)
 	if err != nil {
 		return err
 	}
