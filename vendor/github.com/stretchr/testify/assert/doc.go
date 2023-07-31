@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package assert provides a set of comprehensive testing tools for use with the normal Go testing system.
 //
 // Example Usage

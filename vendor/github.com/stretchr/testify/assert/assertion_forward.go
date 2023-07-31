@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 /*
 * CODE GENERATED AUTOMATICALLY WITH github.com/stretchr/testify/_codegen
 * THIS FILE MUST NOT BE EDITED BY HAND

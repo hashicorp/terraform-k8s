@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package token defines constants representing the lexical tokens for HCL
 // (HashiCorp Configuration Language)
 package token

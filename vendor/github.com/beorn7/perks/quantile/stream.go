@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package quantile computes approximate quantiles over an unbounded data
 // stream within low memory and CPU bounds.
 //

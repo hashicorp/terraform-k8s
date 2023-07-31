@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // The panicwrap package provides functions for capturing and handling
 // panics in your application. It does this by re-executing the running
 // application and monitoring stderr for any panics. At the same time,

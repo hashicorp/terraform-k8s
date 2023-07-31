@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package difflib is a partial port of Python difflib module.
 //
 // It provides tools to compare sequences of strings and generate textual diffs.
