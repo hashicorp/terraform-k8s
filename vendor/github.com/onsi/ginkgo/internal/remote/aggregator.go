@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 /*
 
 Aggregator is a reporter used by the Ginkgo CLI to aggregate and present parallel test output

@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // +build freebsd openbsd netbsd dragonfly darwin linux solaris
 
 package remote

@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 //This package is copied from Go library text/template.
 //The original private functions eq, ge, gt, le, lt, and ne
 //are exported as public functions.

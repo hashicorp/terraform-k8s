@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package parser implements a parser for HCL (HashiCorp Configuration
 // Language)
 package parser

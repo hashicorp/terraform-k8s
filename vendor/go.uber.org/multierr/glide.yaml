@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 package: go.uber.org/multierr
 import:
 - package: go.uber.org/atomic

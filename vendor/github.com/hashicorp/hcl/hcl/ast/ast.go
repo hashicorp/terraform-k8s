@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package ast declares the types used to represent syntax trees for HCL
 // (HashiCorp Configuration Language)
 package ast

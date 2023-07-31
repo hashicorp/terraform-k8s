@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package simplelru
 
 // LRUCache is the interface for simple LRU cache.

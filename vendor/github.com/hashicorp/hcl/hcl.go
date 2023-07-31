@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package hcl decodes HCL into usable Go structures.
 //
 // hcl input can come in either pure HCL format or JSON format.

@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 set -euf -o pipefail
 
 mockgen -source=run.go -destination=mocks/run_mocks.go -package=mocks

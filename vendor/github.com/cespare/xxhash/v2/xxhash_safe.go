@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // +build appengine
 
 // This file contains the safe implementations of otherwise unsafe-using code.

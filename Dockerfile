@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 # Build the terraform-k8s binary
 FROM golang:1.18-alpine as builder
 

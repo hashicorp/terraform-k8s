@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package spec_iterator
 
 import "github.com/onsi/ginkgo/internal/spec"

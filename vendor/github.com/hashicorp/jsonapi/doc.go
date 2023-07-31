@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 /*
 Package jsonapi provides a serializer and deserializer for jsonapi.org spec payloads.
 
