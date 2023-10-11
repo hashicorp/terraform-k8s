@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // +build darwin freebsd openbsd netbsd dragonfly
 // +build !appengine
 

@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package constraints contains a high-level representation of version
 // constraints that retains enough information for direct analysis and
 // serialization as a string.

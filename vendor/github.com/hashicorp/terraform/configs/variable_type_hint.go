@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package configs
 
 // VariableTypeHint is an enumeration used for the Variable.TypeHint field,

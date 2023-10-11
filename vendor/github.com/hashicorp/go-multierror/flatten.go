@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package multierror
 
 // Flatten flattens the given error, merging any *Errors together into

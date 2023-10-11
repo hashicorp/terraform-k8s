@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package addrs
 
 // TerraformAttr is the address of an attribute of the "terraform" object in

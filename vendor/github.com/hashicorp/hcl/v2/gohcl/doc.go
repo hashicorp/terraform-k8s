@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package gohcl allows decoding HCL configurations into Go data structures.
 //
 // It provides a convenient and concise way of describing the schema for
