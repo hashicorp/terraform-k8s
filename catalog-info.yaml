@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: terraform-k8s
+  annotations:
+    github.com/project-slug: snyk/terraform-k8s
+    github.com/team-slug: snyk/cloud-platforms
+spec:
+  type: supply-chain-tooling
+  lifecycle: "-"
+  owner: cloud-platforms
