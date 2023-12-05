@@ -11,8 +11,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	appv1alpha1 "github.com/hashicorp/terraform-k8s/api/v1alpha1"
-	"github.com/hashicorp/terraform-k8s/controllers"
+	appv1alpha1 "github.com/snyk/terraform-k8s/api/v1alpha1"
+	"github.com/snyk/terraform-k8s/controllers"
 	// +kubebuilder:scaffold:imports
 )
 

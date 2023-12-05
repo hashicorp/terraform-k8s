@@ -11,7 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-tfe"
 	tfc "github.com/hashicorp/go-tfe"
-	appv1alpha1 "github.com/hashicorp/terraform-k8s/api/v1alpha1"
+	appv1alpha1 "github.com/snyk/terraform-k8s/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"

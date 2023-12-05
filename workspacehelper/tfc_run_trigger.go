@@ -4,7 +4,7 @@ import (
 	tfc "github.com/hashicorp/go-tfe"
 
 	"context"
-	"github.com/hashicorp/terraform-k8s/api/v1alpha1"
+	"github.com/snyk/terraform-k8s/api/v1alpha1"
 )
 
 // MapToTFCRunTrigger changes controller spec to a TFC RunTrigger

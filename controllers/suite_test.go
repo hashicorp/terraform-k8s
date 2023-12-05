@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	appv1alpha1 "github.com/hashicorp/terraform-k8s/api/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	appv1alpha1 "github.com/snyk/terraform-k8s/api/v1alpha1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-tfe"
-	"github.com/hashicorp/terraform-k8s/api/v1alpha1"
+	"github.com/snyk/terraform-k8s/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/zclconf/go-cty/cty"
 )

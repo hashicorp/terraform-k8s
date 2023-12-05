@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	tfc "github.com/hashicorp/go-tfe"
-	appv1alpha1 "github.com/hashicorp/terraform-k8s/api/v1alpha1"
-	"github.com/hashicorp/terraform-k8s/version"
 	"github.com/hashicorp/terraform/command/cliconfig"
+	appv1alpha1 "github.com/snyk/terraform-k8s/api/v1alpha1"
+	"github.com/snyk/terraform-k8s/version"
 )
 
 var (

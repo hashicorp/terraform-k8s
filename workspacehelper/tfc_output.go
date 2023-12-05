@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/hashicorp/terraform-k8s/api/v1alpha1"
 	"github.com/hashicorp/terraform/states/statefile"
+	"github.com/snyk/terraform-k8s/api/v1alpha1"
 	"github.com/zclconf/go-cty/cty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )

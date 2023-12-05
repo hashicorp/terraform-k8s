@@ -1,0 +1,53 @@
+# This repository is only responsible for building and publishing the image
+# Please see snyk/terraform-operator for the helm chart that deploys the application.
+version: 2.1
+
+orbs:
+  publish: snyk/publish@1
+  sre-tools: snyk/sre-tools@1
+
+commands:
+ docker_build:
+   description: Build Docker Container with GCR tag
+   steps:
+     - run: |
+         DOCKER_BUILDKIT=1 docker build \
+           --secret id=gh_token,env=GITHUB_PRIVATE_TOKEN \
+           --label org.opencontainers.image.source=https://github.com/${CIRCLE_PROJECT_REPONAME} \
+           --label org.opencontainers.image.revision=$(git rev-parse HEAD) \
+           -t ${CIRCLE_PROJECT_REPONAME}:${CIRCLE_WORKFLOW_ID}
+
+jobs:
+  main:
+    docker:
+      # https://circleci.com/developer/images/image/cimg/go#image-tags
+      - image: cimg/go:1.21
+
+    steps:
+      - checkout
+      - setup_remote_docker:
+          # https://circleci.com/docs/2.0/building-docker-images/#docker-version
+          version: 20.10.24
+          docker_layer_caching: true
+      - sre-tools/gcr-oidc
+      - docker_build
+      - publish/save-image
+
+workflows:
+  main:
+    jobs:
+      - main:
+          name: "Build Docker Image"
+          context:
+            - go-private-modules
+
+      - publish/publish:
+          name: "Publish Docker Image"
+          filters: { branches: { only: [main] } }
+          snyk_project_tags: component=pkg:github/snyk/${CIRCLE_PROJECT_REPONAME}@main
+          snyk_token_variable: MONITOR_SNYK_TOKEN
+          context:
+            - infra-publish-orb
+            - snyk-on-snyk-infra-cloud-platforms
+          requires:
+            - "Build Docker Image"

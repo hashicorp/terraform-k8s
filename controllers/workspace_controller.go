@@ -3,8 +3,8 @@ package controllers
 import (
 	"context"
 
-	appv1alpha1 "github.com/hashicorp/terraform-k8s/api/v1alpha1"
-	"github.com/hashicorp/terraform-k8s/workspacehelper"
+	appv1alpha1 "github.com/snyk/terraform-k8s/api/v1alpha1"
+	"github.com/snyk/terraform-k8s/workspacehelper"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"

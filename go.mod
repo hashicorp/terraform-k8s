@@ -1,4 +1,4 @@
-module github.com/hashicorp/terraform-k8s
+module github.com/snyk/terraform-k8s
 
 go 1.16
 
