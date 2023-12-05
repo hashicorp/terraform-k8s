@@ -15,7 +15,8 @@ commands:
            --secret id=gh_token,env=GITHUB_PRIVATE_TOKEN \
            --label org.opencontainers.image.source=https://github.com/${CIRCLE_PROJECT_REPONAME} \
            --label org.opencontainers.image.revision=$(git rev-parse HEAD) \
-           -t ${CIRCLE_PROJECT_REPONAME}:${CIRCLE_WORKFLOW_ID}
+           -t ${CIRCLE_PROJECT_REPONAME}:${CIRCLE_WORKFLOW_ID} \
+           .
 
 jobs:
   main:
