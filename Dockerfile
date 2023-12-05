@@ -1,25 +1,20 @@
-# Build the terraform-k8s binary
-FROM golang:1.18-alpine as builder
-
+FROM golang:1-bullseye AS build
+ENV CGO_ENABLED=1 \
+    GOEXPERIMENT=boringcrypto \
+    GOFLAGS='-trimpath "-ldflags=-s -w"'
 WORKDIR /workspace
+
 # Copy the Go Modules manifests
-COPY go.mod go.mod
-COPY go.sum go.sum
-# cache deps before building and copying source so that we don't need to re-download as much
-# and so that source changes don't invalidate our downloaded layer
+COPY go.mod go.sum ./ 
 RUN --mount=type=secret,id=gh_token,required=true \
   git config --global url."https://$(cat /run/secrets/gh_token):x-oauth-basic@github.com/snyk".insteadOf "https://github.com/snyk" && \
   go mod download
 
 # Copy the go source
 COPY . .
+RUN go build -o terraform-k8s .
 
-# Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o terraform-k8s main.go
-
-FROM alpine:3.16.0
-WORKDIR /
-COPY --from=builder /workspace/terraform-k8s /bin/terraform-k8s
-USER nobody:nobody
-
-ENTRYPOINT ["/bin/terraform-k8s"]
+FROM gcr.io/snyk-main/ubuntu-20:2.1.0_202308221557
+LABEL org.opencontainers.image.source=https://github.com/snyk/terraform-k8s
+COPY --from=build /workspace/terraform-k8s /usr/local/bin/terraform-k8s
+ENTRYPOINT ["/usr/local/bin/polaris-hello-world"]
