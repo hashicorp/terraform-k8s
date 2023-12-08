@@ -5,6 +5,7 @@ version: 2.1
 orbs:
   publish: snyk/publish@1
   sre-tools: snyk/sre-tools@1
+  prodsec: snyk/prodsec-orb@1.0
 
 commands:
  docker_build:
@@ -37,6 +38,11 @@ jobs:
 workflows:
   main:
     jobs:
+      - prodsec/secrets-scan: # DO NOT REMOVE OR MOVE THIS LINE
+          name: Scan repository for secrets
+          context:
+            - snyk-bot-slack
+          channel: alerts-cloud-platforms
       - main:
           name: "Build Docker Image"
           context:
