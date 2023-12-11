@@ -1,12 +1,12 @@
-### :mega: Terraform Cloud Operator v2 Beta :mega: 
+# 📣 Terraform Cloud Operator v2 📣
 
-We are working on a new version of the Terraform Cloud Operator for Kubernetes at [hashicorp/terraform-cloud-operator](https://github.com/hashicorp/terraform-cloud-operator). This new version of the operator will bring a cleaner set of CRDs and support for features such as Agent Pools and deploying agents, Run Tasks, and Workspace Notifications. If you would like to participate in our beta please see our [installation instructions](https://github.com/hashicorp/terraform-cloud-operator#install-beta-version). 
+We are excited to announce the release of the latest version of the Terraform Cloud Operator for Kubernetes, now available at [hashicorp/terraform-cloud-operator](https://github.com/hashicorp/terraform-cloud-operator). This update introduces a more streamlined set of CRDs, along with new features such as Agent Pools, the capability to deploy and scale agents, Run Tasks, and Workspace Notifications. To learn more about these enhancements and to get started, please checkout our [announcement blog](https://www.hashicorp.com/blog/terraform-cloud-operator-v2-for-kubernetes-is-now-ga)
   
 <a href="https://terraform.io">
     <img src=".github/tf.png" alt="Terraform logo" title="Terraform" align="left" height="50" />
 </a>
 
-# Terraform Cloud Operator for Kubernetes 
+# Terraform Cloud Operator for Kubernetes (v1)
 
 The Terraform Cloud Operator for Kubernetes provides first-class integration between [Kubernetes](https://kubernetes.io/) and [Terraform Cloud](https://www.hashicorp.com/products/terraform/editions/cloud/) by extending the Kubernetes control plane to enable lifecycle management of cloud and on-prem infrastructure through [Kubernetes manifests](https://kubernetes.io/docs/concepts/cluster-administration/manage-deployment/). Manifests can be deployed and managed using kubectl, [Terraform](https://registry.terraform.io/providers/hashicorp/kubernetes-alpha/latest), Gitops tools, or any other tool that allows you to manage Kubernetes [custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/). 
 
