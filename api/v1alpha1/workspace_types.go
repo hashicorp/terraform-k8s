@@ -147,6 +147,9 @@ type WorkspaceSpec struct {
 	// Specifies the agent pool name we wish to use.
 	// +optional
 	AgentPoolName string `json:"agentPoolName,omitempty"`
+	// Working directory within the module repository
+	// +optional
+	WorkingDirectory string `json:"workingDirectory,omitempty"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace
