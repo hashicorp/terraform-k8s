@@ -85,6 +85,9 @@ func checkIfVariableChanged(specVariable *tfc.Variable, workspaceVariable *tfc.V
 	if specVariable.HCL != workspaceVariable.HCL {
 		return true
 	}
+	if specVariable.Category != workspaceVariable.Category {
+		return true
+	}
 	if !specVariable.Sensitive && workspaceVariable.Sensitive {
 		return true
 	}
@@ -189,7 +192,7 @@ func (t *TerraformCloudClient) listVariables(workspaceID string) ([]*tfc.Variabl
 	options := tfc.VariableListOptions{
 		ListOptions: tfc.ListOptions{PageSize: PageSize},
 	}
-	variables, err := t.Client.Variables.List(context.TODO(), workspaceID, options)
+	variables, err := t.Client.Variables.List(context.TODO(), workspaceID, &options)
 	if err != nil {
 		return nil, err
 	}
@@ -215,6 +218,7 @@ func (t *TerraformCloudClient) UpdateTerraformVariables(variables []*tfc.Variabl
 			Key:       &v.Key,
 			Value:     &v.Value,
 			HCL:       &v.HCL,
+			Category:  &v.Category,
 			Sensitive: &v.Sensitive,
 		}
 		_, err := t.Client.Variables.Update(context.TODO(), v.Workspace.ID, v.ID, options)

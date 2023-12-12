@@ -123,7 +123,7 @@ func (t *TerraformCloudClient) listAgentPools() ([]*tfc.AgentPool, error) {
 		ListOptions: tfc.ListOptions{PageSize: AgentPageSize},
 	}
 
-	agentpools, err := t.Client.AgentPools.List(context.TODO(), t.Organization, options)
+	agentpools, err := t.Client.AgentPools.List(context.TODO(), t.Organization, &options)
 	if err != nil {
 		return nil, fmt.Errorf("Problem fetching agent pools %s", err)
 	}
@@ -260,7 +260,7 @@ func (t *TerraformCloudClient) CreateWorkspace(workspace string, instance *appv1
 
 // GetSSHKeyByNameOrID Lookup provided Key ID by name or ID, return ID.
 func (t *TerraformCloudClient) GetSSHKeyByNameOrID(SSHKeyID string) (string, error) {
-	sshKeys, err := t.Client.SSHKeys.List(context.TODO(), t.Organization, tfc.SSHKeyListOptions{})
+	sshKeys, err := t.Client.SSHKeys.List(context.TODO(), t.Organization, &tfc.SSHKeyListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -349,7 +349,7 @@ func (t *TerraformCloudClient) CheckNotifications(instance *appv1alpha1.Workspac
 	workspaceID := instance.Status.WorkspaceID
 
 	notifications, err := t.Client.NotificationConfigurations.List(context.TODO(), workspaceID,
-		tfc.NotificationConfigurationListOptions{})
+		&tfc.NotificationConfigurationListOptions{})
 	if err != nil {
 		return err
 	}
@@ -384,7 +384,7 @@ func (t *TerraformCloudClient) CheckNotifications(instance *appv1alpha1.Workspac
 
 	// refresh notifications list
 	notifications, err = t.Client.NotificationConfigurations.List(context.TODO(), workspaceID,
-		tfc.NotificationConfigurationListOptions{})
+		&tfc.NotificationConfigurationListOptions{})
 	if err != nil {
 		return err
 	}
@@ -405,6 +405,13 @@ func (t *TerraformCloudClient) CheckNotifications(instance *appv1alpha1.Workspac
 
 	// Add missing notifications
 	for _, notification := range toAdd {
+		triggers := []tfc.NotificationTriggerType{}
+
+		// Convert []string to []tfc.NotificationTriggerType
+		for _, trigger := range notification.Triggers {
+			triggers = append(triggers, tfc.NotificationTriggerType(trigger))
+		}
+
 		createOpts := tfc.NotificationConfigurationCreateOptions{
 			Name:            &notification.Name,
 			DestinationType: &notification.Type,
@@ -412,7 +419,7 @@ func (t *TerraformCloudClient) CheckNotifications(instance *appv1alpha1.Workspac
 			Token:           &notification.Token,
 			URL:             &notification.URL,
 			EmailAddresses:  notification.Recipients,
-			Triggers:        notification.Triggers,
+			Triggers:        triggers,
 		}
 		for _, user := range notification.Users {
 			createOpts.EmailUsers = append(createOpts.EmailUsers, &tfc.User{ID: user})

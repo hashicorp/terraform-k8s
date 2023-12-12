@@ -5,7 +5,6 @@ package tfe
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 )
@@ -20,7 +19,7 @@ var _ SSHKeys = (*sshKeys)(nil)
 // https://www.terraform.io/docs/cloud/api/ssh-keys.html
 type SSHKeys interface {
 	// List all the SSH keys for a given organization
-	List(ctx context.Context, organization string, options SSHKeyListOptions) (*SSHKeyList, error)
+	List(ctx context.Context, organization string, options *SSHKeyListOptions) (*SSHKeyList, error)
 
 	// Create an SSH key and associate it with an organization.
 	Create(ctx context.Context, organization string, options SSHKeyCreateOptions) (*SSHKey, error)
@@ -57,27 +56,6 @@ type SSHKeyListOptions struct {
 	ListOptions
 }
 
-// List all the SSH keys for a given organization
-func (s *sshKeys) List(ctx context.Context, organization string, options SSHKeyListOptions) (*SSHKeyList, error) {
-	if !validStringID(&organization) {
-		return nil, ErrInvalidOrg
-	}
-
-	u := fmt.Sprintf("organizations/%s/ssh-keys", url.QueryEscape(organization))
-	req, err := s.client.newRequest("GET", u, &options)
-	if err != nil {
-		return nil, err
-	}
-
-	kl := &SSHKeyList{}
-	err = s.client.do(ctx, req, kl)
-	if err != nil {
-		return nil, err
-	}
-
-	return kl, nil
-}
-
 // SSHKeyCreateOptions represents the options for creating an SSH key.
 type SSHKeyCreateOptions struct {
 	// Type is a public field utilized by JSON:API to
@@ -93,14 +71,34 @@ type SSHKeyCreateOptions struct {
 	Value *string `jsonapi:"attr,value"`
 }
 
-func (o SSHKeyCreateOptions) valid() error {
-	if !validString(o.Name) {
-		return ErrRequiredName
+// SSHKeyUpdateOptions represents the options for updating an SSH key.
+type SSHKeyUpdateOptions struct {
+	// For internal use only!
+	ID string `jsonapi:"primary,ssh-keys"`
+
+	// Optional: A new name to identify the SSH key.
+	Name *string `jsonapi:"attr,name,omitempty"`
+}
+
+// List all the SSH keys for a given organization
+func (s *sshKeys) List(ctx context.Context, organization string, options *SSHKeyListOptions) (*SSHKeyList, error) {
+	if !validStringID(&organization) {
+		return nil, ErrInvalidOrg
 	}
-	if !validString(o.Value) {
-		return errors.New("value is required")
+
+	u := fmt.Sprintf("organizations/%s/ssh-keys", url.QueryEscape(organization))
+	req, err := s.client.newRequest("GET", u, options)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	kl := &SSHKeyList{}
+	err = s.client.do(ctx, req, kl)
+	if err != nil {
+		return nil, err
+	}
+
+	return kl, nil
 }
 
 // Create an SSH key and associate it with an organization.
@@ -131,7 +129,7 @@ func (s *sshKeys) Create(ctx context.Context, organization string, options SSHKe
 // Read an SSH key by its ID.
 func (s *sshKeys) Read(ctx context.Context, sshKeyID string) (*SSHKey, error) {
 	if !validStringID(&sshKeyID) {
-		return nil, errors.New("invalid value for SSH key ID")
+		return nil, ErrInvalidSHHKeyID
 	}
 
 	u := fmt.Sprintf("ssh-keys/%s", url.QueryEscape(sshKeyID))
@@ -149,26 +147,11 @@ func (s *sshKeys) Read(ctx context.Context, sshKeyID string) (*SSHKey, error) {
 	return k, nil
 }
 
-// SSHKeyUpdateOptions represents the options for updating an SSH key.
-type SSHKeyUpdateOptions struct {
-	// For internal use only!
-	ID string `jsonapi:"primary,ssh-keys"`
-
-	// A new name to identify the SSH key.
-	Name *string `jsonapi:"attr,name,omitempty"`
-
-	// Updated content of the SSH private key.
-	Value *string `jsonapi:"attr,value,omitempty"`
-}
-
 // Update an SSH key by its ID.
 func (s *sshKeys) Update(ctx context.Context, sshKeyID string, options SSHKeyUpdateOptions) (*SSHKey, error) {
 	if !validStringID(&sshKeyID) {
-		return nil, errors.New("invalid value for SSH key ID")
+		return nil, ErrInvalidSHHKeyID
 	}
-
-	// Make sure we don't send a user provided ID.
-	options.ID = ""
 
 	u := fmt.Sprintf("ssh-keys/%s", url.QueryEscape(sshKeyID))
 	req, err := s.client.newRequest("PATCH", u, &options)
@@ -188,7 +171,7 @@ func (s *sshKeys) Update(ctx context.Context, sshKeyID string, options SSHKeyUpd
 // Delete an SSH key by its ID.
 func (s *sshKeys) Delete(ctx context.Context, sshKeyID string) error {
 	if !validStringID(&sshKeyID) {
-		return errors.New("invalid value for SSH key ID")
+		return ErrInvalidSHHKeyID
 	}
 
 	u := fmt.Sprintf("ssh-keys/%s", url.QueryEscape(sshKeyID))
@@ -198,4 +181,14 @@ func (s *sshKeys) Delete(ctx context.Context, sshKeyID string) error {
 	}
 
 	return s.client.do(ctx, req, nil)
+}
+
+func (o SSHKeyCreateOptions) valid() error {
+	if !validString(o.Name) {
+		return ErrRequiredName
+	}
+	if !validString(o.Value) {
+		return ErrRequiredValue
+	}
+	return nil
 }

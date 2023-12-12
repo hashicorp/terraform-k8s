@@ -389,7 +389,7 @@ func Unpack(r io.Reader, dst string) error {
 		}
 
 		// Only unpack regular files from this point on.
-		if header.Typeflag == tar.TypeDir {
+		if header.Typeflag == tar.TypeDir || header.Typeflag == tar.TypeXGlobalHeader || header.Typeflag == tar.TypeXHeader {
 			continue
 		} else if header.Typeflag != tar.TypeReg && header.Typeflag != tar.TypeRegA {
 			return fmt.Errorf("failed creating %q: unsupported type %c", path,

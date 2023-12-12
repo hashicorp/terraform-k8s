@@ -18,7 +18,7 @@ import (
 
 // GetStateVersionDownloadURL retrieves download URL for state file
 func (t *TerraformCloudClient) GetStateVersionDownloadURL(workspaceID string) (string, error) {
-	stateVersion, err := t.Client.StateVersions.Current(context.TODO(), workspaceID)
+	stateVersion, err := t.Client.StateVersions.ReadCurrent(context.TODO(), workspaceID)
 	if err != nil {
 		return "", fmt.Errorf("could not get current state version, WorkspaceID, %s, Error, %v", workspaceID, err)
 	}

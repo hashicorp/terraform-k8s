@@ -26,7 +26,7 @@ type Applies interface {
 	Logs(ctx context.Context, applyID string) (io.Reader, error)
 }
 
-// applies implements Applys.
+// applies implements Applies interface.
 type applies struct {
 	client *Client
 }
@@ -34,7 +34,7 @@ type applies struct {
 // ApplyStatus represents an apply state.
 type ApplyStatus string
 
-//List all available apply statuses.
+// List all available apply statuses.
 const (
 	ApplyCanceled    ApplyStatus = "canceled"
 	ApplyCreated     ApplyStatus = "created"
@@ -108,7 +108,7 @@ func (s *applies) Logs(ctx context.Context, applyID string) (io.Reader, error) {
 
 	u, err := url.Parse(a.LogReadURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid log URL: %v", err)
+		return nil, fmt.Errorf("invalid log URL: %w", err)
 	}
 
 	done := func() (bool, error) {

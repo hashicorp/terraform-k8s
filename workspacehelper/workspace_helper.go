@@ -395,7 +395,7 @@ func (r *WorkspaceHelper) prepareVCSRun(instance *appv1alpha1.Workspace) (bool, 
 		instance.Spec.Organization, "Name", instance.Name, "Namespace", instance.Namespace)
 
 	configVersions, err := r.tfclient.Client.ConfigurationVersions.List(context.TODO(),
-		instance.Status.WorkspaceID, tfe.ConfigurationVersionListOptions{})
+		instance.Status.WorkspaceID, &tfe.ConfigurationVersionListOptions{})
 	if err != nil {
 		return false, err
 	}

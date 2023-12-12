@@ -5,7 +5,6 @@ package tfe
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -20,7 +19,7 @@ var _ Runs = (*runs)(nil)
 // TFE API docs: https://www.terraform.io/docs/cloud/api/run.html
 type Runs interface {
 	// List all the runs of the given workspace.
-	List(ctx context.Context, workspaceID string, options RunListOptions) (*RunList, error)
+	List(ctx context.Context, workspaceID string, options *RunListOptions) (*RunList, error)
 
 	// Create a new run with the given options.
 	Create(ctx context.Context, options RunCreateOptions) (*Run, error)
@@ -52,7 +51,7 @@ type runs struct {
 // RunStatus represents a run state.
 type RunStatus string
 
-//List all available run statuses.
+// List all available run statuses.
 const (
 	RunApplied            RunStatus = "applied"
 	RunApplyQueued        RunStatus = "apply_queued"
@@ -63,6 +62,7 @@ const (
 	RunCostEstimating     RunStatus = "cost_estimating"
 	RunDiscarded          RunStatus = "discarded"
 	RunErrored            RunStatus = "errored"
+	RunFetching           RunStatus = "fetching"
 	RunPending            RunStatus = "pending"
 	RunPlanQueued         RunStatus = "plan_queued"
 	RunPlanned            RunStatus = "planned"
@@ -72,6 +72,8 @@ const (
 	RunPolicyChecking     RunStatus = "policy_checking"
 	RunPolicyOverride     RunStatus = "policy_override"
 	RunPolicySoftFailed   RunStatus = "policy_soft_failed"
+	RunPostPlanRunning    RunStatus = "post_plan_running"
+	RunPostPlanCompleted  RunStatus = "post_plan_completed"
 )
 
 // RunSource represents a source type of a run.
@@ -118,7 +120,9 @@ type Run struct {
 	CreatedBy            *User                 `jsonapi:"relation,created-by"`
 	Plan                 *Plan                 `jsonapi:"relation,plan"`
 	PolicyChecks         []*PolicyCheck        `jsonapi:"relation,policy-checks"`
+	TaskStages           []*TaskStage          `jsonapi:"relation,task-stages,omitempty"`
 	Workspace            *Workspace            `jsonapi:"relation,workspace"`
+	Comments             []*Comment            `jsonapi:"relation,comments"`
 }
 
 // RunActions represents the run actions.
@@ -149,6 +153,8 @@ type RunStatusTimestamps struct {
 	CostEstimatingAt     time.Time `jsonapi:"attr,cost-estimating-at,rfc3339"`
 	DiscardedAt          time.Time `jsonapi:"attr,discarded-at,rfc3339"`
 	ErroredAt            time.Time `jsonapi:"attr,errored-at,rfc3339"`
+	FetchedAt            time.Time `jsonapi:"attr,fetched-at,rfc3339"`
+	FetchingAt           time.Time `jsonapi:"attr,fetching-at,rfc3339"`
 	ForceCanceledAt      time.Time `jsonapi:"attr,force-canceled-at,rfc3339"`
 	PlanQueueableAt      time.Time `jsonapi:"attr,plan-queueable-at,rfc3339"`
 	PlanQueuedAt         time.Time `jsonapi:"attr,plan-queued-at,rfc3339"`
@@ -159,42 +165,34 @@ type RunStatusTimestamps struct {
 	PolicySoftFailedAt   time.Time `jsonapi:"attr,policy-soft-failed-at,rfc3339"`
 }
 
+// RunIncludeOpt represents the available options for include query params.
+// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
+type RunIncludeOpt string
+
+const (
+	RunPlan             RunIncludeOpt = "plan"
+	RunApply            RunIncludeOpt = "apply"
+	RunCreatedBy        RunIncludeOpt = "created_by"
+	RunCostEstimate     RunIncludeOpt = "cost_estimate"
+	RunConfigVer        RunIncludeOpt = "configuration_version"
+	RunConfigVerIngress RunIncludeOpt = "configuration_version.ingress_attributes"
+	RunWorkspace        RunIncludeOpt = "workspace"
+	RunTaskStages       RunIncludeOpt = "task_stages"
+)
+
 // RunListOptions represents the options for listing runs.
 type RunListOptions struct {
 	ListOptions
-
-	// A list of relations to include. See available resources:
+	// Optional: A list of relations to include. See available resources:
 	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
-	Include *string `url:"include"`
+	Include []RunIncludeOpt `url:"include,omitempty"`
 }
 
-// RunVariable represents a variable that can be applied to a run. All values must be expressed as an HCL literal
-// in the same syntax you would use when writing terraform code. See https://www.terraform.io/docs/language/expressions/types.html#types
-// for more details.
-type RunVariable struct {
-	Key   string `jsonapi:"attr,key"`
-	Value string `jsonapi:"attr,value"`
-}
-
-// List all the runs of the given workspace.
-func (s *runs) List(ctx context.Context, workspaceID string, options RunListOptions) (*RunList, error) {
-	if !validStringID(&workspaceID) {
-		return nil, ErrInvalidWorkspaceID
-	}
-
-	u := fmt.Sprintf("workspaces/%s/runs", url.QueryEscape(workspaceID))
-	req, err := s.client.newRequest("GET", u, &options)
-	if err != nil {
-		return nil, err
-	}
-
-	rl := &RunList{}
-	err = s.client.do(ctx, req, rl)
-	if err != nil {
-		return nil, err
-	}
-
-	return rl, nil
+// RunReadOptions represents the options for reading a run.
+type RunReadOptions struct {
+	// Optional: A list of relations to include. See available resources:
+	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
+	Include []RunIncludeOpt `url:"include,omitempty"`
 }
 
 // RunCreateOptions represents the options for creating a new run.
@@ -255,11 +253,60 @@ type RunCreateOptions struct {
 	Variables []*RunVariable `jsonapi:"attr,variables,omitempty"`
 }
 
-func (o RunCreateOptions) valid() error {
-	if o.Workspace == nil {
-		return errors.New("workspace is required")
+// RunApplyOptions represents the options for applying a run.
+type RunApplyOptions struct {
+	// An optional comment about the run.
+	Comment *string `json:"comment,omitempty"`
+}
+
+// RunCancelOptions represents the options for canceling a run.
+type RunCancelOptions struct {
+	// An optional explanation for why the run was canceled.
+	Comment *string `json:"comment,omitempty"`
+}
+
+// RunVariable represents a variable that can be applied to a run. All values must be expressed as an HCL literal
+// in the same syntax you would use when writing terraform code. See https://www.terraform.io/docs/language/expressions/types.html#types
+// for more details.
+type RunVariable struct {
+	Key   string `jsonapi:"attr,key"`
+	Value string `jsonapi:"attr,value"`
+}
+
+// RunForceCancelOptions represents the options for force-canceling a run.
+type RunForceCancelOptions struct {
+	// An optional comment explaining the reason for the force-cancel.
+	Comment *string `json:"comment,omitempty"`
+}
+
+// RunDiscardOptions represents the options for discarding a run.
+type RunDiscardOptions struct {
+	// An optional explanation for why the run was discarded.
+	Comment *string `json:"comment,omitempty"`
+}
+
+// List all the runs of the given workspace.
+func (s *runs) List(ctx context.Context, workspaceID string, options *RunListOptions) (*RunList, error) {
+	if !validStringID(&workspaceID) {
+		return nil, ErrInvalidWorkspaceID
 	}
-	return nil
+	if err := options.valid(); err != nil {
+		return nil, err
+	}
+
+	u := fmt.Sprintf("workspaces/%s/runs", url.QueryEscape(workspaceID))
+	req, err := s.client.newRequest("GET", u, options)
+	if err != nil {
+		return nil, err
+	}
+
+	rl := &RunList{}
+	err = s.client.do(ctx, req, rl)
+	if err != nil {
+		return nil, err
+	}
+
+	return rl, nil
 }
 
 // Create a new run with the given options.
@@ -287,15 +334,13 @@ func (s *runs) Read(ctx context.Context, runID string) (*Run, error) {
 	return s.ReadWithOptions(ctx, runID, nil)
 }
 
-// RunReadOptions represents the options for reading a run.
-type RunReadOptions struct {
-	Include string `url:"include"`
-}
-
 // Read a run by its ID with the given options.
 func (s *runs) ReadWithOptions(ctx context.Context, runID string, options *RunReadOptions) (*Run, error) {
 	if !validStringID(&runID) {
 		return nil, ErrInvalidRunID
+	}
+	if err := options.valid(); err != nil {
+		return nil, err
 	}
 
 	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
@@ -313,12 +358,6 @@ func (s *runs) ReadWithOptions(ctx context.Context, runID string, options *RunRe
 	return r, nil
 }
 
-// RunApplyOptions represents the options for applying a run.
-type RunApplyOptions struct {
-	// An optional comment about the run.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
 // Apply a run by its ID.
 func (s *runs) Apply(ctx context.Context, runID string, options RunApplyOptions) error {
 	if !validStringID(&runID) {
@@ -332,12 +371,6 @@ func (s *runs) Apply(ctx context.Context, runID string, options RunApplyOptions)
 	}
 
 	return s.client.do(ctx, req, nil)
-}
-
-// RunCancelOptions represents the options for canceling a run.
-type RunCancelOptions struct {
-	// An optional explanation for why the run was canceled.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
 }
 
 // Cancel a run by its ID.
@@ -355,12 +388,6 @@ func (s *runs) Cancel(ctx context.Context, runID string, options RunCancelOption
 	return s.client.do(ctx, req, nil)
 }
 
-// RunForceCancelOptions represents the options for force-canceling a run.
-type RunForceCancelOptions struct {
-	// An optional comment explaining the reason for the force-cancel.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
 // ForceCancel is used to forcefully cancel a run by its ID.
 func (s *runs) ForceCancel(ctx context.Context, runID string, options RunForceCancelOptions) error {
 	if !validStringID(&runID) {
@@ -376,12 +403,6 @@ func (s *runs) ForceCancel(ctx context.Context, runID string, options RunForceCa
 	return s.client.do(ctx, req, nil)
 }
 
-// RunDiscardOptions represents the options for discarding a run.
-type RunDiscardOptions struct {
-	// An optional explanation for why the run was discarded.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
 // Discard a run by its ID.
 func (s *runs) Discard(ctx context.Context, runID string, options RunDiscardOptions) error {
 	if !validStringID(&runID) {
@@ -395,4 +416,46 @@ func (s *runs) Discard(ctx context.Context, runID string, options RunDiscardOpti
 	}
 
 	return s.client.do(ctx, req, nil)
+}
+
+func (o RunCreateOptions) valid() error {
+	if o.Workspace == nil {
+		return ErrRequiredWorkspace
+	}
+	return nil
+}
+
+func (o *RunReadOptions) valid() error {
+	if o == nil {
+		return nil // nothing to validate
+	}
+
+	if err := validateRunIncludeParam(o.Include); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *RunListOptions) valid() error {
+	if o == nil {
+		return nil // nothing to validate
+	}
+
+	if err := validateRunIncludeParam(o.Include); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateRunIncludeParam(params []RunIncludeOpt) error {
+	for _, p := range params {
+		switch p {
+		case RunPlan, RunApply, RunCreatedBy, RunCostEstimate, RunConfigVer, RunConfigVerIngress, RunWorkspace, RunTaskStages:
+			// do nothing
+		default:
+			return ErrInvalidIncludeValue
+		}
+	}
+
+	return nil
 }
