@@ -51,6 +51,9 @@ spec:
               agentPoolName:
                 description: Specifies the agent pool name we wish to use.
                 type: string
+              disableAutoApply:
+                description: Specifies if auto apply will be disabled or enabled
+                type: boolean
               module:
                 description: Module source and version to use
                 nullable: true
