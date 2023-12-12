@@ -102,7 +102,8 @@ func TestShouldGetSensitiveVariablesForUpdate(t *testing.T) {
 			Sensitive: true,
 		},
 	}
-	update, err := getSensitiveVariablesToUpdate(specVariables, workspaceVariables, secretsMount)
+	secretData := make(map[string][]byte)
+	update, err := getSensitiveVariablesToUpdate(specVariables, workspaceVariables, secretsMount, secretData)
 	assert.NoError(t, err)
 	assert.Len(t, update, 1)
 	assert.Equal(t, update[0].Key, specVariables[0].Key)
@@ -135,7 +136,8 @@ func TestShouldUpdateVariables(t *testing.T) {
 			HCL:       false,
 		},
 	}
-	update, err := generateUpdateVariableList(specVariables, workspaceVariables, secretsMount)
+	secretData := make(map[string][]byte)
+	update, err := generateUpdateVariableList(specVariables, workspaceVariables, secretsMount, secretData)
 	assert.NoError(t, err)
 	assert.Len(t, update, 2)
 	assert.False(t, update[0].Sensitive)
@@ -174,7 +176,8 @@ func TestShouldNotUpdateVariables(t *testing.T) {
 			HCL:       true,
 		},
 	}
-	update, err := generateUpdateVariableList(specVariables, workspaceVariables, secretsMount)
+	secretData := make(map[string][]byte)
+	update, err := generateUpdateVariableList(specVariables, workspaceVariables, secretsMount, secretData)
 	assert.NoError(t, err)
 	assert.Len(t, update, 0)
 }
