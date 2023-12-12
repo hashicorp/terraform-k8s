@@ -259,9 +259,7 @@ spec:
                           type: object
                       type: object
                   required:
-                  - environmentVariable
                   - key
-                  - sensitive
                   type: object
                 type: array
               vcs:
