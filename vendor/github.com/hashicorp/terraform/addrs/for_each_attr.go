@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package addrs
 
 // ForEachAttr is the address of an attribute referencing the current "for_each" object in

@@ -1,6 +1,3 @@
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
-
 sudo: false
 language: go
 go_import_path: go.uber.org/multierr

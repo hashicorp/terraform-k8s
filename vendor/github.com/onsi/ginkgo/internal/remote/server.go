@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 /*
 
 The remote package provides the pieces to allow Ginkgo test suites to report to remote listeners.

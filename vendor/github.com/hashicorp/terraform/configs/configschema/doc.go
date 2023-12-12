@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package configschema contains types for describing the expected structure
 // of a configuration block whose shape is not known until runtime.
 //

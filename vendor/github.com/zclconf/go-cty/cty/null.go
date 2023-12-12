@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package cty
 
 // NullVal returns a null value of the given type. A null can be created of any

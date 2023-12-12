@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 /*
 Gomega is the Ginkgo BDD-style testing framework's preferred matcher library.
 

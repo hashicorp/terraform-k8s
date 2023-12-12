@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package discovery
 
 // PluginCache is an interface implemented by objects that are able to maintain
