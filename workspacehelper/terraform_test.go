@@ -148,9 +148,15 @@ func TestShouldCreateTerraformWithOutputs(t *testing.T) {
 	}
 	output "module_output" {
 		value = module.operator.my_output
+		sensitive = false
 	}
 	output "ip" {
 		value = module.operator.ip_address
+		sensitive = false
+	}
+	output "password" {
+		value = module.operator.my_password
+		sensitive = true
 	}
 	module "operator" {
 		source = "my_source"
@@ -176,6 +182,11 @@ func TestShouldCreateTerraformWithOutputs(t *testing.T) {
 				{
 					Key:              "ip",
 					ModuleOutputName: "ip_address",
+				},
+				{
+					Key:              "password",
+					ModuleOutputName: "my_password",
+					Sensitive:        true,
 				},
 			},
 		},
