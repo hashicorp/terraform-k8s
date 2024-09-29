@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-tfe"
-	tfc "github.com/hashicorp/go-tfe"
 	appv1alpha1 "github.com/hashicorp/terraform-k8s/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -374,7 +373,7 @@ func (r *WorkspaceHelper) prepareModuleRun(instance *appv1alpha1.Workspace, opti
 	if err != nil {
 		return true, err
 	}
-	if !(configVersion.Status == tfc.ConfigurationUploaded) {
+	if !(configVersion.Status == tfe.ConfigurationUploaded) {
 		return true, err
 	}
 
