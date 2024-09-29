@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package discovery
 
 // A PluginMetaSet is a set of PluginMeta objects meeting a certain criteria.

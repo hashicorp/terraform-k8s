@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package typeexpr is a fork of github.com/hashicorp/hcl/v2/ext/typeexpr
 // which has additional experimental support for optional attributes.
 //

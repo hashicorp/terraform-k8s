@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package tfdiags
 
 // diagnosticBase can be embedded in other diagnostic structs to get

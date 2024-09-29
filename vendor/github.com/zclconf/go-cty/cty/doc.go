@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package cty (pronounced see-tie) provides some infrastructure for a type
 // system that might be useful for applications that need to represent
 // configuration values provided by the user whose types are not known
