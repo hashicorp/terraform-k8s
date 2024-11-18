@@ -108,6 +108,17 @@ func (t *TerraformCloudClient) SetTerraformVersion(workspace, terraformVersion s
 	return nil
 }
 
+func (t *TerraformCloudClient) SetWorkingDirectory(workspace, workingDirectory string) error {
+	wsUpdateOptions := tfc.WorkspaceUpdateOptions{
+		WorkingDirectory: &workingDirectory,
+	}
+	_, err := t.Client.Workspaces.Update(context.TODO(), t.Organization, workspace, wsUpdateOptions)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // getAgentPoolID uses AgentPoolName to lookup and return AgentPoolID
 func getAgentPoolID(specTFCAgentPoolName string, agentPools []*tfc.AgentPool) (*tfc.AgentPool, error) {
 	for _, agentPool := range agentPools {
@@ -201,6 +212,13 @@ func (t *TerraformCloudClient) CheckWorkspace(workspace string, instance *appv1a
 		}
 	}
 
+	if instance.Spec.WorkingDirectory != ws.WorkingDirectory {
+		err = t.SetWorkingDirectory(workspace, instance.Spec.WorkingDirectory)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if instance.Spec.AgentPoolID != ws.AgentPoolID {
 		err := t.updateAgentPoolID(instance, ws)
 		if err != nil {
@@ -249,6 +267,10 @@ func (t *TerraformCloudClient) CreateWorkspace(workspace string, instance *appv1
 		}
 		options.AgentPoolID = &agentPool.ID
 		options.ExecutionMode = tfc.String("agent")
+	}
+
+	if instance.Spec.WorkingDirectory != "" {
+		options.WorkingDirectory = &instance.Spec.WorkingDirectory
 	}
 
 	ws, err := t.Client.Workspaces.Create(context.TODO(), t.Organization, options)

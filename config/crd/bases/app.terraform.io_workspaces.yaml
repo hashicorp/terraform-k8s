@@ -288,6 +288,9 @@ spec:
                 - repo_identifier
                 - token_id
                 type: object
+              workingDirectory:
+                description: Working directory within the module repository
+                type: string
             required:
             - organization
             - secretsMountPath
