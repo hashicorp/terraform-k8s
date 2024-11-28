@@ -147,6 +147,9 @@ type WorkspaceSpec struct {
 	// Specifies the agent pool name we wish to use.
 	// +optional
 	AgentPoolName string `json:"agentPoolName,omitempty"`
+	// Specifies if the auto apply feature for the workspace is disabled or enabled
+	// +optional
+	DisableAutoApply bool `json:"disableAutoApply"`
 }
 
 // WorkspaceStatus defines the observed state of Workspace
