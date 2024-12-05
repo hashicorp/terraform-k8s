@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package getproviders
 
 // HashicorpPublicKey is the HashiCorp public key, also available at

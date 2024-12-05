@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package getproviders is the lowest-level provider automatic installation
 // functionality. It can answer questions about what providers and provider
 // versions are available in a registry, and it can retrieve the URL for

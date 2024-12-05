@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package tfe
 
 // AdminSettings describes all the admin settings related methods that the Terraform Enterprise API supports.

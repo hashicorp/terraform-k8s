@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 //This package is copied from Go library text/template.
 //The original private functions indirect and printableValue
 //are exported as public functions.

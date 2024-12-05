@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package edge
 
 import . "github.com/onsi/gomega/matchers/support/goraph/node"

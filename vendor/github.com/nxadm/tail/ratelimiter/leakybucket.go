@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package ratelimiter implements the Leaky Bucket ratelimiting algorithm with memcached and in-memory backends.
 package ratelimiter
 

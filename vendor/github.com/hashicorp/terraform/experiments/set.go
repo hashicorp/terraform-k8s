@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package experiments
 
 // Set is a collection of experiments where every experiment is either a member

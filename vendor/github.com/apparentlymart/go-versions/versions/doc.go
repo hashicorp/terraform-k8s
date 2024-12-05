@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package versions is a library for wrangling version numbers in Go.
 //
 // There are many libraries offering some or all of this functionality.

@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package addrs contains types that represent "addresses", which are
 // references to specific objects within a Terraform configuration or
 // state.

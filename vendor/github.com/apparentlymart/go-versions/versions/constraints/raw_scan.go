@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // line 1 "raw_scan.rl"
 // This file is generated from raw_scan.rl. DO NOT EDIT.
 

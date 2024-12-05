@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 // Package scanner implements a scanner for HCL (HashiCorp Configuration
 // Language) source text.
 package scanner

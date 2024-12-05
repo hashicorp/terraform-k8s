@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package configschema
 
 // NoneRequired returns a deep copy of the receiver with any required

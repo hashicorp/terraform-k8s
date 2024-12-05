@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 /*
 Package color is an ANSI color package to output colorized or SGR defined
 output to the standard output. The API can be used in several way, pick one

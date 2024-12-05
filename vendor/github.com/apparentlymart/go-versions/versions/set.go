@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package versions
 
 // Set is a set of versions, usually created by parsing a constraint string.
