@@ -77,9 +77,9 @@ func (t *TerraformCloudClient) CheckRunTriggers(workspace string, specRunTrigger
 
 func (t *TerraformCloudClient) listRunTriggers(workspaceID string) ([]*tfc.RunTrigger, error) {
 	options := tfc.RunTriggerListOptions{
-		RunTriggerType: tfc.String("inbound"),
+		RunTriggerType: tfc.RunTriggerFilterOp("inbound"),
 	}
-	runTriggers, err := t.Client.RunTriggers.List(context.TODO(), workspaceID, options)
+	runTriggers, err := t.Client.RunTriggers.List(context.TODO(), workspaceID, &options)
 	if err != nil {
 		return nil, err
 	}

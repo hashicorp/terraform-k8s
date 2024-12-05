@@ -81,7 +81,7 @@ func isError(status string) bool {
 // DeleteRuns cancels runs that haven't been applied or planned
 func (t *TerraformCloudClient) DeleteRuns(workspaceID string) error {
 	message := "operator, finalizer, cancelling run"
-	runs, err := t.Client.Runs.List(context.TODO(), workspaceID, tfc.RunListOptions{})
+	runs, err := t.Client.Runs.List(context.TODO(), workspaceID, &tfc.RunListOptions{})
 	if err != nil {
 		return err
 	}
