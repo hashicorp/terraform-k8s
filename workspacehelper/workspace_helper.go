@@ -302,8 +302,14 @@ func (r *WorkspaceHelper) updateVariables(instance *appv1alpha1.Workspace) (bool
 		}
 	}
 
+	secretData, err := r.GetSecretData(instance.Namespace, instance.Spec.SecretName)
+	if err != nil {
+		r.reqLogger.Error(err, "Could not get namespaced Secret data")
+		return false, err
+	}
+
 	specTFCVariables := MapToTFCVariable(instance.Spec.Variables)
-	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables)
+	updatedVariables, err := r.tfclient.CheckVariables(workspace, specTFCVariables, secretData)
 	if err != nil {
 		r.reqLogger.Error(err, "Could not update variables")
 		return false, err
